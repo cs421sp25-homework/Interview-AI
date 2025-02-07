@@ -10,7 +10,6 @@
 | Xu Lian | Lance | xlian3@jhu.edu | 6674645480 | lancelianl |
 | Zixi Huang | Kevin | zhuang60@jhu.edu | 6674645874 | ZixiHuang66 |
 | Timothy Lin | Timothy | tlin56@jh.edu | 6673548366 | Deodat-Lawson |
-|           |                |           |            |                 |
 
 ## Team Agreement
 
