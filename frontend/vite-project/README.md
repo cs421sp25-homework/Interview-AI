@@ -87,24 +87,27 @@ my-project/
 
 ## Setting Up the Backend (Python + Flask) with Poetry
 
-1. **Initialize a new Poetry project**  
-   In your terminal, navigate to the `backend` directory:
+1. **Install Poetry**  
+   Follow the instructions [here](https://python-poetry.org/docs/#installation)
    ```bash
-   cd ../backend
-   poetry init
+   pip install poetry
    ```
-   During the `poetry init` process:
-   - You’ll be asked for some metadata (package name, version, description, etc.).  
-   - You can skip or fill in as needed.
+   - After installation, verify by running `poetry --version`.
 
-2. **Add Flask to your project**  
+2. **Create a virtual environment**  
+   ```bash
+   poetry install
+   ```
+   This creates a virtual environment and installs the dependencies specified in `pyproject.toml`.
+
+3. **Add Flask to your project**  
    After initialization, add Flask as a dependency:
    ```bash
    poetry add flask
    ```
    This updates `pyproject.toml` and generates/updates a `poetry.lock` file.
 
-3. **Project Structure**  
+4. **Project Structure**  
    Within `backend/`, you might have:
    ```
    backend/
@@ -114,12 +117,12 @@ my-project/
    ```
    - **app.py** holds your Flask endpoints.
 
-4. **Run the Flask server**  
+5. **Run the Flask server**  
    Activate the Poetry environment and start the app:
    ```bash
    poetry run python app.py
    ```
-   - By default, Flask will serve on `http://127.0.0.1:5000`.
+   - Flask will serve on `http://127.0.0.1:5001`.
 ---
 
 ## Summary
