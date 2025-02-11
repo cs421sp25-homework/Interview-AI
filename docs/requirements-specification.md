@@ -98,30 +98,37 @@ Again, this app lacks the resume features and lacks the feature in which our app
 
 ### Software Architecture & Technology Stack
 
-Software Architecture
+Below is the updated Markdown document outlining the Software Architecture and Technology Stack, with Poetry mentioned as a dependency in the backend:
+
+---
+
+# Software Architecture & Technology Stack
+
+## Software Architecture
 
 This project is a web application that follows a client-server architecture. The frontend is built using React with TypeScript, while the backend is developed using Flask with Python. The application communicates via a RESTful API to ensure a modular and scalable design.
 
-Technology Stack
+## Technology Stack
 
-Programming Languages
+### Programming Languages
 
--   TypeScript (Frontend) -- Provides static typing and improved maintainability in React.
+- **TypeScript (Frontend):** Provides static typing and improved maintainability in React.
+- **Python (Backend):** Offers flexibility and strong library support for AI/ML and API development.
 
--   Python (Backend) -- Offers flexibility and strong library support for AI/ML and API development.
+### Frontend
 
-Frontend
+- **React (with TypeScript):** A modern JavaScript library for building interactive UI components.
+- **Vite with React:** Utilized as a fast build tool and development server for an enhanced development experience.
+- **Tailwind CSS:** A utility-first CSS framework for rapid and responsive UI development.
 
--   React (with TypeScript) -- A modern JavaScript library for building interactive UI components.
+### Backend
 
--   Tailwind CSS -- A utility-first CSS framework for rapid and responsive UI development.
+- **Flask:** A lightweight Python web framework for building APIs.
+- **LangChain:** A framework for integrating language models into the application.
+- **Poetry:** Used for managing Python dependencies, ensuring a consistent environment across both macOS and Windows.
 
-Backend
+### Database
 
--   Flask -- A lightweight Python web framework for building APIs.
+- **PostgreSQL:** A powerful, scalable relational database with support for advanced querying and indexing.
 
--   LangChain -- A framework for integrating language models into the application.
-
-Database
-
--   PostgreSQL -- A powerful, scalable relational database with support for advanced querying and indexing.
+---
