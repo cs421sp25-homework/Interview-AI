@@ -20,7 +20,7 @@ Goal: Foundational user authentication, profile setup, resume analysis, and basi
 
 ## Iteration 2
 Dates: 3/3 - 3/16\
-Goal: AI question generation and response mechanisms.
+Goal: AI question generation.
 
 #### Must-Have Features:
 
@@ -33,7 +33,7 @@ Goal: AI question generation and response mechanisms.
 
 ## Iteration 3
 Dates: 3/17 - 4/6\
-Goal: Feedback, scoring, and session review capabilities.
+Goal: Feedback, scoring, session review capabilities, and response mechanism.
 
 #### Must-Have Features:
 
