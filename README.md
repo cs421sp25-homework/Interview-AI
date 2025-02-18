@@ -1,38 +1,143 @@
-# OOSE Team Project
+Below is a step-by-step guide to setting up and running a **React + Vite** application using **pnpm**, along with a **Python** backend using **Poetry** and **Flask**. This guide assumes you have a basic understanding of the terminal/command line and have both **Node.js** and **Python** installed on your system. 
 
-Name of the application goes here -- followed by a brief description (elevator pitch) of the application.
+---
 
-- [Team Information & Agreement](./docs/team-agreement.md)
-- [Requirements Specification](./docs/requirements-specification.md)
-- [Project Roadmap](./docs/roadmap.md)
-- [Technical Documentation](./docs/technical-documentation.md)
+## Prerequisites
 
-## Installing / Getting started
+1. **Node.js (>= 14.0.0)**  
+   - [Official Download Page](https://nodejs.org/)  
 
-A quick introduction of the minimal setup you need to get the app up & running on a local computer. For example, your advisor might use the instruction here to run the application locally.
+2. **pnpm (>= 7.0.0)**  
+   - [pnpm Installation Guide](https://pnpm.io/installation)  
+   - After installing, you should be able to run `pnpm --version` to verify your installation.  
 
-```shell
-commands here
+3. **Python (>= 3.8)**  
+   - [Official Download Page](https://www.python.org/downloads/)  
+
+4. **Poetry**  
+   - [Poetry Installation Guide](https://python-poetry.org/docs/#installation)  
+   - After installation, verify by running `poetry --version`.  
+
+5. **Git (optional)**  
+   - Use Git for version control or to clone your project repository if it’s hosted on a Git platform like GitHub or GitLab.
+
+---
+
+## Project Structure
+
+For clarity, you might organize your files and folders as follows:
+
+```
+my-project/
+├─ frontend/vite-project/
+│  ├─ index.html
+│  ├─ package.json
+│  ├─ pnpm-lock.yaml
+│  ├─ src/
+│  │  ├─ main.jsx
+│  │  └─ App.jsx
+│  └─ vite.config.js
+└─ backend/
+   ├─ pyproject.toml
+   ├─ poetry.lock
+   └─ app.py
 ```
 
-## Developing
+- `frontend/` contains the React + Vite app.
+- `backend/` contains the Python (Flask) server.
+- You may have additional directories (e.g., `tests`, `docs`) as needed.
 
-Detailed and step-by-step documentation for setting up local development. For example, a new team member will use these instructions to start developing the project further. 
+---
 
-```shell
-commands here
-```
+## Setting Up the Frontend (React + Vite) with pnpm
 
-You should include what is needed (e.g. all of the configurations) to set up the dev environment. For instance, global dependencies or any other tools (include download links), explaining what database (and version) has been used, etc. If there is any virtual environment, local server, ..., explain here. 
+1. **Install dependencies with pnpm**  
+   Go to `frontend/vite-project/` directory:
+   ```bash
+   cd frontend/vite-project/
+   pnpm install
+   ```
+   This reads the `package.json` and installs the necessary dependencies, creating a `pnpm-lock.yaml` file.
 
-Additionally, describe and show how to run the tests, explain your code style and show how to check it.
+2. **Project Configuration**  
+   - **package.json**: ensures that your `scripts` section includes something like:
+     ```json
+     {
+       "scripts": {
+         "dev": "vite",
+         "build": "vite build",
+         "preview": "vite preview"
+       }
+     }
+     ```
 
-If your project needs some additional steps for the developer to build the project after some code changes, state them here. Moreover, give instructions on how to build and release a new version. In case there's some step you have to take that publishes this project to a server, it must be stated here. 
+4. **Running the Frontend**  
+   From within the `frontend/vite-project/` directory:
+   ```bash
+   pnpm dev
+   ```
+   - By default, Vite will start a development server at `http://localhost:5173/` (the exact port may differ).
+   - To create a production-ready build:
+     ```bash
+     pnpm build
+     ```
+     This will generate static files in the `dist/` folder.
 
-## Contributing
+---
 
-Refer to the [Contributing Guidelines](./CONTRIBUTING.md) for information on how to contribute to the project.
+## Setting Up the Backend (Python + Flask) with Poetry
 
-## Licensing
+1. **Install Poetry**  
+   Follow the instructions [here](https://python-poetry.org/docs/#installation)
+   ```bash
+   pip install poetry
+   ```
+   - After installation, verify by running `poetry --version`.
 
-Refer to the [Project Repository License](./LICENSE.md) for information on how the project is licensed.
+2. **Create a virtual environment**  
+   ```bash
+   poetry install
+   ```
+   This creates a virtual environment and installs the dependencies specified in `pyproject.toml`.
+
+3. **Add Flask to your project**  
+   After initialization, add Flask as a dependency:
+   ```bash
+   poetry add flask
+   ```
+   This updates `pyproject.toml` and generates/updates a `poetry.lock` file.
+
+4. **Project Structure**  
+   Within `backend/`, you might have:
+   ```
+   backend/
+   ├─ pyproject.toml
+   ├─ poetry.lock
+   └─ app.py
+   ```
+   - **app.py** holds your Flask endpoints.
+
+5. **Run the Flask server**  
+   Activate the Poetry environment and start the app:
+   ```bash
+   poetry run python app.py
+   ```
+   - Flask will serve on `http://127.0.0.1:5001`.
+---
+
+## Summary
+
+1. **Frontend** (React + Vite):
+   - Use `pnpm` to install and manage dependencies.
+   - Run development server with `pnpm dev`.
+   - Build production artifacts with `pnpm build`.
+
+2. **Backend** (Flask):
+   - Use `Poetry` for Python dependency management.
+   - Run your Flask development server with `poetry run python app.py`.
+
+3. **Combine & Deploy**:
+   - In development, run two separate terminals for front and back ends.
+   - In production, build the React app and optionally serve static files from Flask or a dedicated static hosting solution. 
+
+By following these steps, you can maintain a clean and modern setup for both your frontend and backend while leveraging the benefits of **pnpm** (faster, disk-space efficient package management) and **Poetry** (reliable, isolated Python environments with clear dependency management).
