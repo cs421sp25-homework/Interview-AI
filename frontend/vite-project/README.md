@@ -85,45 +85,97 @@ my-project/
 
 ---
 
-## Setting Up the Backend (Python + Flask) with Poetry
+## Setting Up the Frontend (React + Vite) with pnpm
 
-1. **Install Poetry**  
-   Follow the instructions [here](https://python-poetry.org/docs/#installation)
+1. **Install dependencies with pnpm**  
+   Go to `frontend/vite-project/` directory:
    ```bash
-   pip install poetry
+   cd frontend/vite-project/
+   pnpm install
    ```
-   - After installation, verify by running `poetry --version`.
+   This reads the `package.json` and installs the necessary dependencies, creating a `pnpm-lock.yaml` file.
 
-2. **Create a virtual environment**  
+2. **Project Configuration**  
+   - **package.json**: ensures that your `scripts` section includes something like:
+     ```json
+     {
+       "scripts": {
+         "dev": "vite",
+         "build": "vite build",
+         "preview": "vite preview"
+       }
+     }
+     ```
+
+4. **Running the Frontend**  
+   From within the `frontend/vite-project/` directory:
    ```bash
-   poetry install
+   pnpm dev
    ```
-   This creates a virtual environment and installs the dependencies specified in `pyproject.toml`.
+   - By default, Vite will start a development server at `http://localhost:5173/` (the exact port may differ).
+   - To create a production-ready build:
+     ```bash
+     pnpm build
+     ```
+     This will generate static files in the `dist/` folder.
 
-3. **Add Flask to your project**  
-   After initialization, add Flask as a dependency:
-   ```bash
-   poetry add flask
-   ```
-   This updates `pyproject.toml` and generates/updates a `poetry.lock` file.
-
-4. **Project Structure**  
-   Within `backend/`, you might have:
-   ```
-   backend/
-   ├─ pyproject.toml
-   ├─ poetry.lock
-   └─ app.py
-   ```
-   - **app.py** holds your Flask endpoints.
-
-5. **Run the Flask server**  
-   Activate the Poetry environment and start the app:
-   ```bash
-   poetry run python app.py
-   ```
-   - Flask will serve on `http://127.0.0.1:5001`.
 ---
+## **Setting Up the Backend (Python + Flask) with Poetry**  
+
+Follow these steps to set up and run the `backend` project using **Poetry** for dependency management.
+
+---
+
+### **1. Install Poetry**  
+If Poetry is not installed, follow the official guide [here](https://python-poetry.org/docs/#installation) or install it using:  
+```bash
+pip install poetry
+```
+After installation, verify it by running:  
+```bash
+poetry --version
+```
+
+---
+
+### **2. Install Dependencies & Create Virtual Environment**  
+Navigate to the `backend` directory and install dependencies:  
+```bash
+cd backend
+poetry install
+```
+This command:
+- Creates a virtual environment (stored in `backend/.venv/`).
+- Installs all dependencies listed in `pyproject.toml`.
+
+---
+
+### **3. Project Structure**  
+After setup, your `backend/` directory should look like this:  
+```
+backend/
+├── pyproject.toml    # Poetry config file
+├── poetry.lock       # Dependency lock file
+└── app.py            # Main Flask application
+```
+- **`app.py`** contains your Flask routes and logic.
+
+---
+
+### **4. Run the Flask Server**  
+Start the server using:  
+```bash
+poetry run python app.py
+```
+Or, if you have activated the Poetry shell:  
+```bash
+poetry shell
+python app.py
+```
+By default, Flask will run on **`http://127.0.0.1:5000`**.
+
+---
+
 
 ## Summary
 

@@ -1,21 +1,19 @@
-[project]
+[tool.poetry]
 name = "backend"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "timot",email = "timothylinziqi@gmail.com"}
-]
+authors = ["Ryan Lin  <linjinhong@yandex.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "flask (>=3.1.0,<4.0.0)",
-    "flask-cors (>=5.0.0,<6.0.0)"
-]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.1.0"
+flask-cors = "^5.0.0"
 
 [tool.poetry]
 package-mode = false
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
