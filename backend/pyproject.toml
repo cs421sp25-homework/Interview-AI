@@ -4,14 +4,12 @@ version = "0.1.0"
 description = ""
 authors = ["Ryan Lin  <linjinhong@yandex.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
 flask = "^3.1.0"
 flask-cors = "^5.0.0"
-
-[tool.poetry]
-package-mode = false
 
 
 [build-system]
