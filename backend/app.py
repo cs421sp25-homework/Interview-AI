@@ -29,12 +29,15 @@ def profile():
 def signup():
     try:
         data = request.form.to_dict()
+
+        print(data)
+        print("sign up")
         
         # Handle file upload if present
         if 'resume' in request.files:
             resume_file = request.files['resume']
             file_content = resume_file.read()
-            file_path = f"{data['email']}/{resume_file.filename}"  # Simplified path
+            file_path = f"{data['email']}/{resume_file.filename}"
             
             # Upload to the 'resumes' bucket
             supabase.storage.from_('resumes').upload(
@@ -66,6 +69,25 @@ def signup():
             'preferred_role': data.get('preferredRole'),
             'expectations': data.get('expectations')
         }).execute()
+
+        print(data)
+        print(data['resume_url'])
+
+        # If resume was uploaded, process it
+        if 'resume_url' in data:
+            try:
+                # Process the resume
+                extraction_result = process_resume(data['resume_url'])
+                
+                # Update profile with resume summary
+                supabase.table('profiles').update({
+                    'resume_summary': extraction_result
+                }).eq('email', data['email']).execute()
+                
+            except Exception as e:
+                print(f"Resume processing error: {str(e)}")
+                # Continue even if resume processing fails
+                pass
 
         return jsonify({
             "message": "Signup successful",

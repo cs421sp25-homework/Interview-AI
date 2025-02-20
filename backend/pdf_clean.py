@@ -97,7 +97,7 @@ def process_resume(pdf_url):
         from langchain_openai import ChatOpenAI
         from langchain_core.messages import HumanMessage
 
-        llm = ChatOpenAI(model_name="gpt-4-mini", temperature=0.7)
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.7)
         message = HumanMessage(content=prompt_template)
         response = llm.invoke([message])
 

@@ -60,11 +60,21 @@ const MultiStepForm = () => {
     updateFormData('resume', file);
   };
 
-  const handleNext = () => setCurrentStep(prev => Math.min(prev + 1, 5));
-  const handlePrev = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  const handleNext = () => {
+    setCurrentStep(prev => Math.min(prev + 1, 5));
+  };
+
+  const handlePrev = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (currentStep !== 5) {
+      return;
+    }
+
     try {
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
@@ -354,7 +364,7 @@ const MultiStepForm = () => {
         <div className={styles.formNavigation}>
           {currentStep > 1 && (
             <button 
-              type="button" 
+              type="button"
               className={styles.buttonSecondary}
               onClick={handlePrev}
             >
@@ -365,7 +375,7 @@ const MultiStepForm = () => {
           
           {currentStep < 5 ? (
             <button 
-              type="button" 
+              type="button"
               className={styles.buttonPrimary}
               onClick={handleNext}
             >
@@ -374,7 +384,7 @@ const MultiStepForm = () => {
             </button>
           ) : (
             <button 
-              type="submit" 
+              type="submit"
               className={styles.buttonPrimary}
             >
               Submit
