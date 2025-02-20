@@ -10,6 +10,16 @@ package-mode = false
 python = "^3.11"
 flask = "^3.1.0"
 flask-cors = "^5.0.0"
+<<<<<<< HEAD
+langchain-openai = "^0.3.6"
+langgraph = "^0.2.74"
+langchain-core = "^0.3.37"
+dotenv = "^0.9.9"
+langchain-community = "^0.3.18"
+=======
+supabase = "^2.13.0"
+python-dotenv = "^1.0.1"
+>>>>>>> 344d4f6ce55cdd5d4f6b3d8563f69eaccd46764f
 
 
 [build-system]
