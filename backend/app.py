@@ -32,18 +32,16 @@ def signup():
         # Handle file upload if present
         if 'resume' in request.files:
             resume_file = request.files['resume']
-            # Read the file content
             file_content = resume_file.read()
-            file_path = f"resumes/{data['email']}/{resume_file.filename}"
+            file_path = f"{data['email']}/{resume_file.filename}"  # Simplified path
             
-            # Upload the file content to Supabase storage
+            # Upload to the 'resumes' bucket
             supabase.storage.from_('resumes').upload(
                 path=file_path,
                 file=file_content,
                 file_options={"content-type": resume_file.content_type}
             )
             
-            # Get the public URL
             file_url = supabase.storage.from_('resumes').get_public_url(file_path)
             data['resume_url'] = file_url
 
