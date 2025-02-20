@@ -3,6 +3,7 @@ from flask_cors import CORS
 from supabase import create_client
 from dotenv import load_dotenv
 import os
+from pdf_clean import process_resume  # Add this import at the top with other imports
 
 # Load environment variables
 load_dotenv()
@@ -75,6 +76,41 @@ def signup():
         print(f"Error: {str(e)}")
         return jsonify({
             "error": "Signup failed",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/resume-summary/<email>', methods=['GET'])
+def get_resume_summary(email):
+    try:
+        # Get user profile from Supabase
+        result = supabase.table('profiles').select('*').eq('email', email).execute()
+        
+        if not result.data:
+            return jsonify({"error": "User not found"}), 404
+            
+        user_profile = result.data[0]
+        resume_url = user_profile.get('resume_url')
+        
+        if not resume_url:
+            return jsonify({"error": "No resume found for this user"}), 404
+
+        # Process the resume and get the summary
+        extraction_result = process_resume(resume_url)
+        
+        # Update the profile with the resume summary
+        supabase.table('profiles').update({
+            'resume_summary': extraction_result
+        }).eq('email', email).execute()
+        
+        return jsonify({
+            "message": "Resume processed successfully",
+            "data": extraction_result
+        }), 200
+
+    except Exception as e:
+        print(f"Error processing resume: {str(e)}")
+        return jsonify({
+            "error": "Failed to process resume",
             "message": str(e)
         }), 500
 
