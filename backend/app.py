@@ -29,27 +29,32 @@ def profile():
 def signup():
     try:
         data = request.form.to_dict()
-
-        print(data)
-        print("sign up")
         
-        # Handle file upload if present
-        if 'resume' in request.files:
-            resume_file = request.files['resume']
-            file_content = resume_file.read()
-            file_path = f"{data['email']}/{resume_file.filename}"
-            
-            # Upload to the 'resumes' bucket
-            supabase.storage.from_('resumes').upload(
-                path=file_path,
-                file=file_content,
-                file_options={"content-type": resume_file.content_type}
-            )
-            
-            file_url = supabase.storage.from_('resumes').get_public_url(file_path)
-            data['resume_url'] = file_url
+        # Check if resume is provided (make it required)
+        if 'resume' not in request.files:
+            return jsonify({
+                "error": "Resume is required",
+                "message": "Please upload a resume file"
+            }), 400
 
-        # Insert data into Supabase
+        # Handle resume file upload
+        resume_file = request.files['resume']
+        file_content = resume_file.read()
+        file_path = f"{data['email']}/{resume_file.filename}"
+        
+        # Upload to the 'resumes' bucket
+        supabase.storage.from_('resumes').upload(
+            path=file_path,
+            file=file_content,
+            file_options={"content-type": resume_file.content_type}
+        )
+        
+        file_url = supabase.storage.from_('resumes').get_public_url(file_path)
+        
+        # Process the resume
+        extraction_result = process_resume(file_url)
+
+        # Insert all data into Supabase at once
         result = supabase.table('profiles').insert({
             'first_name': data.get('firstName'),
             'last_name': data.get('lastName'),
@@ -62,32 +67,16 @@ def signup():
             'interview_type': data.get('interviewType'),
             'preferred_language': data.get('preferredLanguage'),
             'specialization': data.get('specialization'),
-            'resume_url': data.get('resume_url'),
+            'resume_url': file_url,
             'portfolio_url': data.get('portfolioUrl'),
             'linkedin_url': data.get('linkedinUrl'),
             'key_skills': data.get('keySkills'),
             'preferred_role': data.get('preferredRole'),
-            'expectations': data.get('expectations')
+            'expectations': data.get('expectations'),
+            'resume_summary': extraction_result,
+            'education_history': extraction_result.get('education_history', []),
+            'resume_experience': extraction_result.get('experience', [])
         }).execute()
-
-        print(data)
-        print(data['resume_url'])
-
-        # If resume was uploaded, process it
-        if 'resume_url' in data:
-            try:
-                # Process the resume
-                extraction_result = process_resume(data['resume_url'])
-                
-                # Update profile with resume summary
-                supabase.table('profiles').update({
-                    'resume_summary': extraction_result
-                }).eq('email', data['email']).execute()
-                
-            except Exception as e:
-                print(f"Resume processing error: {str(e)}")
-                # Continue even if resume processing fails
-                pass
 
         return jsonify({
             "message": "Signup successful",
@@ -100,6 +89,7 @@ def signup():
             "error": "Signup failed",
             "message": str(e)
         }), 500
+
 
 @app.route('/api/resume-summary/<email>', methods=['GET'])
 def get_resume_summary(email):
