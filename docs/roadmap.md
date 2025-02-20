@@ -3,7 +3,7 @@ Dates: 2/17 - 3/2\
 Goal: Foundational user authentication, profile setup, resume analysis, and basic question selection.
 
 #### Must-Have Features:
--   As a user, I want to sign up/login using email/password or third-party authentication (Google, Github), so that I can easily access my interview preparation account.
+-   As a user, I want to sign up/login using email/password or third-party authentication (Google, Github) and log out, so that I can easily access my interview preparation account and keep my account protected when I am done using the app.
 
 -   As a user, I want to choose the type of questions I want to practice (technical, behavioral, system design), so that I can prepare effectively for my target interviews.
 

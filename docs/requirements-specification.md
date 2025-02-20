@@ -31,7 +31,7 @@ Functional Requirements 
 
 Must-Have: 
 
-1.  As a user, I want to sign up/login in using email/password or third-party authentication (Google, Github), so that I can easily access my interview preparation account.
+1.  As a user, I want to sign up/login using email/password or third-party authentication (Google, Github) and log out, so that I can easily access my interview preparation account and keep my account protected when I am done using the app.
 
 2.  As a user, I want to have a profile page, where I can upload my resume to generate my profile and also manually edit any fields, including name, role, past experience, area of expertise, etc, so that the app can tailor my interview sessions to my background.
 
