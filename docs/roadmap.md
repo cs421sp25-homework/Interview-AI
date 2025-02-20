@@ -9,7 +9,7 @@ Goal: Foundational user authentication, profile setup, resume analysis, and basi
 
 - As a user, I want to have a profile page, where I can upload my resume to generate my profile and also manually edit any fields, including name, role, past experience, area of expertise, etc, so that the app can tailor my interview sessions to my background.
 
--   As a user, I want to upload my resume to the app, so that AI can analyze my resume for my profile data (name, experience level, area of expertise, etc) and generate some relevant technical/behavioral interview questions for me.
+-   As a user, I want the AI to analyze my profile, so that it can generate some relevant technical/behavioral interview questions for me.
 
 #### Nice-to-Have Features:
 (None for this iteration)
