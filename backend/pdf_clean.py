@@ -26,93 +26,105 @@ def download_pdf(pdf_url):
 
     return temp_pdf.name
 
+def process_resume(pdf_url):
+    """
+    Process a resume PDF and return the extracted information.
+    
+    Args:
+        pdf_url (str): URL of the PDF file to process
+        
+    Returns:
+        dict: Extracted information in JSON format
+    """
+    # Download the PDF
+    pdf_file_path = download_pdf(pdf_url)
 
-pdf_url = "filepath"
+    try:
+        loader = PyPDFLoader(pdf_file_path)
+        pages = list(loader.lazy_load())
 
-# Download the PDF
-pdf_file_path = download_pdf(pdf_url)
+        if len(pages) != 1:
+            raise ValueError(f"Error: The provided PDF contains {len(pages)} pages. Please upload a single-page resume.")
 
-loader = PyPDFLoader(pdf_file_path)
-pages = list(loader.lazy_load())
+        pdf_text = pages[0].page_content
 
-if len(pages) != 1:
-    raise ValueError(f"Error: The provided PDF contains {len(pages)} pages. Please upload a single-page resume.")
+        prompt_template = f"""
+        You are an expert resume parser. Given the following text extracted from a PDF resume, extract the candidate's education history and activities/internship experiences.
 
-pdf_text = pages[0].page_content
+        For each education entry, extract:
+          - institution
+          - degree or field of study
+          - dates (start-end)
+          - location
+          - description (any relevant details)
 
+        For each activity or internship, extract:
+          - title
+          - organization
+          - dates (start-end)
+          - location
+          - description
 
+        Return the result as a **strictly valid JSON** object with the following structure and nothing else:
+        {{
+          "education_history": [
+            {{
+              "institution": "...",
+              "degree": "...",
+              "dates": "...",
+              "location": "...",
+              "description": "..."
+            }}
+          ],
+          "experience": [
+            {{
+              "title": "...",
+              "organization": "...",
+              "dates": "...",
+              "location": "...",
+              "description": "..."
+            }}
+          ]
+        }}
 
-prompt_template = f"""
-You are an expert resume parser. Given the following text extracted from a PDF resume, extract the candidate's education history and activities/internship experiences.
+        If some details are missing, use null or an empty string for their values.
 
-For each education entry, extract:
-  - institution
-  - degree or field of study
-  - dates (start-end)
-  - location
-  - description (any relevant details)
+        Here is the extracted text:
 
-For each activity or internship, extract:
-  - title
-  - organization
-  - dates (start-end)
-  - location
-  - description
+        {pdf_text}
+        """
 
-Return the result as a **strictly valid JSON** object with the following structure and nothing else:
-{{
-  "education_history": [
-    {{
-      "institution": "...",
-      "degree": "...",
-      "dates": "...",
-      "location": "...",
-      "description": "..."
-    }}
-  ],
-  "experience": [
-    {{
-      "title": "...",
-      "organization": "...",
-      "dates": "...",
-      "location": "...",
-      "description": "..."
-    }}
-  ]
-}}
+        from langchain_openai import ChatOpenAI
+        from langchain_core.messages import HumanMessage
 
-If some details are missing, use null or an empty string for their values.
+        llm = ChatOpenAI(model_name="gpt-4-mini", temperature=0.7)
+        message = HumanMessage(content=prompt_template)
+        response = llm.invoke([message])
 
-Here is the extracted text:
+        def extract_json(text: str):
+            match = re.search(r'(\{.*\})', text, re.DOTALL)
+            if match:
+                return match.group(1)
+            return None
 
-{pdf_text}
-"""
+        json_str = extract_json(response.content)
+        if not json_str:
+            raise ValueError("Could not extract JSON from the LLM's response.")
 
+        try:
+            extraction_result = json.loads(json_str)
+        except json.JSONDecodeError:
+            extraction_result = {"error": "Failed to parse JSON from the model's response."}
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+        return extraction_result
 
-llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.7)
-message = HumanMessage(content=prompt_template)
-response = llm.invoke([message])
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(pdf_file_path):
+            os.remove(pdf_file_path)
 
-
-print("Raw LLM response:")
-print(response.content)
-
-def extract_json(text: str):
-    match = re.search(r'(\{.*\})', text, re.DOTALL)
-    if match:
-        return match.group(1)
-    return None
-
-json_str = extract_json(response.content)
-if not json_str:
-    raise ValueError("Could not extract JSON from the LLM's response.")
-
-try:
-    extraction_result = json.loads(json_str)
-except json.JSONDecodeError:
-    extraction_result = {"error": "Failed to parse JSON from the model's response."}
-
-print(json.dumps(extraction_result, indent=2))
+if __name__ == '__main__':
+    # This will only run if the script is run directly (not imported)
+    pdf_url = "filepath"
+    result = process_resume(pdf_url)
+    print(json.dumps(result, indent=2))
