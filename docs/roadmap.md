@@ -21,9 +21,11 @@ Dates: 3/3 - 3/16\
 Goal: AI question generation.
 
 #### Must-Have Features:
+-   As a user, I want to respond to all interview questions in a session using either voice or text, so that I can practice my communication skills in different formats. 
+- As a user, I want to input the description of the job I am applying to, so that the AI can generate more related questions based on the specific job position.
+
 -   As a user, I want the AI to ask follow-up questions based on my responses, so that I can simulate a real interview experience.
 
--   As a user, I want to respond to all interview questions in a session using either voice or text, so that I can practice my communication skills in different formats.
 
 #### Nice-to-Have Features:
 -   As a user, I want to sync my interview preparation schedule with Google Calendar or Outlook, so that I can receive reminders and structured preparation plans leading up to my actual interviews.
