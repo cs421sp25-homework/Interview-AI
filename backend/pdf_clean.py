@@ -70,7 +70,7 @@ Return the result as a **strictly valid JSON** object with the following structu
       "description": "..."
     }}
   ],
-  "activities": [
+  "experience": [
     {{
       "title": "...",
       "organization": "...",
