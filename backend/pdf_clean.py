@@ -24,6 +24,9 @@ def download_pdf(pdf_url):
     with open(temp_pdf.name, "wb") as f:
         f.write(response.content)
 
+    print("temp_pdf.name")
+    print(temp_pdf.name)
+
     return temp_pdf.name
 
 def process_resume(pdf_url):
@@ -38,6 +41,8 @@ def process_resume(pdf_url):
     """
     # Download the PDF
     pdf_file_path = download_pdf(pdf_url)
+    print("pdf_file_path")
+    print(pdf_file_path)
 
     try:
         loader = PyPDFLoader(pdf_file_path)
@@ -115,6 +120,9 @@ def process_resume(pdf_url):
             extraction_result = json.loads(json_str)
         except json.JSONDecodeError:
             extraction_result = {"error": "Failed to parse JSON from the model's response."}
+            
+        print("extraction_result")
+        print(extraction_result)
 
         return extraction_result
 
