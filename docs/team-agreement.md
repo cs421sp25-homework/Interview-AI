@@ -28,7 +28,7 @@
 
 ### Team Communication
 
-- The team will meet during each class, as well as coordinated meeting time(s) outside of class. We will aim to meet with our advisor or Professor Madooei at least once a week.
+- The team will meet during each class, as well as on Wednesdays from 9pm to 12am. We will aim to meet with our advisor or Professor Madooei at least once a week.
 
 - If any member is unable to attend a meeting, they must let the team know ahead of time in the Slack. They will also be responsible to give their update and check on any team progress/pending tasks within 12 hours. 
 
