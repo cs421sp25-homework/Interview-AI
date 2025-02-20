@@ -30,15 +30,31 @@ def signup():
     try:
         data = request.form.to_dict()
         
-        # Check if resume is provided (make it required)
+        # Check if resume is provided
         if 'resume' not in request.files:
             return jsonify({
                 "error": "Resume is required",
                 "message": "Please upload a resume file"
             }), 400
 
-        # Handle resume file upload
         resume_file = request.files['resume']
+        
+        # Validate file size (5MB)
+        if len(resume_file.read()) > 5 * 1024 * 1024:
+            return jsonify({
+                "error": "File too large",
+                "message": "Resume file must be less than 5MB"
+            }), 400
+        resume_file.seek(0)  # Reset file pointer after reading
+        
+        # Validate file type
+        allowed_types = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        if resume_file.content_type not in allowed_types:
+            return jsonify({
+                "error": "Invalid file type",
+                "message": "Please upload a PDF or DOCX file"
+            }), 400
+
         file_content = resume_file.read()
         file_path = f"{data['email']}/{resume_file.filename}"
         
