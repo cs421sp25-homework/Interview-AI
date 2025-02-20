@@ -4,7 +4,7 @@ import re
 import requests
 from tempfile import NamedTemporaryFile
 from dotenv import load_dotenv
-
+from langchain_community.document_loaders import PyPDFLoader
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
