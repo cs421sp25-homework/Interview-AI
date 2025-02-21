@@ -50,6 +50,11 @@ const Home = () => {
             <Button variant="ghost">Features</Button>
             <Button variant="ghost">Pricing</Button>
             <Button>Get Started</Button>
+            <Button 
+              onClick={() => navigate('/login')}
+            >
+              Log In
+            </Button>
           </div>
         </div>
       </nav>
