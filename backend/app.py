@@ -142,5 +142,46 @@ def get_resume_summary(email):
             "message": str(e)
         }), 500
 
+@app.route('/api/profile/<email>', methods=['GET'])
+def get_profile(email):
+    try:
+        # Get user profile from Supabase
+        result = supabase.table('profiles').select('*').eq('email', email).execute()
+        
+        if not result.data:
+            return jsonify({"error": "User not found"}), 404
+            
+        return jsonify({
+            "message": "Profile retrieved successfully",
+            "data": result.data[0]
+        }), 200
+
+    except Exception as e:
+        print(f"Error getting profile: {str(e)}")
+        return jsonify({
+            "error": "Failed to get profile",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/profile/<email>', methods=['PUT'])
+def update_profile(email):
+    try:
+        data = request.json
+        
+        # Update profile in Supabase
+        result = supabase.table('profiles').update(data).eq('email', email).execute()
+        
+        return jsonify({
+            "message": "Profile updated successfully",
+            "data": result.data[0]
+        }), 200
+
+    except Exception as e:
+        print(f"Error updating profile: {str(e)}")
+        return jsonify({
+            "error": "Failed to update profile",
+            "message": str(e)
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5001)
