@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Plus, Trash2, Save, MessageSquare, Sparkles, Settings } from 'lucide-react';
 import styles from './PromptPage.module.css';
+import { useNavigate } from 'react-router-dom';
 
 interface Prompt {
   id: number;
@@ -15,6 +16,7 @@ interface Settings {
 }
 
 const PromptPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('custom');
   const [customPrompts, setCustomPrompts] = useState<Prompt[]>([
     { id: 1, text: 'Tell me about your experience with project management.' },
@@ -71,6 +73,10 @@ const PromptPage = () => {
       ]
     }
   ];
+
+  const handleStartInterview = () => {
+    navigate('/interview');
+  };
 
   return (
     <div>
@@ -244,6 +250,15 @@ const PromptPage = () => {
             </div>
           </div>
         )}
+
+        <div className={styles.startInterviewContainer}>
+          <button 
+            className={styles.buttonPrimary}
+            onClick={handleStartInterview}
+          >
+            Start Interview
+          </button>
+        </div>
       </div>
     </div>
   );

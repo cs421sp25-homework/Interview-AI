@@ -25,6 +25,7 @@ interface FormData {
 }
 
 const MultiStepForm = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -91,6 +92,7 @@ const MultiStepForm = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -114,13 +116,15 @@ const MultiStepForm = () => {
 
       if (response.status === 200) {
         console.log('Form submitted successfully');
-        // Navigate to success page or next step
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       // Handle error (show error message to user)
     }
   };
+
+
 
   const renderStep = () => {
     switch(currentStep) {
