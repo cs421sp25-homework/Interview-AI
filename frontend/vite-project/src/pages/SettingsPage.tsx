@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bot, User, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import styles from './SettingsPage.module.css';
 
 interface UserProfile {
@@ -13,54 +14,67 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl?: string;
+  photoUrl: string | undefined;
 }
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Sarah Johnson',
-    title: 'Senior Software Engineer',
-    email: 'sarah.johnson@example.com',
-    phone: '+1 (555) 123-4567',
-    skills: ['React', 'TypeScript', 'Node.js', 'Python'],
-    about: 'A full stack developer with 5+ years of experience',
-    linkedin: 'https://linkedin.com/in/sarah',
-    github: 'https://github.com/sarah',
-    portfolio: 'https://sarah.dev',
+    name: '',
+    title: '',
+    email: '',
+    phone: '',
+    skills: [],
+    about: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
     photoUrl: undefined
   });
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // TODO: Get email from auth context/state
+        const email = 'sarah.johnson@example.com'; // Replace with actual user email
+        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
+        
+        if (response.data.data) {
+          setProfile(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        setError('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleSave = async () => {
     try {
-      // TODO: API call to save profile
+      // TODO: Get email from auth context/state
+      const email = 'sarah.johnson@example.com'; // Replace with actual user email
+      await axios.put(`http://localhost:5001/api/profile/${email}`, profile);
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving profile:', error);
+      setError('Failed to save profile changes');
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-    // Validate file size (2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 2MB.');
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file.');
-      return;
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setProfile(prev => ({ ...prev, photoUrl: previewUrl }));
-  };
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className={styles.container}>
@@ -89,27 +103,9 @@ const SettingsPage = () => {
         <div className={styles.profileCard}>
           <div className={styles.avatarSection}>
             <div className={styles.avatar}>
-              {profile.photoUrl ? (
-                <img 
-                  src={profile.photoUrl} 
-                  alt="Profile" 
-                  className={styles.avatarImage}
-                />
-              ) : (
-                <User size={48} color="#ec4899" />
-              )}
+              <User size={48} color="#ec4899" />
             </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoUpload}
-              accept="image/*"
-              style={{ display: 'none' }}
-            />
-            <button 
-              className={styles.uploadButton}
-              onClick={() => fileInputRef.current?.click()}
-            >
+            <button className={styles.uploadButton}>
               Change Photo
             </button>
           </div>
