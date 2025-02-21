@@ -14,7 +14,7 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl?: string;
+  photoUrl: string | undefined;
 }
 
 const SettingsPage = () => {
@@ -68,27 +68,6 @@ const SettingsPage = () => {
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 2MB.');
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file.');
-      return;
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setProfile(prev => ({ ...prev, photoUrl: previewUrl }));
-  };
-
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -124,27 +103,9 @@ const SettingsPage = () => {
         <div className={styles.profileCard}>
           <div className={styles.avatarSection}>
             <div className={styles.avatar}>
-              {profile.photoUrl ? (
-                <img 
-                  src={profile.photoUrl} 
-                  alt="Profile" 
-                  className={styles.avatarImage}
-                />
-              ) : (
-                <User size={48} color="#ec4899" />
-              )}
+              <User size={48} color="#ec4899" />
             </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoUpload}
-              accept="image/*"
-              style={{ display: 'none' }}
-            />
-            <button 
-              className={styles.uploadButton}
-              onClick={() => fileInputRef.current?.click()}
-            >
+            <button className={styles.uploadButton}>
               Change Photo
             </button>
           </div>
