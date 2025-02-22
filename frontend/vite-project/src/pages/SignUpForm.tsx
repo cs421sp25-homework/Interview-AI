@@ -5,6 +5,10 @@ import styles from './SignUpForm.module.css';
 import axios from 'axios';
 
 interface FormData {
+  username: string;
+  password: string;
+  confirmPassword: string;
+  confirmPasswordError: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -28,6 +32,10 @@ const MultiStepForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
+    username: '',
+    password: '',
+    confirmPassword: '',
+    confirmPasswordError: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -50,18 +58,22 @@ const MultiStepForm = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const updateFormData = (field: keyof FormData, value: string | File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newFormData = { ...prev, [field]: value };
+
+      if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
+        newFormData.confirmPasswordError =
+          newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
+      }
+
+      return newFormData;
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    
     if (!file) return;
 
-    // Check file size (5MB = 5 * 1024 * 1024 bytes)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       alert('File is too large. Maximum size is 5MB.');
@@ -71,8 +83,10 @@ const MultiStepForm = () => {
       return;
     }
 
-    // Check file type
-    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
     if (!validTypes.includes(file.type)) {
       alert('Invalid file format. Please upload a PDF or DOCX file.');
       if (fileInputRef.current) {
@@ -84,34 +98,97 @@ const MultiStepForm = () => {
     updateFormData('resume', file);
   };
 
-  const handleNext = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 5));
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1: {
+        if (
+          !formData.username.trim() ||
+          !formData.password.trim() ||
+          !formData.confirmPassword.trim()
+        ) {
+          alert('Please fill in all required fields.');
+          return false;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          alert('Passwords do not match.');
+          return false;
+        }
+        return true;
+      }
+      case 2: {
+        if (
+          !formData.firstName.trim() ||
+          !formData.lastName.trim() ||
+          !formData.email.trim() ||
+          !formData.phone.trim()
+        ) {
+          alert('Please fill in all required fields.');
+          return false;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+          alert('Please enter a valid email address.');
+          return false;
+        }
+        return true;
+      }
+      case 3: {
+        if (!formData.resume) {
+          alert('Please upload your resume.');
+          return false;
+        }
+        return true;
+      }
+      case 4:
+      case 5:
+      case 6:
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!validateStep(currentStep)) {
+      return;
+    }
+
+    // If we're about to move to step 6, add extra protection
+    if (currentStep === 5) {
+      // Delay the step change to prevent accidental submission
+      setTimeout(() => {
+        setCurrentStep(prev => Math.min(prev + 1, 6));
+      }, 100);
+    } else {
+      setCurrentStep(prev => Math.min(prev + 1, 6));
+    }
   };
 
   const handlePrev = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (currentStep !== 5) {
-      return;
-    }
+    // e.preventDefault(); // Already prevented in the onSubmit callback.
+    if (currentStep !== 6) return;
 
     try {
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
+        // Optionally skip fields not needed on the backend (e.g., confirmPasswordError)
         if (value !== null) {
           formDataToSend.append(key, value);
         }
       });
 
-      const response = await axios.post('http://localhost:5000/api/signup', formDataToSend, {
+      const response = await axios.post('http://localhost:5001/api/signup', formDataToSend, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.status === 200) {
@@ -120,21 +197,58 @@ const MultiStepForm = () => {
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      // Handle error (show error message to user)
+      // Optionally display an error message to the user
     }
   };
 
-
-
   const renderStep = () => {
-    switch(currentStep) {
+    switch (currentStep) {
       case 1:
+        return (
+          <>
+            <h2 className={styles.stepTitle}>Create Your Account</h2>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Username</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={formData.username}
+                onChange={(e) => updateFormData('username', e.target.value)}
+                placeholder="Enter your username"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Password</label>
+              <input
+                type="password"
+                className={styles.formInput}
+                value={formData.password}
+                onChange={(e) => updateFormData('password', e.target.value)}
+                placeholder="Enter your password"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Confirm Password</label>
+              <input
+                type="password"
+                className={styles.formInput}
+                value={formData.confirmPassword}
+                onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                placeholder="Confirm your password"
+              />
+              {formData.confirmPasswordError && (
+                <p className={styles.errorText}>{formData.confirmPasswordError}</p>
+              )}
+            </div>
+          </>
+        );
+      case 2:
         return (
           <>
             <h2 className={styles.stepTitle}>Personal Information</h2>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>First Name</label>
-              <input 
+              <input
                 type="text"
                 className={styles.formInput}
                 value={formData.firstName}
@@ -144,7 +258,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Last Name</label>
-              <input 
+              <input
                 type="text"
                 className={styles.formInput}
                 value={formData.lastName}
@@ -154,7 +268,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Email</label>
-              <input 
+              <input
                 type="email"
                 className={styles.formInput}
                 value={formData.email}
@@ -164,7 +278,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phone</label>
-              <input 
+              <input
                 type="tel"
                 className={styles.formInput}
                 value={formData.phone}
@@ -174,119 +288,13 @@ const MultiStepForm = () => {
             </div>
           </>
         );
-
-      case 2:
-        return (
-          <>
-            <h2 className={styles.stepTitle}>Professional Information</h2>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Current Job Title</label>
-              <input 
-                type="text"
-                className={styles.formInput}
-                value={formData.jobTitle}
-                onChange={(e) => updateFormData('jobTitle', e.target.value)}
-                placeholder="Enter your current job title"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Years of Experience</label>
-              <select 
-                className={styles.formSelect}
-                value={formData.experience}
-                onChange={(e) => updateFormData('experience', e.target.value)}
-              >
-                <option value="">Select experience</option>
-                <option value="0-2">0-2 years</option>
-                <option value="3-5">3-5 years</option>
-                <option value="6-10">6-10 years</option>
-                <option value="10+">10+ years</option>
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Industry</label>
-              <select 
-                className={styles.formSelect}
-                value={formData.industry}
-                onChange={(e) => updateFormData('industry', e.target.value)}
-              >
-                <option value="">Select industry</option>
-                <option value="technology">Technology</option>
-                <option value="finance">Finance</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="education">Education</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Career Level</label>
-              <select 
-                className={styles.formSelect}
-                value={formData.careerLevel}
-                onChange={(e) => updateFormData('careerLevel', e.target.value)}
-              >
-                <option value="">Select level</option>
-                <option value="entry">Entry Level</option>
-                <option value="mid">Mid Level</option>
-                <option value="senior">Senior Level</option>
-                <option value="executive">Executive Level</option>
-              </select>
-            </div>
-          </>
-        );
-
       case 3:
-        return (
-          <>
-            <h2 className={styles.stepTitle}>Interview Preferences</h2>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Interview Type</label>
-              <select 
-                className={styles.formSelect}
-                value={formData.interviewType}
-                onChange={(e) => updateFormData('interviewType', e.target.value)}
-              >
-                <option value="">Select type</option>
-                <option value="behavioral">Behavioral Interview</option>
-                <option value="technical">Technical Interview</option>
-                <option value="case">Case Interview</option>
-                <option value="general">General Interview</option>
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Preferred Language</label>
-              <select 
-                className={styles.formSelect}
-                value={formData.preferredLanguage}
-                onChange={(e) => updateFormData('preferredLanguage', e.target.value)}
-              >
-                <option value="">Select language</option>
-                <option value="english">English</option>
-                <option value="spanish">Spanish</option>
-                <option value="french">French</option>
-                <option value="german">German</option>
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Technical Specialization (if applicable)</label>
-              <input 
-                type="text"
-                className={styles.formInput}
-                value={formData.specialization}
-                onChange={(e) => updateFormData('specialization', e.target.value)}
-                placeholder="e.g., React, Python, Data Science"
-              />
-            </div>
-          </>
-        );
-
-      case 4:
         return (
           <>
             <h2 className={styles.stepTitle}>Upload Documents</h2>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Resume/CV</label>
-              <div 
+              <div
                 className={styles.fileInputContainer}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -307,7 +315,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>LinkedIn Profile URL (optional)</label>
-              <input 
+              <input
                 type="url"
                 className={styles.formInput}
                 value={formData.linkedinUrl}
@@ -316,7 +324,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Portfolio URL (optional)</label>
-              <input 
+              <input
                 type="url"
                 className={styles.formInput}
                 value={formData.portfolioUrl}
@@ -325,14 +333,116 @@ const MultiStepForm = () => {
             </div>
           </>
         );
-
+      case 4:
+        return (
+          <>
+            <h2 className={styles.stepTitle}>Professional Information (Optional)</h2>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Current Job Title</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={formData.jobTitle}
+                onChange={(e) => updateFormData('jobTitle', e.target.value)}
+                placeholder="Enter your current job title"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Years of Experience</label>
+              <select
+                className={styles.formSelect}
+                value={formData.experience}
+                onChange={(e) => updateFormData('experience', e.target.value)}
+              >
+                <option value="">Select experience</option>
+                <option value="0-2">0-2 years</option>
+                <option value="3-5">3-5 years</option>
+                <option value="6-10">6-10 years</option>
+                <option value="10+">10+ years</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Industry</label>
+              <select
+                className={styles.formSelect}
+                value={formData.industry}
+                onChange={(e) => updateFormData('industry', e.target.value)}
+              >
+                <option value="">Select industry</option>
+                <option value="technology">Technology</option>
+                <option value="finance">Finance</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="education">Education</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Career Level</label>
+              <select
+                className={styles.formSelect}
+                value={formData.careerLevel}
+                onChange={(e) => updateFormData('careerLevel', e.target.value)}
+              >
+                <option value="">Select level</option>
+                <option value="entry">Entry Level</option>
+                <option value="mid">Mid Level</option>
+                <option value="senior">Senior Level</option>
+                <option value="executive">Executive Level</option>
+              </select>
+            </div>
+          </>
+        );
       case 5:
         return (
           <>
-            <h2 className={styles.stepTitle}>Additional Information</h2>
+            <h2 className={styles.stepTitle}>Interview Preferences (Optional)</h2>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Interview Type</label>
+              <select
+                className={styles.formSelect}
+                value={formData.interviewType}
+                onChange={(e) => updateFormData('interviewType', e.target.value)}
+              >
+                <option value="">Select type</option>
+                <option value="behavioral">Behavioral Interview</option>
+                <option value="technical">Technical Interview</option>
+                <option value="case">Case Interview</option>
+                <option value="general">General Interview</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Preferred Language</label>
+              <select
+                className={styles.formSelect}
+                value={formData.preferredLanguage}
+                onChange={(e) => updateFormData('preferredLanguage', e.target.value)}
+              >
+                <option value="">Select language</option>
+                <option value="english">English</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Technical Specialization (if applicable)</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={formData.specialization}
+                onChange={(e) => updateFormData('specialization', e.target.value)}
+                placeholder="e.g., React, Python, Data Science"
+              />
+            </div>
+          </>
+        );
+      case 6:
+        return (
+          <>
+            <h2 className={styles.stepTitle}>Additional Information (Optional)</h2>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Key Skills (comma-separated)</label>
-              <textarea 
+              <textarea
                 className={styles.formTextarea}
                 value={formData.keySkills}
                 onChange={(e) => updateFormData('keySkills', e.target.value)}
@@ -342,7 +452,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Target Role</label>
-              <input 
+              <input
                 type="text"
                 className={styles.formInput}
                 value={formData.preferredRole}
@@ -352,7 +462,7 @@ const MultiStepForm = () => {
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Interview Goals & Expectations</label>
-              <textarea 
+              <textarea
                 className={styles.formTextarea}
                 value={formData.expectations}
                 onChange={(e) => updateFormData('expectations', e.target.value)}
@@ -362,7 +472,6 @@ const MultiStepForm = () => {
             </div>
           </>
         );
-
       default:
         return null;
     }
@@ -371,52 +480,70 @@ const MultiStepForm = () => {
   return (
     <div className={styles.formContainer}>
       <div className={styles.progressBar}>
-        {[1, 2, 3, 4, 5].map((step) => (
+        {[1, 2, 3, 4, 5, 6].map((step) => (
           <div key={step} className={styles.progressStep}>
             <div className={`${styles.stepNumber} ${currentStep === step ? styles.active : ''}`}>
               {step}
             </div>
-            <div className={styles.stepLabel}>
-              Step {step}
-            </div>
+            <div className={styles.stepLabel}>Step {step}</div>
           </div>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className={styles.formCard}>
-        <div className={styles.formContent}>
-          {renderStep()}
-        </div>
-        
+      <form
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              if (currentStep !== 6) {
+                handleNext(e);
+              }
+            }
+          }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStep === 6) {
+              handleSubmit(e);
+            }
+          }}
+      >
+        <div className={styles.formContent}>{renderStep()}</div>
+
         <div className={styles.formNavigation}>
           {currentStep > 1 && (
-            <button 
-              type="button"
-              className={styles.buttonSecondary}
-              onClick={handlePrev}
-            >
-              <ChevronLeft size={20} />
-              Previous
-            </button>
+              <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  onClick={handlePrev}
+              >
+                <ChevronLeft size={20}/>
+                Previous
+              </button>
           )}
-          
-          {currentStep < 5 ? (
-            <button 
-              type="button"
-              className={styles.buttonPrimary}
-              onClick={handleNext}
-            >
-              Next
-              <ChevronRight size={20} />
-            </button>
+
+          {currentStep < 6 ? (
+              <button
+                  type="button"
+                  className={styles.buttonPrimary}
+                  onClick={(e) => handleNext(e)}
+              >
+                Next
+                <ChevronRight size={20}/>
+              </button>
           ) : (
-            <button 
-              type="submit"
-              className={styles.buttonPrimary}
-            >
-              Submit
-              <CheckCircle size={20} />
-            </button>
+              <button 
+                  type="submit" 
+                  className={styles.buttonPrimary}
+                  onClick={(e) => {
+                    if (currentStep !== 6) {
+                      e.preventDefault();
+                      return;
+                    }
+                  }}
+              >
+                Submit
+                <CheckCircle size={20}/>
+              </button>
           )}
         </div>
       </form>
@@ -428,7 +555,7 @@ const SignUpForm = () => {
   const navigate = useNavigate();
 
   return (
-    <div className={styles.pageContainer}>
+      <div className={styles.pageContainer}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
           <div className={styles.logo} onClick={() => navigate('/')}>

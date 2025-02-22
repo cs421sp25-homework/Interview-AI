@@ -72,6 +72,8 @@ def signup():
 
         # Insert all data into Supabase at once
         result = supabase.table('profiles').insert({
+            'username': data.get('username'),
+            'password': data.get('password'),
             'first_name': data.get('firstName'),
             'last_name': data.get('lastName'),
             'email': data.get('email'),
@@ -184,4 +186,4 @@ def update_profile(email):
         }), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    app.run(debug=True, host='127.0.0.1', port=5000)
