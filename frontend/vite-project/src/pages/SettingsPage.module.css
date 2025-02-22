@@ -3,16 +3,18 @@
   background: #f9fafb;
 }
 
+/* ================================
+      Navigation
+================================ */
 .nav {
   background: white;
   padding: 1rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .navContent {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -21,33 +23,30 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--text-dark);
 }
 
 .backButton {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 0.5rem;
   background: #f3f4f6;
-  color: var(--text-dark);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
 .backButton:hover {
   background: #e5e7eb;
 }
 
+/* ================================
+      Main Section
+================================ */
 .main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 1rem;
 }
 
 .header {
@@ -55,111 +54,193 @@
   margin-bottom: 2rem;
 }
 
-.header h1 {
-  color: var(--text-dark);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+/* ================================
+      Two-Column Grid
+================================ */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 3fr; /* Education gets more space */
+  gap: 2rem;
 }
 
-.header p {
-  color: var(--text-light);
-}
-
-.profileCard {
+/* ================================
+      Column Styling
+================================ */
+.column {
   background: white;
   border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Prevent content overflow */
 }
 
+/* ================================
+      Avatar Section
+================================ */
 .avatarSection {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
-  overflow: hidden;
-}
-
-.avatarImage {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .uploadButton {
+  margin-top: 0.5rem;
+  border: 1px solid #ec4899;
+  color: #ec4899;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--primary-color);
   border-radius: 0.5rem;
   background: transparent;
-  color: var(--primary-color);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
 .uploadButton:hover {
-  background: #fdf2f8;
+  background: #fde2e4;
 }
 
-.formSection {
-  display: grid;
-  gap: 1.5rem;
-}
-
+/* ================================
+      Form Input Fields
+================================ */
 .formGroup {
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
 }
 
-.formGroup label {
+label {
   font-weight: 500;
-  color: var(--text-dark);
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  color: #6b7280;
 }
 
-.input, .textarea {
-  padding: 0.75rem;
+.input {
+  padding: 0.5rem;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border-radius: 0.4rem;
   font-size: 1rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
-.input:focus, .textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
-}
-
+/* ================================
+    Full Description Textarea (Auto-expand)
+================================ */
 .textarea {
-  resize: vertical;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.4rem;
+  font-size: 1rem;
+  width: 100%;
+  overflow: auto; /* No scrollbars */
+  resize: none; /* Disable manual resize */
+  white-space: pre-wrap; /* Preserve line breaks */
+  line-height: 1.5;
+  word-wrap: break-word; /* Prevent overflow */
+  box-sizing: border-box;
+  min-height: 150px; /* More space for longer content */
+  height: auto; /* Auto expand by default */
 }
 
-.saveButton {
-  padding: 1rem;
-  border: none;
+/* Auto-expand Textarea on Input */
+.autoExpand {
+  height: auto;
+  overflow-y: hidden;
+  min-height: 150px; /* Minimum height */
+  max-height: none; /* No maximum height */
+}
+
+
+
+/* ================================
+      Cards (Experience & Education)
+================================ */
+.card {
+  border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
-  background: var(--primary-color);
-  color: white;
-  font-weight: 500;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: #ec4899;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.icon {
   cursor: pointer;
-  transition: all 0.2s;
+  color: #dc2626;
+  transition: color 0.2s;
+}
+
+.icon:hover {
+  color: #b91c1c;
+}
+
+/* ================================
+      Add Button
+================================ */
+.addButton {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  border: 1px solid #ec4899;
+  color: #ec4899;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.addButton:hover {
+  background: #fde2e4;
+}
+
+/* ================================
+      Save Button
+================================ */
+.saveButton {
+  padding: 1rem;
+  border: none;
+  border-radius: 2rem;
+  background: #ec4899;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
 }
 
 .saveButton:hover {
-  background: var(--primary-hover);
-} 
+  background: #db2777;
+}
+
+/* ================================
+      Responsive Design
+================================ */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
