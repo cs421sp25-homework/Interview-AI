@@ -88,6 +88,7 @@ def signup():
             'resume_url': file_url,
             'portfolio_url': data.get('portfolioUrl'),
             'linkedin_url': data.get('linkedinUrl'),
+            'github_url': data.get('githubUrl'),
             'key_skills': data.get('keySkills'),
             'preferred_role': data.get('preferredRole'),
             'expectations': data.get('expectations'),
@@ -144,19 +145,90 @@ def get_resume_summary(email):
             "message": str(e)
         }), 500
 
-@app.route('/api/profile/<email>', methods=['GET'])
-def get_profile(email):
+# @app.route('/api/profile/<username>', methods=['GET'])
+# def get_profile(username):
+#     try:
+#         mock_data = {
+#             "name": "Sarah Johnson",
+#             "title": "Full Stack Developer",
+#             "email": "213@qq.com",
+#             "username": username,
+#             "phone": "123-456-7890",
+#             "skills": "React, Node.js, Python",
+#             "about": "I am a passionate developer with 5 years of experience...",
+#             "linkedin": "https://www.linkedin.com/in/sarah-johnson",
+#             "github": "https://github.com/sarah-johnson",
+#             "portfolio": "https://sarah-portfolio.example.com",
+#             "photoUrl": "https://cdn.example.com/photos/sarah.jpg",
+#
+#             "education_history": [
+#                 {
+#                     "institution": "Johns Hopkins University | Whiting School of Engineering",
+#                     "degree": "B.S. in Computer Science; B.S. in Applied Mathematics and Statistics",
+#                     "dates": "Sept. 2022 – May 2026",
+#                     "location": "Baltimore, MD",
+#                     "description": "Relevant Courses: Machine Learning, Deep Learning, Algorithm, Data Structure, OOP, Fullstack JS, Data Science, Prob & Stats"
+#                 }
+#             ],
+#             "experience": [
+#                 {
+#                     "title": "Software Engineer, Internship",
+#                     "organization": "Zilliz (Vector Database)",
+#                     "dates": "Oct. 2024 – Present",
+#                     "location": "Redwood City, CA",
+#                     "description": "Co-developed DeepSearcher, integrating LLMs (DeepSeek, OpenAI) with vector databases (Milvus) for semantic search, evaluation, and reasoning on private data, providing detailed reports for enterprise knowledge management and intelligent Q&A systems. "
+#                 },
+#                 {
+#                     "title": "Machine Learning Engineer, Internship",
+#                     "organization": "Pinduoduo (E-Commerce)",
+#                     "dates": "May. 2024 – Aug. 2024",
+#                     "location": "Shanghai, China",
+#                     "description": "Enhanced the pretrained mContriever embedding model for an AI shopping assistant through Supervised Fine-Tuning. Improved model testing accuracy from 0.79 to 0.91, with a 27% gain in recall @ 5 and a 21% improvement in F1-score. "
+#                 },
+#                 {
+#                     "title": "Back-End Developer, Part Time",
+#                     "organization": "Capybara-AI (AI Financial)",
+#                     "dates": "Oct. 2023 – Feb. 2024",
+#                     "location": "Manhattan, New York",
+#                     "description": "Developed a multithreaded news collection system with asynchronous summarization to deliver real-time news updates to users. Engineered a weekly industry keyword and summary system using BERT and hierarchical clustering with integrated sentiment scoring"
+#                 },
+#                 {
+#                     "title": "Multimodal Machine Learning, Internship",
+#                     "organization": "Vipshop Holdings Limited (E-Commerce)",
+#                     "dates": "May 2023 – Aug. 2023",
+#                     "location": "Shanghai, China",
+#                     "description": "Enhanced VisualGLM for multimodal shopping recommendations by fine-tuning its Q-Former with attention masking for Image-Text Contrastive (ITC) and Image-Grounded Text Generation (IGTG), increasing model accuracy by 6.79%."
+#                 }
+#             ]
+#         }
+#
+#         return jsonify({
+#             "message": "Profile retrieved successfully",
+#             "data": mock_data
+#         }), 200
+#
+#     except Exception as e:
+#         print(f"Error getting profile: {str(e)}")
+#         return jsonify({
+#             "error": "Failed to get profile",
+#             "message": str(e)
+#         }), 500
+
+
+@app.route('/api/profile/<username>', methods=['GET'])
+def get_profile(username):
     try:
-        # Get user profile from Supabase
-        result = supabase.table('profiles').select('*').eq('email', email).execute()
-        
+        result = supabase.table('profiles').select('*').eq('username', username).execute()
         if not result.data:
             return jsonify({"error": "User not found"}), 404
-            
+
+        user_data = result.data[0]
+        print(user_data.keys())
         return jsonify({
             "message": "Profile retrieved successfully",
-            "data": result.data[0]
+            "data": user_data
         }), 200
+
 
     except Exception as e:
         print(f"Error getting profile: {str(e)}")
@@ -165,14 +237,15 @@ def get_profile(email):
             "message": str(e)
         }), 500
 
-@app.route('/api/profile/<email>', methods=['PUT'])
-def update_profile(email):
+@app.route('/api/profile/<username>', methods=['PUT'])
+def update_profile(username):
     try:
         data = request.json
-        
-        # Update profile in Supabase
-        result = supabase.table('profiles').update(data).eq('email', email).execute()
-        
+        result = supabase.table('profiles').update(data).eq('username', username).execute()
+
+        if not result.data:
+            return jsonify({"error": "User not found"}), 404
+
         return jsonify({
             "message": "Profile updated successfully",
             "data": result.data[0]
@@ -186,4 +259,4 @@ def update_profile(email):
         }), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5001)

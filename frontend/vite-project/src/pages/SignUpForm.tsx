@@ -23,6 +23,7 @@ interface FormData {
   resume: File | null;
   portfolioUrl: string;
   linkedinUrl: string;
+  githubUrl: string;
   keySkills: string;
   preferredRole: string;
   expectations: string;
@@ -50,6 +51,7 @@ const MultiStepForm = () => {
     resume: null,
     portfolioUrl: '',
     linkedinUrl: '',
+    githubUrl: '',
     keySkills: '',
     preferredRole: '',
     expectations: ''
@@ -290,59 +292,68 @@ const MultiStepForm = () => {
         );
       case 3:
         return (
-          <>
-            <h2 className={styles.stepTitle}>Upload Documents</h2>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Resume/CV</label>
-              <div
-                className={styles.fileInputContainer}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FileText size={48} color="#ec4899" />
-                <p>Click to upload your resume (PDF, DOC, DOCX)</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className={styles.fileInput}
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                {formData.resume && (
-                  <p className={styles.fileName}>Selected: {formData.resume.name}</p>
-                )}
+            <>
+              <h2 className={styles.stepTitle}>Upload Documents</h2>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Resume/CV</label>
+                <div
+                    className={styles.fileInputContainer}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                  <FileText size={48} color="#ec4899"/>
+                  <p>Click to upload your resume (PDF, DOC, DOCX)</p>
+                  <input
+                      ref={fileInputRef}
+                      type="file"
+                      className={styles.fileInput}
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                      style={{display: 'none'}}
+                  />
+                  {formData.resume && (
+                      <p className={styles.fileName}>Selected: {formData.resume.name}</p>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>LinkedIn Profile URL (optional)</label>
-              <input
-                type="url"
-                className={styles.formInput}
-                value={formData.linkedinUrl}
-                onChange={(e) => updateFormData('linkedinUrl', e.target.value)}
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Portfolio URL (optional)</label>
-              <input
-                type="url"
-                className={styles.formInput}
-                value={formData.portfolioUrl}
-                onChange={(e) => updateFormData('portfolioUrl', e.target.value)}
-              />
-            </div>
-          </>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>LinkedIn Profile URL (optional)</label>
+                <input
+                    type="url"
+                    className={styles.formInput}
+                    value={formData.linkedinUrl}
+                    onChange={(e) => updateFormData('linkedinUrl', e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Portfolio URL (optional)</label>
+                <input
+                    type="url"
+                    className={styles.formInput}
+                    value={formData.portfolioUrl}
+                    onChange={(e) => updateFormData('portfolioUrl', e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Github URL (optional)</label>
+                <input
+                    type="url"
+                    className={styles.formInput}
+                    value={formData.githubUrl}
+                    onChange={(e) => updateFormData('githubUrl', e.target.value)}
+                />
+              </div>
+            </>
         );
       case 4:
         return (
-          <>
-            <h2 className={styles.stepTitle}>Professional Information (Optional)</h2>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Current Job Title</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                value={formData.jobTitle}
+            <>
+              <h2 className={styles.stepTitle}>Professional Information (Optional)</h2>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Current Job Title</label>
+                <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.jobTitle}
                 onChange={(e) => updateFormData('jobTitle', e.target.value)}
                 placeholder="Enter your current job title"
               />
