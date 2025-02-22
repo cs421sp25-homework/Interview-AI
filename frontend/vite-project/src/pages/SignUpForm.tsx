@@ -147,11 +147,25 @@ const MultiStepForm = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!validateStep(currentStep)) {
       return;
     }
-    setCurrentStep(prev => Math.min(prev + 1, 6));
+
+    // If we're about to move to step 6, add extra protection
+    if (currentStep === 5) {
+      // Delay the step change to prevent accidental submission
+      setTimeout(() => {
+        setCurrentStep(prev => Math.min(prev + 1, 6));
+      }, 100);
+    } else {
+      setCurrentStep(prev => Math.min(prev + 1, 6));
+    }
   };
 
   const handlePrev = () => {
@@ -478,11 +492,20 @@ const MultiStepForm = () => {
 
       <form
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && currentStep !== 6) {
+            if (e.key === 'Enter') {
               e.preventDefault();
+              e.stopPropagation();
+              if (currentStep !== 6) {
+                handleNext(e);
+              }
             }
           }}
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStep === 6) {
+              handleSubmit(e);
+            }
+          }}
       >
         <div className={styles.formContent}>{renderStep()}</div>
 
@@ -502,13 +525,22 @@ const MultiStepForm = () => {
               <button
                   type="button"
                   className={styles.buttonPrimary}
-                  onClick={handleNext}
+                  onClick={(e) => handleNext(e)}
               >
                 Next
                 <ChevronRight size={20}/>
               </button>
           ) : (
-              <button type="submit" className={styles.buttonPrimary}>
+              <button 
+                  type="submit" 
+                  className={styles.buttonPrimary}
+                  onClick={(e) => {
+                    if (currentStep !== 6) {
+                      e.preventDefault();
+                      return;
+                    }
+                  }}
+              >
                 Submit
                 <CheckCircle size={20}/>
               </button>
