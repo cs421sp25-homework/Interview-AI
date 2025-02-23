@@ -98,29 +98,50 @@ const SettingsPage: React.FC = () => {
     textarea.style.height = textarea.scrollHeight + 'px'; // Expand to fit content
   };
   const handleSave = async () => {
-  try {
-    const updatedProfile = {
-      ...profile,
-      skills: profile.skills.join(', '),
-      experience: profile.experience,
-      education_history: profile.education_history
-    };
+    try {
+      // Split the name into first and last name
+      const [firstName = "", lastName = ""] = profile.name.split(" ", 2);
+      
+      const updatedProfile = {
+        firstName: firstName,
+        lastName: lastName,
+        jobTitle: profile.title,
+        email: profile.email,
+        phone: profile.phone,
+        keySkills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
+        about: profile.about,
+        linkedinUrl: profile.linkedin,
+        githubUrl: profile.github,
+        portfolioUrl: profile.portfolio,
+        education_history: profile.education_history || [],
+        resume_experience: profile.experience || []
+      };
 
-    const username = "RyanTestNew";
-    console.log("Request URL:", `http://localhost:5001/api/profile/${username}`);
-    console.log("Request Data:", updatedProfile);
+      console.log("Sending profile update:", updatedProfile);
 
-    await axios.put(`http://localhost:5001/api/profile/${username}`, updatedProfile, {
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
-    });
+      const username = "RyanTestNew";
+      const response = await axios.put(
+        `http://localhost:5001/api/profile/${username}`, 
+        updatedProfile,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-    navigate('/dashboard');
-  } catch (err) {
-    console.error('Error saving profile:', err);
-    setError('Failed to save profile changes');
-  }
-};
-
+      console.log("Update response:", response.data);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      if (axios.isAxiosError(err)) {
+        console.error('Response data:', err.response?.data);
+        setError(err.response?.data?.message || 'Failed to save profile changes');
+      } else {
+        setError('Failed to save profile changes');
+      }
+    }
+  };
 
   const handleEducationChange = (index: number, key: keyof EducationItem, value: string) => {
     const updatedEdus = [...profile.education_history];
@@ -199,10 +220,10 @@ const SettingsPage: React.FC = () => {
 
     {/* Form Fields */}
     {[
-      { label: 'Full Name', value: profile.name, onChange: (v) => setProfile({ ...profile, name: v }) },
-      { label: 'Job Title', value: profile.title, onChange: (v) => setProfile({ ...profile, title: v }) },
-      { label: 'Email', value: profile.email, onChange: (v) => setProfile({ ...profile, email: v }) },
-      { label: 'Phone', value: profile.phone, onChange: (v) => setProfile({ ...profile, phone: v }) },
+      { label: 'Full Name', value: profile.name, onChange: (v: string) => setProfile({ ...profile, name: v }) },
+      { label: 'Job Title', value: profile.title, onChange: (v: string) => setProfile({ ...profile, title: v }) },
+      { label: 'Email', value: profile.email, onChange: (v: string) => setProfile({ ...profile, email: v }) },
+      { label: 'Phone', value: profile.phone, onChange: (v: string) => setProfile({ ...profile, phone: v }) },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
@@ -227,9 +248,9 @@ const SettingsPage: React.FC = () => {
 
     {/* Links */}
     {[
-      { label: 'LinkedIn URL', value: profile.linkedin, onChange: (v) => setProfile({ ...profile, linkedin: v }) },
-      { label: 'GitHub URL', value: profile.github, onChange: (v) => setProfile({ ...profile, github: v }) },
-      { label: 'Portfolio URL', value: profile.portfolio, onChange: (v) => setProfile({ ...profile, portfolio: v }) },
+      { label: 'LinkedIn URL', value: profile.linkedin, onChange: (v: string) => setProfile({ ...profile, linkedin: v }) },
+      { label: 'GitHub URL', value: profile.github, onChange: (v: string) => setProfile({ ...profile, github: v }) },
+      { label: 'Portfolio URL', value: profile.portfolio, onChange: (v: string) => setProfile({ ...profile, portfolio: v }) },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
