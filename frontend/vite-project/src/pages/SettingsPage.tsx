@@ -30,7 +30,7 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl: string | undefined;
+  photoUrl: string | null;
   education_history: EducationItem[];
   experience: ExperienceItem[];
 }
@@ -39,6 +39,9 @@ const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
 
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
@@ -50,10 +53,23 @@ const SettingsPage: React.FC = () => {
     linkedin: '',
     github: '',
     portfolio: '',
-    photoUrl: undefined,
+    photoUrl: null,
     education_history: [],
     experience: [],
   });
+
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+    github: '',
+    portfolio: ''
+  });
+
+
+
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -76,12 +92,13 @@ const SettingsPage: React.FC = () => {
             linkedin: userData.linkedin_url || '',
             github: userData.github_url || '',
             portfolio: userData.portfolio_url || '',
-            photoUrl: userData.photoUrl || undefined,
+            photoUrl: userData.photo_url || null,
             education_history: Array.isArray(userData.education_history) ? userData.education_history : [],
             experience: Array.isArray(userData.resume_experience) ? userData.resume_experience : []
           };
 
           setProfile(profileData);
+          setPhotoPreview(userData.photo_url || null);
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -91,17 +108,76 @@ const SettingsPage: React.FC = () => {
       }
     };
     fetchProfile();
+
   }, []);
   const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
     textarea.style.height = 'auto'; // Reset height
     textarea.style.height = textarea.scrollHeight + 'px'; // Expand to fit content
   };
+
+
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateURL = (url: string) => !url || /^https?:\/\//.test(url);
+  const validateName = (name: string) => name.trim().length >= 2;
+  const validatePhone = (phone: string) => /^\+?\d{10,15}$/.test(phone);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+  const handlePhotoUpload = async () => {
+    if (!photoFile) return null;
+
+    const formData = new FormData();
+    formData.append('file', photoFile);
+    // TODO
+    formData.append('username', "RyanTestNew")
+
+    try {
+      const response = await axios.post('http://localhost:5001/api/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const imageUrl = response.data.url;
+
+      setProfile({ ...profile, photoUrl: imageUrl });
+      console.log('Image uploaded successfully:', imageUrl);
+
+      return imageUrl;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    }
+  };
+
+
+
   const handleSave = async () => {
     try {
+      const newErrors = {
+        name: validateName(profile.name) ? '' : 'Name must be at least 2 characters',
+        email: validateEmail(profile.email) ? '' : 'Invalid email address',
+        phone: validatePhone(profile.phone) ? '' : 'Invalid phone number',
+        linkedin: validateURL(profile.linkedin) ? '' : 'Invalid URL',
+        github: validateURL(profile.github) ? '' : 'Invalid URL',
+        portfolio: validateURL(profile.portfolio) ? '' : 'Invalid URL'
+      };
+
+      setErrors(newErrors);
+
+      if (Object.values(newErrors).some((error) => error !== '')) {
+        return;
+      }
+      let imageUrl = profile.photoUrl;
+      if (photoFile) {
+        imageUrl = await handlePhotoUpload();
+      }
       // Split the name into first and last name
       const [firstName = "", lastName = ""] = profile.name.split(" ", 2);
-      
+
       const updatedProfile = {
         firstName: firstName,
         lastName: lastName,
@@ -113,6 +189,7 @@ const SettingsPage: React.FC = () => {
         linkedinUrl: profile.linkedin,
         githubUrl: profile.github,
         portfolioUrl: profile.portfolio,
+        photoUrl: imageUrl || profile.photoUrl || null,
         education_history: profile.education_history || [],
         resume_experience: profile.experience || []
       };
@@ -121,7 +198,7 @@ const SettingsPage: React.FC = () => {
 
       const username = "RyanTestNew";
       const response = await axios.put(
-        `http://localhost:5001/api/profile/${username}`, 
+        `http://localhost:5001/api/profile/${username}`,
         updatedProfile,
         {
           headers: {
@@ -212,24 +289,56 @@ const SettingsPage: React.FC = () => {
   {/* Column 1: Basic Info + Education */}
   <div className={styles.column}>
     <h3>Basic Info</h3>
-    {/* Basic Info Form */}
+
+    {/* Avatar Section */}
     <div className={styles.avatarSection}>
-      <div className={styles.avatar}><User size={48} color="#ec4899" /></div>
-      <button className={styles.uploadButton}>Change Photo</button>
+      {/* Avatar Image or Default Icon */}
+      <div className={styles.avatar}>
+        {photoPreview || profile?.photoUrl ? (
+          <img src={photoPreview || profile?.photoUrl} alt="Profile" className={styles.avatarImage} />
+        ) : (
+          <User size={48} color="#ec4899" />
+        )}
+      </div>
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoChange}
+        style={{ display: 'none' }}
+        id="photoUpload"
+      />
+
+      {/* Single Button for Upload & Change Photo */}
+      <button className={styles.uploadButton} onClick={() => document.getElementById('photoUpload')?.click()}>
+        Change Photo
+      </button>
     </div>
+
+
+
 
     {/* Form Fields */}
     {[
-      { label: 'Full Name', value: profile.name, onChange: (v: string) => setProfile({ ...profile, name: v }) },
-      { label: 'Job Title', value: profile.title, onChange: (v: string) => setProfile({ ...profile, title: v }) },
-      { label: 'Email', value: profile.email, onChange: (v: string) => setProfile({ ...profile, email: v }) },
-      { label: 'Phone', value: profile.phone, onChange: (v: string) => setProfile({ ...profile, phone: v }) },
+      {
+        label: 'Full Name',
+        value: profile.name, error: errors.name, onChange: (v: string) => setProfile({ ...profile, name: v }) },
+      { label: 'Job Title', value: profile.title, error: '', onChange: (v: string) => setProfile({ ...profile, title: v }) },
+      { label: 'Email', value: profile.email, error: errors.email, onChange: (v: string) => setProfile({ ...profile, email: v }) },
+      { label: 'Phone', value: profile.phone, error: errors.phone, onChange: (v: string) => setProfile({ ...profile, phone: v }) },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
-        <input type="text" className={styles.input} value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+        <input
+          type="text"
+          className={`${styles.input} ${field.error ? styles.inputError : ''}`}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+        />
+        {field.error && <span className={styles.error}>{field.error}</span>}
       </div>
     ))}
+
 
     {/* Description Textarea (Auto-Expand) */}
     <div className={styles.formGroup}>
@@ -248,15 +357,22 @@ const SettingsPage: React.FC = () => {
 
     {/* Links */}
     {[
-      { label: 'LinkedIn URL', value: profile.linkedin, onChange: (v: string) => setProfile({ ...profile, linkedin: v }) },
-      { label: 'GitHub URL', value: profile.github, onChange: (v: string) => setProfile({ ...profile, github: v }) },
-      { label: 'Portfolio URL', value: profile.portfolio, onChange: (v: string) => setProfile({ ...profile, portfolio: v }) },
+      { label: 'LinkedIn URL', value: profile.linkedin, error: errors.linkedin, onChange: (v: string) => setProfile({ ...profile, linkedin: v }) },
+      { label: 'GitHub URL', value: profile.github, error: errors.github, onChange: (v: string) => setProfile({ ...profile, github: v }) },
+      { label: 'Portfolio URL', value: profile.portfolio, error: errors.portfolio, onChange: (v: string) => setProfile({ ...profile, portfolio: v }) },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
-        <input type="url" className={styles.input} value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+        <input
+          type="url"
+          className={`${styles.input} ${field.error ? styles.inputError : ''}`} // 如果有错误，添加 inputError 样式
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+        />
+        {field.error && <span className={styles.error}>{field.error}</span>}  {/* 如果有错误，显示提示 */}
       </div>
     ))}
+
 
     {/* Education Cards */}
     <h3>Education</h3>

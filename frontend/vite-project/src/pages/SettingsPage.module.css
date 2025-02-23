@@ -221,7 +221,7 @@ label {
       Save Button
 ================================ */
 .saveButton {
-  padding: 1rem;
+  padding: 1rem 5rem;
   border: none;
   border-radius: 2rem;
   background: #ec4899;
@@ -243,4 +243,40 @@ label {
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.inputError {
+  border-color: #dc2626;
+  background-color: #fee2e2;
+}
+
+.avatarImage {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ec4899;
+}
+
+.uploadButton {
+  width: 150px;
+  text-align: center;
+  margin-top: 0.5rem;
+  border: 1px solid #ec4899;
+  color: #ec4899;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.uploadButton:hover {
+  background: #fde2e4;
 }
