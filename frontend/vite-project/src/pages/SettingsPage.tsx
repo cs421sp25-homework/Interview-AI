@@ -98,15 +98,29 @@ const SettingsPage: React.FC = () => {
     textarea.style.height = textarea.scrollHeight + 'px'; // Expand to fit content
   };
   const handleSave = async () => {
-    try {
-      const updatedProfile = { ...profile, skills: profile.skills.join(', ') };
-      await axios.put(`http://localhost:5000/api/profile/${profile.email}`, updatedProfile);
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Error saving profile:', err);
-      setError('Failed to save profile changes');
-    }
-  };
+  try {
+    const updatedProfile = {
+      ...profile,
+      skills: profile.skills.join(', '),
+      experience: profile.experience,
+      education_history: profile.education_history
+    };
+
+    const username = "RyanTestNew";
+    console.log("Request URL:", `http://localhost:5001/api/profile/${username}`);
+    console.log("Request Data:", updatedProfile);
+
+    await axios.put(`http://localhost:5001/api/profile/${username}`, updatedProfile, {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
+    });
+
+    navigate('/dashboard');
+  } catch (err) {
+    console.error('Error saving profile:', err);
+    setError('Failed to save profile changes');
+  }
+};
+
 
   const handleEducationChange = (index: number, key: keyof EducationItem, value: string) => {
     const updatedEdus = [...profile.education_history];

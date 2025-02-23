@@ -110,40 +110,40 @@ def signup():
         }), 500
 
 
-@app.route('/api/resume-summary/<email>', methods=['GET'])
-def get_resume_summary(email):
-    try:
-        # Get user profile from Supabase
-        result = supabase.table('profiles').select('*').eq('email', email).execute()
-        
-        if not result.data:
-            return jsonify({"error": "User not found"}), 404
-            
-        user_profile = result.data[0]
-        resume_url = user_profile.get('resume_url')
-        
-        if not resume_url:
-            return jsonify({"error": "No resume found for this user"}), 404
-
-        # Process the resume and get the summary
-        extraction_result = process_resume(resume_url)
-        
-        # Update the profile with the resume summary
-        supabase.table('profiles').update({
-            'resume_summary': extraction_result
-        }).eq('email', email).execute()
-        
-        return jsonify({
-            "message": "Resume processed successfully",
-            "data": extraction_result
-        }), 200
-
-    except Exception as e:
-        print(f"Error processing resume: {str(e)}")
-        return jsonify({
-            "error": "Failed to process resume",
-            "message": str(e)
-        }), 500
+# @app.route('/api/resume-summary/<email>', methods=['GET'])
+# def get_resume_summary(email):
+#     try:
+#         # Get user profile from Supabase
+#         result = supabase.table('profiles').select('*').eq('email', email).execute()
+#
+#         if not result.data:
+#             return jsonify({"error": "User not found"}), 404
+#
+#         user_profile = result.data[0]
+#         resume_url = user_profile.get('resume_url')
+#
+#         if not resume_url:
+#             return jsonify({"error": "No resume found for this user"}), 404
+#
+#         # Process the resume and get the summary
+#         extraction_result = process_resume(resume_url)
+#
+#         # Update the profile with the resume summary
+#         supabase.table('profiles').update({
+#             'resume_summary': extraction_result
+#         }).eq('email', email).execute()
+#
+#         return jsonify({
+#             "message": "Resume processed successfully",
+#             "data": extraction_result
+#         }), 200
+#
+#     except Exception as e:
+#         print(f"Error processing resume: {str(e)}")
+#         return jsonify({
+#             "error": "Failed to process resume",
+#             "message": str(e)
+#         }), 500
 
 # @app.route('/api/profile/<username>', methods=['GET'])
 # def get_profile(username):
@@ -223,7 +223,6 @@ def get_profile(username):
             return jsonify({"error": "User not found"}), 404
 
         user_data = result.data[0]
-        print(user_data.keys())
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": user_data
@@ -237,13 +236,48 @@ def get_profile(username):
             "message": str(e)
         }), 500
 
+
 @app.route('/api/profile/<username>', methods=['PUT'])
 def update_profile(username):
     try:
+        print("Querying username:", username)
         data = request.json
-        result = supabase.table('profiles').update(data).eq('username', username).execute()
+        result = supabase.table("profiles").select("*").eq('username', username).execute()
+        print("[DEBUG] Before update:", result.data)
+
+        full_name = data.get("name", "").strip()
+        parts = full_name.split(" ", 1)
+        first_name = parts[0] if len(parts) > 0 else ""
+        last_name = parts[1] if len(parts) > 1 else ""
+
+        update_dict = {
+            "first_name": first_name,
+            "last_name": last_name,
+
+            "email": data.get("email", ""),
+            "phone": data.get("phone", ""),
+            "job_title": data.get("title", ""),
+
+            "key_skills": data.get("skills", ""),
+            "about": data.get("about", ""),
+
+            "linkedin_url": data.get("linkedin", ""),
+            "github_url": data.get("github", ""),
+            "portfolio_url": data.get("portfolio", ""),
+
+            "education_history": data.get("education_history", []),
+            "resume_experience": data.get("experience", [])
+        }
+        print("[DEBUG] Looking for username:", username)
+        result = supabase.table("profiles") \
+            .update(update_dict) \
+            .filter("username", "eq", username.strip()) \
+            .execute()
+
+        print("[DEBUG] Query result:", result.data)
 
         if not result.data:
+            print("[DEBUG] User not found in database.")
             return jsonify({"error": "User not found"}), 404
 
         return jsonify({
@@ -252,11 +286,12 @@ def update_profile(username):
         }), 200
 
     except Exception as e:
-        print(f"Error updating profile: {str(e)}")
+        print("Error updating profile:", str(e))
         return jsonify({
             "error": "Failed to update profile",
             "message": str(e)
         }), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5001)
