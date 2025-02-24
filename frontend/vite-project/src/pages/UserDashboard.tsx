@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bot, 
   User, 
@@ -24,14 +24,54 @@ import axios from 'axios';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const userData = {
-    name: 'Sarah Johnson',
-    title: 'Senior Software Engineer',
-    email: 'sarah.johnson@example.com',
-    interviews: 12,
-    resumeReviews: 3,
-    joined: 'January 2025'
-  };
+  const [userData, setUserData] = useState({
+    name: '',
+    title: '',
+    email: '',
+    interviews: 0,
+    resumeReviews: 0,
+    joined: ''
+  });
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const email = localStorage.getItem('user_email');
+        const token = localStorage.getItem('auth_token');
+        
+        if (!email || !token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5001/api/profile/${email}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (response.data.data) {
+          const profile = response.data.data;
+          setUserData({
+            name: `${profile.first_name} ${profile.last_name}`,
+            title: profile.job_title || '',
+            email: profile.email,
+            interviews: profile.interviews_completed || 0,
+            resumeReviews: profile.resume_reviews || 0,
+            joined: new Date(profile.created_at).toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric'
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        navigate('/login');
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
 
   const skillStats = [
     { subject: 'Technical Skills', A: 85 },

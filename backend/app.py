@@ -146,6 +146,19 @@ def get_resume_summary(email):
 @app.route('/api/profile/<email>', methods=['GET'])
 def get_profile(email):
     try:
+        # Get the access token from the Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "No authorization token provided"}), 401
+        
+        token = auth_header.split(' ')[1]
+        
+        # Verify the token
+        try:
+            supabase.auth.get_user(token)
+        except Exception as e:
+            return jsonify({"error": "Invalid token"}), 401
+
         # Get user profile from Supabase
         result = supabase.table('profiles').select('*').eq('email', email).execute()
         
@@ -254,8 +267,6 @@ def email_login():
 
 #         existing_user = supabase.table('profiles').select('*').eq('email', email).execute()
 
-        
-
 #         if not existing_user.data:
 #             supabase.table('profiles').insert({
 #                 "id": user_id, 
@@ -292,27 +303,12 @@ def oauth_login(provider):
         auth_url = (
             f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
             f"?provider={provider}"
-            f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+            f"&access_type=offline"
+            f"&prompt=consent"
+            f"&redirect_to={os.getenv('FRONTEND_URL')}/auth/callback"
         )
         
-        if provider == "google":
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider=google"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
-            )
-        else:    
-            # Build the Supabase OAuth URL with access token
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider={provider}"
-                f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
-            )
-            
         print("auth url", auth_url)
-        # Return a redirect response
         return redirect(auth_url)
 
     except Exception as e:
@@ -325,21 +321,24 @@ def oauth_login(provider):
 @app.route('/api/auth/callback', methods=['GET'])
 def auth_callback():
     try:
-        print("auth callback")
-        access_token = request.args.get("access_token")
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "No authorization token provided"}), 401
+        
+        access_token = auth_header.split(' ')[1]
         if not access_token:
             return jsonify({"error": "Access token missing"}), 400
 
-        supabase.auth.session = {"access_token": access_token}
-        user = supabase.auth.get_user()
+        # Get user data from token
+        user = supabase.auth.get_user(access_token)
 
-        if "error" in user:
+        if not user or not user.user:
             return jsonify({"error": "Invalid token"}), 401
 
-        user_data = user["user"]
-        user_email = user_data["email"]
-        user_id = user_data["id"]
-        provider = user_data["app_metadata"]["provider"]
+        user_data = user.user
+        user_email = user_data.email
+        user_id = user_data.id
+        provider = user_data.app_metadata.get("provider")
 
         existing_user = supabase.table('profiles').select('*').eq('email', user_email).execute()
 
@@ -347,8 +346,8 @@ def auth_callback():
             supabase.table('profiles').insert({
                 "id": user_id, 
                 "email": user_email,
-                "first_name": user_data.get("user_metadata", {}).get("first_name", ""),
-                "last_name": user_data.get("user_metadata", {}).get("last_name", ""),
+                "first_name": user_data.user_metadata.get("full_name", "").split()[0] if user_data.user_metadata.get("full_name") else "",
+                "last_name": " ".join(user_data.user_metadata.get("full_name", "").split()[1:]) if user_data.user_metadata.get("full_name") else "",
                 "auth_provider": provider
             }).execute()
 
@@ -362,6 +361,8 @@ def auth_callback():
         }), 200
 
     except Exception as e:
+        print(f"Error in auth callback: {str(e)}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/auth/logout', methods=['POST'])

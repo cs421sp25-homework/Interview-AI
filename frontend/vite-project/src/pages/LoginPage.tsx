@@ -20,28 +20,40 @@ const LoginPage = () => {
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
-    }
-
     try {
-      const response = await axios.post(
-        'http://localhost:5001/api/auth/login',
-        { email, password },
-      );
+      const response = await axios.post('http://localhost:5001/api/auth/login', {
+        email,
+        password
+      });
 
-      if (response.status === 200) {
-        localStorage.setItem('authToken', response.data.token);
-        console.log('Login successful');
+      if (response.data.user) {
+        // Store auth token
+        localStorage.setItem('auth_token', response.data.user.token);
+        localStorage.setItem('user_email', response.data.user.email);
+        
+        // Fetch user profile data
+        const profileResponse = await axios.get(
+          `http://localhost:5001/api/profile/${response.data.user.email}`,
+          {
+            headers: {
+              Authorization: `Bearer ${response.data.user.token}`
+            }
+          }
+        );
+
+        if (profileResponse.data.data) {
+          // Store profile data
+          localStorage.setItem('user_profile', JSON.stringify(profileResponse.data.data));
+        }
+
+        // Navigate to dashboard
         navigate('/dashboard');
       }
     } catch (error) {
-      setError('Invalid email or password. Please try again.');
+      console.error('Login failed:', error);
+      setError('Invalid email or password');
     }
   };
 
@@ -66,7 +78,7 @@ const LoginPage = () => {
           <p>Access your interview practice portal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.formCard}>
+        <form onSubmit={handleLogin} className={styles.formCard}>
           {error && <p className={styles.errorMessage}>{error}</p>}
 
           <div className={styles.formGroup}>
