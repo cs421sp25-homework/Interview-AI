@@ -136,7 +136,7 @@ Or, if you have activated the Poetry shell:
 poetry shell
 python app.py
 ```
-By default, Flask will run on **`http://127.0.0.1:5000`**.
+Our backend, Flask, will run on **`http://127.0.0.1:5001`**.
 
 ---
 

@@ -31,7 +31,7 @@ const LoginPage = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
+        'http://localhost:5001/api/auth/login',
         { email, password },
         { withCredentials: true }
       );
@@ -47,7 +47,7 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    window.location.href = `http://localhost:5000/api/oauth/${provider}`;
+    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
   };
 
   return (
@@ -104,9 +104,6 @@ const LoginPage = () => {
               </button>
               <button className={styles.oauthButton} onClick={() => handleOAuthLogin('github')}>
                 <img src="/github.svg" alt="Github" className={styles.oauthIcon} /> GitHub
-              </button>
-              <button className={styles.oauthButton} onClick={() => handleOAuthLogin('linkedin')}>
-                <img src="/linkedin.svg" alt="Linkedin" className={styles.oauthIcon} /> LinkedIn
               </button>
             </div>
           </div>

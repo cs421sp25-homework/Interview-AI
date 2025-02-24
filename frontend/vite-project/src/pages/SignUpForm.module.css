@@ -330,4 +330,37 @@
   margin-top: 1rem;
   font-size: 0.875rem;
   color: #4b5563;
-} 
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  text-align: left;
+  font-weight: 500;
+}
+
+.stepTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.fileInputContainer {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+  color: #4b5563;
+}
+
+.fileInputContainer:hover {
+  border-color: #ec4899;
+  background-color: #fdf2f8;
+}
+
