@@ -60,10 +60,11 @@ def signup():
         
         # Upload to the 'resumes' bucket
         supabase.storage.from_('resumes').upload(
-            path=file_path,
-            file=file_content,
-            file_options={"content-type": resume_file.content_type}
+        path=file_path,
+        file=file_content,
+        file_options={"content-type": resume_file.content_type, "upsert": "true"}
         )
+
         
         file_url = supabase.storage.from_('resumes').get_public_url(file_path)
         
@@ -231,6 +232,54 @@ def update_profile(username):
             "message": str(e)
         }), 500
 
+
+@app.route('/api/parse-resume', methods=['POST'])
+def parse_resume():
+    try:
+        if 'resume' not in request.files:
+            return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
+
+        resume_file = request.files['resume']
+
+        # Validate file size (5MB)
+        file_bytes = resume_file.read()
+        if len(file_bytes) > 5 * 1024 * 1024:
+            return jsonify({"error": "File too large", "message": "Resume file must be less than 5MB"}), 400
+        resume_file.seek(0)
+
+        # Validate file type (PDF only)
+        if resume_file.content_type != "application/pdf":
+            return jsonify({"error": "Invalid file type", "message": "Please upload a PDF file"}), 400
+
+        # Generate file storage path
+        username = request.form.get('username', 'temp_user')  # Default if username is not sent
+        file_path = f"{username}/{resume_file.filename}"
+
+        # Upload file to Supabase
+        supabase.storage.from_('resumes').upload(
+            path=file_path,
+            file=file_bytes,
+            file_options={"content-type": "application/pdf", "upsert":"true"}
+        )
+
+        # Get public URL
+        file_url = supabase.storage.from_('resumes').get_public_url(file_path)
+
+        # Process the resume using the public URL
+        extraction_result = process_resume(file_url)
+
+        return jsonify({
+            "resume_url": file_url,
+            "education_history": extraction_result.get("education_history", []),
+            "experience": extraction_result.get("experience", [])
+        }), 200
+
+    except Exception as e:
+        print(f"Error parsing resume: {str(e)}")
+        return jsonify({
+            "error": "Failed to parse resume",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/upload-image', methods=['POST'])
 def upload_image():

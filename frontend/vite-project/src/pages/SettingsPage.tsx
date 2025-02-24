@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Bot, User, Save, ArrowLeft, PlusCircle, Trash } from 'lucide-react';
 import styles from './SettingsPage.module.css';
 
+
 interface EducationItem {
   institution: string;
   degree: string;
@@ -12,6 +13,7 @@ interface EducationItem {
   description: string;
 }
 
+
 interface ExperienceItem {
   title: string;
   organization: string;
@@ -19,6 +21,7 @@ interface ExperienceItem {
   location: string;
   description: string;
 }
+
 
 interface UserProfile {
   name: string;
@@ -35,12 +38,15 @@ interface UserProfile {
   experience: ExperienceItem[];
 }
 
+
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+
 
 
   const [profile, setProfile] = useState<UserProfile>({
@@ -58,6 +64,7 @@ const SettingsPage: React.FC = () => {
     experience: [],
   });
 
+
   const [errors, setErrors] = useState({
     name: '',
     email: '',
@@ -66,6 +73,15 @@ const SettingsPage: React.FC = () => {
     github: '',
     portfolio: ''
   });
+
+
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeName, setResumeName] = useState<string>("");
+  const [uploading, setUploading] = useState<boolean>(false);
+ 
+
+
+
 
 
 
@@ -97,6 +113,7 @@ const SettingsPage: React.FC = () => {
             experience: Array.isArray(userData.resume_experience) ? userData.resume_experience : []
           };
 
+
           setProfile(profileData);
           setPhotoPreview(userData.photo_url || null);
         }
@@ -109,6 +126,7 @@ const SettingsPage: React.FC = () => {
     };
     fetchProfile();
 
+
   }, []);
   const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
@@ -117,10 +135,13 @@ const SettingsPage: React.FC = () => {
   };
 
 
+
+
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validateURL = (url: string) => !url || /^https?:\/\//.test(url);
   const validateName = (name: string) => name.trim().length >= 2;
   const validatePhone = (phone: string) => /^\+?\d{10,15}$/.test(phone);
+
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -132,10 +153,12 @@ const SettingsPage: React.FC = () => {
   const handlePhotoUpload = async () => {
     if (!photoFile) return null;
 
+
     const formData = new FormData();
     formData.append('file', photoFile);
     // TODO
     formData.append('username', "RyanTestNew")
+
 
     try {
       const response = await axios.post('http://localhost:5001/api/upload-image', formData, {
@@ -143,8 +166,10 @@ const SettingsPage: React.FC = () => {
       });
       const imageUrl = response.data.url;
 
+
       setProfile({ ...profile, photoUrl: imageUrl });
       console.log('Image uploaded successfully:', imageUrl);
+
 
       return imageUrl;
     } catch (err) {
@@ -152,6 +177,49 @@ const SettingsPage: React.FC = () => {
       return null;
     }
   };
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+ 
+    // Ensure it's a PDF file
+    if (file.type !== "application/pdf") {
+      alert("Please upload a valid PDF file.");
+      return;
+    }
+ 
+    setResumeFile(file);
+    setResumeName(file.name);
+    setUploading(true);
+ 
+    const formData = new FormData();
+    formData.append("resume", file);
+    formData.append("username", "RyanTestNew"); // Adjust as needed
+ 
+    try {
+      const response = await axios.post('http://localhost:5001/api/parse-resume', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+ 
+      if (response.status === 200) {
+        const data = response.data;
+        setProfile((prev) => ({
+          ...prev,
+          education_history: data.education_history || prev.education_history,
+          experience: data.experience || prev.experience
+        }));
+        console.log("Resume parsed and profile updated:", data);
+      }
+    } catch (error) {
+      console.error("Error parsing resume:", error);
+      alert("Failed to parse resume. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+ 
+
+
+
 
 
 
@@ -166,7 +234,9 @@ const SettingsPage: React.FC = () => {
         portfolio: validateURL(profile.portfolio) ? '' : 'Invalid URL'
       };
 
+
       setErrors(newErrors);
+
 
       if (Object.values(newErrors).some((error) => error !== '')) {
         return;
@@ -177,6 +247,7 @@ const SettingsPage: React.FC = () => {
       }
       // Split the name into first and last name
       const [firstName = "", lastName = ""] = profile.name.split(" ", 2);
+
 
       const updatedProfile = {
         firstName: firstName,
@@ -194,7 +265,9 @@ const SettingsPage: React.FC = () => {
         resume_experience: profile.experience || []
       };
 
+
       console.log("Sending profile update:", updatedProfile);
+
 
       const username = "RyanTestNew";
       const response = await axios.put(
@@ -206,6 +279,7 @@ const SettingsPage: React.FC = () => {
           }
         }
       );
+
 
       console.log("Update response:", response.data);
       navigate('/dashboard');
@@ -220,11 +294,13 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+
   const handleEducationChange = (index: number, key: keyof EducationItem, value: string) => {
     const updatedEdus = [...profile.education_history];
     updatedEdus[index] = { ...updatedEdus[index], [key]: value };
     setProfile({ ...profile, education_history: updatedEdus });
   };
+
 
   const addEducation = () => {
     setProfile({
@@ -233,17 +309,20 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+
   const deleteEducation = (index: number) => {
     const updatedEdus = [...profile.education_history];
     updatedEdus.splice(index, 1);
     setProfile({ ...profile, education_history: updatedEdus });
   };
 
+
   const handleExperienceChange = (index: number, key: keyof ExperienceItem, value: string) => {
     const updatedExps = [...profile.experience];
     updatedExps[index] = { ...updatedExps[index], [key]: value };
     setProfile({ ...profile, experience: updatedExps });
   };
+
 
   const addExperience = () => {
     setProfile({
@@ -252,14 +331,17 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+
   const deleteExperience = (index: number) => {
     const updatedExps = [...profile.experience];
     updatedExps.splice(index, 1);
     setProfile({ ...profile, experience: updatedExps });
   };
 
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+
 
   return (
     <div className={styles.container}>
@@ -277,6 +359,7 @@ const SettingsPage: React.FC = () => {
         </div>
       </nav>
 
+
       {/* Main */}
       <main className={styles.main}>
         <div className={styles.header}>
@@ -284,36 +367,63 @@ const SettingsPage: React.FC = () => {
           <p>Manage Your Profile Information</p>
         </div>
 
+
         {/* Two-Column Grid */}
 <div className={styles.grid}>
   {/* Column 1: Basic Info + Education */}
   <div className={styles.column}>
     <h3>Basic Info</h3>
 
+
     {/* Avatar Section */}
-    <div className={styles.avatarSection}>
-      {/* Avatar Image or Default Icon */}
-      <div className={styles.avatar}>
-        {photoPreview || profile?.photoUrl ? (
-          <img src={photoPreview || profile?.photoUrl} alt="Profile" className={styles.avatarImage} />
-        ) : (
-          <User size={48} color="#ec4899" />
-        )}
-      </div>
+<div className={styles.avatarSection}>
+  {/* Avatar Image or Default Icon */}
+  <div className={styles.avatar}>
+    {photoPreview || profile?.photoUrl ? (
+      <img src={photoPreview || profile?.photoUrl} alt="Profile" className={styles.avatarImage} />
+    ) : (
+      <User size={48} color="#ec4899" />
+    )}
+  </div>
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handlePhotoChange}
-        style={{ display: 'none' }}
-        id="photoUpload"
-      />
 
-      {/* Single Button for Upload & Change Photo */}
-      <button className={styles.uploadButton} onClick={() => document.getElementById('photoUpload')?.click()}>
-        Change Photo
-      </button>
-    </div>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={handlePhotoChange}
+    style={{ display: 'none' }}
+    id="photoUpload"
+  />
+
+
+  {/* Change Photo Button */}
+  <button className={styles.uploadButton} onClick={() => document.getElementById('photoUpload')?.click()}>
+    Change Photo
+  </button>
+
+
+  {/* Resume Upload Section */}
+  <input
+    type="file"
+    accept=".pdf"
+    onChange={handleResumeChange}
+    style={{ display: 'none' }}
+    id="resumeUpload"
+  />
+  <button
+    className={styles.uploadButton}
+    onClick={() => document.getElementById('resumeUpload')?.click()}
+    disabled={uploading} // Disable button when uploading
+  >
+    {uploading ? "Uploading & Parsing..." : "Upload Resume PDF"}
+  </button>
+  {uploading && <p className={styles.loadingText}>Processing resume, please wait...</p>}
+  {resumeName && !uploading && <p className={styles.fileName}>Selected: {resumeName}</p>}
+</div>
+
+
+
+
 
 
 
@@ -340,6 +450,8 @@ const SettingsPage: React.FC = () => {
     ))}
 
 
+
+
     {/* Description Textarea (Auto-Expand) */}
     <div className={styles.formGroup}>
       <label>About</label>
@@ -349,11 +461,13 @@ const SettingsPage: React.FC = () => {
       }} />
     </div>
 
+
     {/* Skills */}
     <div className={styles.formGroup}>
       <label>Skills (comma-separated)</label>
       <input type="text" className={styles.input} value={profile.skills.join(', ')} onChange={(e) => setProfile({ ...profile, skills: e.target.value.split(',').map(s => s.trim()) })} />
     </div>
+
 
     {/* Links */}
     {[
@@ -374,6 +488,8 @@ const SettingsPage: React.FC = () => {
     ))}
 
 
+
+
     {/* Education Cards */}
     <h3>Education</h3>
     {profile.education_history.map((edu, idx) => (
@@ -382,6 +498,7 @@ const SettingsPage: React.FC = () => {
           <strong>Education {idx + 1}</strong>
           <Trash size={16} className={styles.icon} onClick={() => deleteEducation(idx)} />
         </div>
+
 
         {[
           { label: 'School', value: edu.institution, key: 'institution' },
@@ -395,6 +512,7 @@ const SettingsPage: React.FC = () => {
           </div>
         ))}
 
+
         <div className={styles.formGroup}>
           <label>Description</label>
           <textarea className={`${styles.textarea} autoExpand`} value={edu.description} onChange={(e) => {
@@ -407,6 +525,7 @@ const SettingsPage: React.FC = () => {
     <button className={styles.addButton} onClick={addEducation}><PlusCircle size={16}/> Add Education</button>
   </div>
 
+
   {/* Column 2: Experience */}
   <div className={styles.column}>
     <h3>Experience</h3>
@@ -416,6 +535,7 @@ const SettingsPage: React.FC = () => {
           <strong>Experience {idx + 1}</strong>
           <Trash size={16} className={styles.icon} onClick={() => deleteExperience(idx)} />
         </div>
+
 
         {[
           { label: 'Title', value: exp.title, key: 'title' },
@@ -428,6 +548,7 @@ const SettingsPage: React.FC = () => {
             <input type="text" className={styles.input} value={field.value} onChange={(e) => handleExperienceChange(idx, field.key as keyof ExperienceItem, e.target.value)} />
           </div>
         ))}
+
 
         <div className={styles.formGroup}>
           <label>Description</label>
@@ -442,12 +563,15 @@ const SettingsPage: React.FC = () => {
   </div>
 </div>
 
+
 {/* Save Button */}
 <button className={styles.saveButton} onClick={handleSave}><Save size={20}/> Save Changes</button>
       </main>
 
+
     </div>
   );
 };
+
 
 export default SettingsPage;
