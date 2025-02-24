@@ -308,6 +308,16 @@ def oauth_login(provider):
             f"&redirect_to={os.getenv('FRONTEND_URL')}/auth/callback"
         )
         
+        # Add provider-specific configurations
+        if provider == "github":
+            auth_url = (
+                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+                f"?provider=github"
+                f"&access_type=offline"
+                f"&prompt=consent"
+                f"&redirect_to={os.getenv('FRONTEND_URL')}/auth/callback"
+            )
+
         print("auth url", auth_url)
         return redirect(auth_url)
 
