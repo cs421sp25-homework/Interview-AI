@@ -224,6 +224,8 @@ def email_login():
         }), 200
 
     except Exception as e:
+        print(f"Error in email login: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # @app.route('/api/upload-image', methods=['POST'])
 # def upload_image():
