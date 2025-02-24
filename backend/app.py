@@ -234,48 +234,48 @@ def email_login():
 #             return jsonify({"message": "No image uploaded", "url": None}), 200
 
 # Email/Password Login 
-@app.route('/api/auth/login', methods=['POST'])
-def email_login():
-    try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
+# @app.route('/api/auth/login', methods=['POST'])
+# def email_login():
+#     try:
+#         data = request.json
+#         email = data.get('email')
+#         password = data.get('password')
 
-        if not email or not password:
-            return jsonify({"error": "Email and password are required"}), 400
+#         if not email or not password:
+#             return jsonify({"error": "Email and password are required"}), 400
 
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+#         response = supabase.auth.sign_in_with_password({"email": email, "password": password})
 
-        if "error" in response:
-            return jsonify({"error": "Invalid email or password"}), 401
+#         if "error" in response:
+#             return jsonify({"error": "Invalid email or password"}), 401
 
-        user = response.user
-        user_id = user.id
+#         user = response.user
+#         user_id = user.id
 
-        existing_user = supabase.table('profiles').select('*').eq('email', email).execute()
+#         existing_user = supabase.table('profiles').select('*').eq('email', email).execute()
 
         
 
-        if not existing_user.data:
-            supabase.table('profiles').insert({
-                "id": user_id, 
-                "email": email,
-                "first_name": user.user_metadata.get("first_name", ""),
-                "last_name": user.user_metadata.get("last_name", ""),
-                "auth_provider": "email"
-            }).execute()
+#         if not existing_user.data:
+#             supabase.table('profiles').insert({
+#                 "id": user_id, 
+#                 "email": email,
+#                 "first_name": user.user_metadata.get("first_name", ""),
+#                 "last_name": user.user_metadata.get("last_name", ""),
+#                 "auth_provider": "email"
+#             }).execute()
 
-        return jsonify({
-            "message": "Login successful",
-            "user": {
-                "id": user_id,
-                "email": email,
-                "token": response.session.access_token
-            }
-        }), 200
+#         return jsonify({
+#             "message": "Login successful",
+#             "user": {
+#                 "id": user_id,
+#                 "email": email,
+#                 "token": response.session.access_token
+#             }
+#         }), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
     
 # OAuth Login 
 @app.route('/api/oauth/<provider>', methods=['GET'])
