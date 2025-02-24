@@ -33,7 +33,7 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl: string | null;
+  photoUrl: string | null | undefined;
   education_history: EducationItem[];
   experience: ExperienceItem[];
 }
@@ -379,8 +379,12 @@ const SettingsPage: React.FC = () => {
 <div className={styles.avatarSection}>
   {/* Avatar Image or Default Icon */}
   <div className={styles.avatar}>
-    {photoPreview || profile?.photoUrl ? (
-      <img src={photoPreview || profile?.photoUrl} alt="Profile" className={styles.avatarImage} />
+    {(photoPreview || profile.photoUrl) ? (
+      <img 
+        src={photoPreview || profile.photoUrl || ''} 
+        alt="Profile" 
+        className={styles.avatarImage}
+      />
     ) : (
       <User size={48} color="#ec4899" />
     )}
