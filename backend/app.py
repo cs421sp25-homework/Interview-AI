@@ -182,6 +182,92 @@ def update_profile(email):
             "error": "Failed to update profile",
             "message": str(e)
         }), 500
+    
+# Email/Password Login 
+@app.route('/api/auth/login', methods=['POST'])
+def email_login():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
 
-if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+
+        if "error" in response:
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        user = response.user
+        user_id = user.id
+
+        existing_user = supabase.table('profiles').select('*').eq('email', email).execute()
+
+        if not existing_user.data:
+            supabase.table('profiles').insert({
+                "id": user_id, 
+                "email": email,
+                "first_name": user.user_metadata.get("first_name", ""),
+                "last_name": user.user_metadata.get("last_name", ""),
+                "auth_provider": "email"
+            }).execute()
+
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user_id,
+                "email": email,
+                "token": response.session.access_token
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# OAuth Login 
+@app.route('/api/auth/login/<provider>', methods=['GET'])
+def auth_login(provider):
+    redirect_url = f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize?provider={provider}&redirect_to=http://localhost:5001/api/auth/callback"
+    return jsonify({"auth_url": redirect_url})
+
+@app.route('/api/auth/callback', methods=['GET'])
+def auth_callback():
+    try:
+        access_token = request.args.get("access_token")
+        if not access_token:
+            return jsonify({"error": "Access token missing"}), 400
+
+        supabase.auth.session = {"access_token": access_token}
+        user = supabase.auth.get_user()
+
+        if "error" in user:
+            return jsonify({"error": "Invalid token"}), 401
+
+        user_data = user["user"]
+        user_email = user_data["email"]
+        user_id = user_data["id"]
+        provider = user_data["app_metadata"]["provider"]
+
+        existing_user = supabase.table('profiles').select('*').eq('email', user_email).execute()
+
+        if not existing_user.data:
+            supabase.table('profiles').insert({
+                "id": user_id, 
+                "email": user_email,
+                "first_name": user_data.get("user_metadata", {}).get("first_name", ""),
+                "last_name": user_data.get("user_metadata", {}).get("last_name", ""),
+                "auth_provider": provider
+            }).execute()
+
+        return jsonify({
+            "message": "OAuth login successful",
+            "user": {
+                "id": user_id,
+                "email": user_email,
+                "provider": provider
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
