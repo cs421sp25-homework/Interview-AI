@@ -364,5 +364,29 @@ def auth_callback():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    try:
+        # Get the access token from the Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "No authorization token provided"}), 401
+        
+        token = auth_header.split(' ')[1]
+        
+        # Sign out the user from Supabase
+        supabase.auth.sign_out()
+        
+        return jsonify({
+            "message": "Logged out successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in logout: {str(e)}")
+        return jsonify({
+            "error": "Logout failed",
+            "message": str(e)
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5001)

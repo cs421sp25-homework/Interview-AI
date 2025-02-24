@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import styles from './UserDashboard.module.css';
+import axios from 'axios';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -47,6 +48,26 @@ const UserDashboard = () => {
     'Quick Learner'
   ];
 
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      await axios.post('http://localhost:5001/api/auth/logout', {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Clear local storage
+      localStorage.removeItem('auth_token');
+      
+      // Redirect to login page
+      navigate('/login');
+      
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <>
       <div>
@@ -64,7 +85,12 @@ const UserDashboard = () => {
                 style={{ cursor: 'pointer' }} 
                 onClick={() => navigate('/settings')}
               />
-              <LogOut size={24} color="#4b5563" style={{ cursor: 'pointer' }} />
+              <LogOut 
+                size={24} 
+                color="#4b5563" 
+                style={{ cursor: 'pointer' }} 
+                onClick={handleLogout}
+              />
             </div>
           </div>
         </nav>
