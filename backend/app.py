@@ -225,6 +225,25 @@ def email_login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/api/oauth/google', methods=['GET'])
+def google_oauth():
+    try:
+        auth_url = (
+            f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+            f"?provider=google"
+            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+        )
+        return redirect(auth_url)
+    except Exception as e:
+        print(f"Error in Google OAuth: {str(e)}")
+        return jsonify({
+            "error": "Google OAuth failed",
+            "message": str(e)
+        }), 500
+
+
+
 # OAuth Login 
 @app.route('/api/oauth/<provider>', methods=['GET'])
 def oauth_login(provider):
@@ -258,7 +277,7 @@ def oauth_login(provider):
 @app.route('/api/auth/callback', methods=['GET'])
 def auth_callback():
     try:
-        access_token = "sbp_9cb9509f5e92c7b8f8149c700a8e5c3c280f7a4b"
+        access_token = ""
         if not access_token:
             return jsonify({"error": "Access token missing"}), 400
 
