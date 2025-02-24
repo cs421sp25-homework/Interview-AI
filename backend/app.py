@@ -328,7 +328,6 @@ def email_login():
         }), 200
 
     except Exception as e:
-        print("Exception:", traceback.format_exc())
         return jsonify({"error": str(e)}), 500
     
 # OAuth Login 
