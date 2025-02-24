@@ -26,86 +26,89 @@ def profile():
     }
     return jsonify(data)
 
+from flask import Flask, request, jsonify
+from supabase import create_client, Client
+import os
+
+app = Flask(__name__)
+
+# Initialize Supabase client
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     try:
         data = request.form.to_dict()
-        
-        # Check if resume is provided
-        if 'resume' not in request.files:
-            return jsonify({
-                "error": "Resume is required",
-                "message": "Please upload a resume file"
-            }), 400
 
-        resume_file = request.files['resume']
-        
-        # Validate file size (5MB)
-        if len(resume_file.read()) > 5 * 1024 * 1024:
-            return jsonify({
-                "error": "File too large",
-                "message": "Resume file must be less than 5MB"
-            }), 400
-        resume_file.seek(0)  # Reset file pointer after reading
-        
+        # Ensure required fields
+        required_fields = ["email", "password", "firstName", "lastName"]
+        for field in required_fields:
+            if field not in data or not data[field].strip():
+                return jsonify({"error": f"{field} is required"}), 400
+
+        email = data["email"]
+        password = data["password"]
+
+        # Sign up user using Supabase Authentication
+        auth_response = supabase.auth.sign_up({"email": email, "password": password})
+
+        if auth_response.user is None or auth_response.user.id is None:
+            return jsonify({"error": "Failed to create account"}), 401
+
+        user_id = auth_response.user.id  # Correct way to access user ID
+
+        # Resume file validation
+        if "resume" not in request.files:
+            return jsonify({"error": "Resume is required"}), 400
+
+        resume_file = request.files["resume"]
+
+        # Validate file size (Max: 5MB)
+        resume_file.seek(0, os.SEEK_END)
+        file_size = resume_file.tell()
+        resume_file.seek(0)  # Reset file pointer for reading
+        if file_size > 5 * 1024 * 1024:
+            return jsonify({"error": "File too large", "message": "Resume must be under 5MB"}), 400
+
         # Validate file type
-        allowed_types = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        allowed_types = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
         if resume_file.content_type not in allowed_types:
-            return jsonify({
-                "error": "Invalid file type",
-                "message": "Please upload a PDF or DOCX file"
-            }), 400
+            return jsonify({"error": "Invalid file type", "message": "Upload a PDF or DOCX file"}), 400
 
-        file_content = resume_file.read()
-        file_path = f"{data['email']}/{resume_file.filename}"
-        
-        # Upload to the 'resumes' bucket
-        supabase.storage.from_('resumes').upload(
-            path=file_path,
-            file=file_content,
-            file_options={"content-type": resume_file.content_type}
-        )
-        
-        file_url = supabase.storage.from_('resumes').get_public_url(file_path)
-        
-        # Process the resume
-        extraction_result = process_resume(file_url)
+        # Convert file to bytes and upload
+        file_path = f"{email}/{resume_file.filename}"
+        file_bytes = resume_file.read()  # Read file content as bytes
+        supabase.storage.from_("resumes").upload(file_path, file_bytes)
 
-        # Insert all data into Supabase at once
-        result = supabase.table('profiles').insert({
-            'first_name': data.get('firstName'),
-            'last_name': data.get('lastName'),
-            'email': data.get('email'),
-            'phone': data.get('phone'),
-            'job_title': data.get('jobTitle'),
-            'experience': data.get('experience'),
-            'industry': data.get('industry'),
-            'career_level': data.get('careerLevel'),
-            'interview_type': data.get('interviewType'),
-            'preferred_language': data.get('preferredLanguage'),
-            'specialization': data.get('specialization'),
-            'resume_url': file_url,
-            'portfolio_url': data.get('portfolioUrl'),
-            'linkedin_url': data.get('linkedinUrl'),
-            'key_skills': data.get('keySkills'),
-            'preferred_role': data.get('preferredRole'),
-            'expectations': data.get('expectations'),
-            'resume_summary': extraction_result,
-            'education_history': extraction_result.get('education_history', []),
-            'resume_experience': extraction_result.get('experience', [])
-        }).execute()
+        resume_url = supabase.storage.from_("resumes").get_public_url(file_path)
 
-        return jsonify({
-            "message": "Signup successful",
-            "data": result.data
-        }), 200
+        # Extract information from resume (assuming a function exists)
+        resume_data = process_resume(resume_url)
+
+        # Insert user profile into Supabase DB
+        profile_data = {
+            "id": user_id,  # Linking profile to Supabase Auth user
+            "first_name": data.get("firstName"),
+            "last_name": data.get("lastName"),
+            "email": email,
+            "resume_url": resume_url,
+            "resume_summary": resume_data.get("summary", ""),
+            "education_history": resume_data.get("education_history", []),
+            "resume_experience": resume_data.get("experience", [])
+        }
+
+        db_response = supabase.table("profiles").insert(profile_data).execute()
+
+        if "error" in db_response:
+            return jsonify({"error": "Database insertion failed"}), 500
+
+        return jsonify({"message": "Signup successful", "data": db_response.data}), 201
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        return jsonify({
-            "error": "Signup failed",
-            "message": str(e)
-        }), 500
+        return jsonify({"error": "Signup failed", "message": str(e)}), 500
 
 
 @app.route('/api/resume-summary/<email>', methods=['GET'])
