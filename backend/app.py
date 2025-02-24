@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 from flask_cors import CORS
 from supabase import create_client
 from dotenv import load_dotenv
@@ -281,11 +281,49 @@ def parse_resume():
             "message": str(e)
         }), 500
 
-@app.route('/api/upload-image', methods=['POST'])
-def upload_image():
+# @app.route('/api/upload-image', methods=['POST'])
+# def upload_image():
+#     try:
+#         if 'file' not in request.files or request.files['file'].filename == '':
+#             return jsonify({"message": "No image uploaded", "url": None}), 200
+
+
+# OAuth Login 
+@app.route('/api/oauth/<provider>', methods=['GET'])
+def oauth_login(provider):
     try:
-        if 'file' not in request.files or request.files['file'].filename == '':
-            return jsonify({"message": "No image uploaded", "url": None}), 200
+        # Validate provider
+        allowed_providers = ['google', 'github', 'linkedin']
+        if provider not in allowed_providers:
+            return jsonify({
+                "error": "Invalid provider",
+                "message": f"Provider must be one of: {', '.join(allowed_providers)}"
+            }), 400
+
+        # Build the Supabase OAuth URL with access token
+        auth_url = (
+            f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+            f"?provider={provider}"
+            f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
+            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+        )
+        
+        # Return a redirect response
+        return redirect(auth_url)
+
+    except Exception as e:
+        print(f"Error in {provider} OAuth: {str(e)}")
+        return jsonify({
+            "error": "OAuth failed",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/auth/callback', methods=['GET'])
+def auth_callback():
+    try:
+        access_token = "sbp_9cb9509f5e92c7b8f8149c700a8e5c3c280f7a4b"
+        if not access_token:
+            return jsonify({"error": "Access token missing"}), 400
 
         image_file = request.files['file']
         username = request.form.get('username', 'default_user')
