@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bot, 
   User, 
   Play, 
   FileText,
   Award,
-  Star,
   Settings,
   LogOut
 } from 'lucide-react';
@@ -37,6 +36,7 @@ const UserDashboard = () => {
     const fetchUserProfile = async () => {
       try {
         const email = localStorage.getItem('user_email');
+        const username = localStorage.getItem('username');
         const token = localStorage.getItem('auth_token');
         
         if (!email || !token) {
@@ -44,7 +44,7 @@ const UserDashboard = () => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`, {
+        const response = await axios.get(`http://localhost:5001/api/profile/${username}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

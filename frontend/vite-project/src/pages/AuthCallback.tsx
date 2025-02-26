@@ -45,6 +45,7 @@ const AuthCallback = () => {
           
           if (response.data.user) {
             localStorage.setItem('user_email', response.data.user.email);
+            localStorage.setItem('username', response.data.user.username);
             localStorage.setItem('user_id', response.data.user.id);
             navigate('/dashboard');
           } else {
