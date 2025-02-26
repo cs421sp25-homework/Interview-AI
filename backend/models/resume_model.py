@@ -1,3 +1,4 @@
+# model for resume, including Education and Experience
 from pydantic import BaseModel
 from typing import List, Optional
 

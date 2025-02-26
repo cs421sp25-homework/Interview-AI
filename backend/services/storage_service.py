@@ -1,3 +1,4 @@
+#interaction with database, can be further break down
 from supabase import create_client
 from utils.validation_utils import validate_file
 

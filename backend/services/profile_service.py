@@ -1,3 +1,4 @@
+# CURD operation for profiles
 from supabase import create_client
 from models.profile_model import Profile
 from utils.validation_utils import validate_file

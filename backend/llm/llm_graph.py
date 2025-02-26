@@ -1,3 +1,4 @@
+# The interactive window for using langchain, might not be used in actual app
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from .llm_interface import LLMInterface

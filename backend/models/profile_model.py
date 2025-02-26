@@ -1,3 +1,4 @@
+# The mode for profile data, including basic user info and a ResumeData
 from pydantic import BaseModel
 from typing import List, Optional
 from models.resume_model import ResumeData
