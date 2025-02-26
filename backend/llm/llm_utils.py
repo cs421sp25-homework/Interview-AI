@@ -1,6 +1,7 @@
 import re
 import json
 
+#This function is now exclusively for resume processing
 def generate_prompt(pdf_text: str) -> str:
     """
     Generates a prompt for the LLM to extract structured data from the resume text.
