@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bot, 
   User, 
@@ -20,17 +20,58 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import styles from './UserDashboard.module.css';
+import axios from 'axios';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const userData = {
-    name: 'Sarah Johnson',
-    title: 'Senior Software Engineer',
-    email: 'sarah.johnson@example.com',
-    interviews: 12,
-    resumeReviews: 3,
-    joined: 'January 2025'
-  };
+  const [userData, setUserData] = useState({
+    name: '',
+    title: '',
+    email: '',
+    interviews: 0,
+    resumeReviews: 0,
+    joined: ''
+  });
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const email = localStorage.getItem('user_email');
+        const token = localStorage.getItem('auth_token');
+        
+        if (!email || !token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5001/api/profile/${email}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (response.data.data) {
+          const profile = response.data.data;
+          setUserData({
+            name: `${profile.first_name} ${profile.last_name}`,
+            title: profile.job_title || '',
+            email: profile.email,
+            interviews: profile.interviews_completed || 0,
+            resumeReviews: profile.resume_reviews || 0,
+            joined: new Date(profile.created_at).toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric'
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        navigate('/login');
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
 
   const skillStats = [
     { subject: 'Technical Skills', A: 85 },
@@ -46,6 +87,26 @@ const UserDashboard = () => {
     'Communication Pro',
     'Quick Learner'
   ];
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      await axios.post('http://localhost:5001/api/auth/logout', {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Clear local storage
+      localStorage.removeItem('auth_token');
+      
+      // Redirect to login page
+      navigate('/login');
+      
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <>
@@ -64,7 +125,12 @@ const UserDashboard = () => {
                 style={{ cursor: 'pointer' }} 
                 onClick={() => navigate('/settings')}
               />
-              <LogOut size={24} color="#4b5563" style={{ cursor: 'pointer' }} />
+              <LogOut 
+                size={24} 
+                color="#4b5563" 
+                style={{ cursor: 'pointer' }} 
+                onClick={handleLogout}
+              />
             </div>
           </div>
         </nav>
