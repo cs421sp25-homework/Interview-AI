@@ -21,8 +21,12 @@ const AuthCallback = () => {
 
     if (error) {
       console.error('Auth Error:', error);
+      const errorDescription = searchParams.get('error_description');
       navigate('/login', { 
-        state: { error: 'Authentication failed. Please try again.' }
+        state: { 
+          error: 'Authentication failed: ' + 
+          (errorDescription?.replace(/\+/g, ' ') || 'Please try again.')
+        }
       });
       return;
     }
