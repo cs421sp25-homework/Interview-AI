@@ -2,8 +2,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client
 from dotenv import load_dotenv
-import os
-from backend.utils.pdf_clean import process_resume  # Add this import at the top with other imports
+import os # Add this import at the top with other imports
+from llm.pdf_clean import process_resume
 
 # Load environment variables
 load_dotenv()

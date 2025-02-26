@@ -9,6 +9,8 @@ from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from models.profile_model import Profile
 from models.resume_model import ResumeData
+from supabase import create_client
+from pdf_clean import process_resume  # Import the missing function
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,7 @@ supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
+supabase = create_client(supabase_url, supabase_key)
 
 
 @app.route('/api/profile', methods=['GET'])
@@ -142,6 +145,31 @@ def parse_resume():
     
     except Exception as e:
         return jsonify({"error": "Failed to parse resume", "message": str(e)}), 500
+
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    try:
+        # Get the access token from the Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "No authorization token provided"}), 401
+        
+        token = auth_header.split(' ')[1]
+        
+        # Just return success since we're handling auth on the client side
+        
+        return jsonify({
+            "message": "Logged out successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in logout: {str(e)}")
+        return jsonify({
+            "error": "Logout failed",
+            "message": str(e)
+        }), 500
 
 
 @app.route('/api/upload-image', methods=['POST'])
