@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
-import { Bot, Github, Linkedin, LogIn, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bot, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import styles from './LoginPage.module.css';
 import axios from 'axios';
+import styles from './LoginPage.module.css';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if redirected from OAuth with token
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('authToken', token);
+      navigate('/dashboard');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +30,13 @@ const LoginPage = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', { email, password });
-      
+      const response = await axios.post(
+        'http://localhost:5001/api/auth/login',
+        { email, password },
+      );
+
       if (response.status === 200) {
+        localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
         navigate('/dashboard');
       }
@@ -32,16 +46,14 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    console.log(`Logging in with ${provider}`);
-    // Redirect to backend OAuth endpoint (update with actual URL)
-    window.location.href = `http://localhost:5000/api/auth/${provider}`;
+    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
   };
 
   return (
     <div className={styles.pageContainer}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
-          <div className={styles.logo} onClick={() => navigate('/')}> 
+          <div className={styles.logo} onClick={() => navigate('/')}>
             <Bot className={styles.logoIcon} />
             <span className={styles.logoText}>InterviewAI</span>
           </div>
@@ -59,26 +71,26 @@ const LoginPage = () => {
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Email</label>
-            <input 
-              type="email" 
-              className={styles.formInput} 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              placeholder="Enter your email" 
+            <input
+              type="email"
+              className={styles.formInput}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
             />
           </div>
-          
+
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Password</label>
-            <input 
-              type="password" 
-              className={styles.formInput} 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              placeholder="Enter your password" 
+            <input
+              type="password"
+              className={styles.formInput}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
             />
           </div>
-          
+
           <button type="submit" className={styles.buttonPrimary}>
             <LogIn size={18} /> Login
           </button>
@@ -91,9 +103,6 @@ const LoginPage = () => {
               </button>
               <button className={styles.oauthButton} onClick={() => handleOAuthLogin('github')}>
                 <img src="/github.svg" alt="Github" className={styles.oauthIcon} /> GitHub
-              </button>
-              <button className={styles.oauthButton} onClick={() => handleOAuthLogin('linkedin')}>
-                <img src="/linkedin.svg" alt="Linkedin" className={styles.oauthIcon} /> LinkedIn
               </button>
             </div>
           </div>

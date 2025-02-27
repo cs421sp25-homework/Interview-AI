@@ -2,8 +2,6 @@ from flask import Flask, redirect, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
-
-import supabase
 from services.profile_service import ProfileService
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
@@ -11,6 +9,7 @@ from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from models.profile_model import Profile
 from models.resume_model import ResumeData
+from supabase import create_client
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +25,10 @@ profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 
+supabase = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_KEY")
+)
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -237,7 +240,7 @@ def email_login():
 def oauth_login(provider):
     try:
         # Validate provider
-        allowed_providers = ['google', 'github', 'linkedin']
+        allowed_providers = ['google', 'github']
         if provider not in allowed_providers:
             return jsonify({
                 "error": "Invalid provider",

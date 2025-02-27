@@ -33,3 +33,4 @@ coverage/
 .env.test
 # Local Netlify folder
 .netlify
+
