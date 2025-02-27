@@ -90,7 +90,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const username = 'RyanTestNew';
+        const username = 'Timothy123';
         const response = await axios.get(`http://localhost:5001/api/profile/${username}`);
         if (response.data?.data) {
           const userData = response.data.data;
@@ -109,8 +109,12 @@ const SettingsPage: React.FC = () => {
             github: userData.github_url || '',
             portfolio: userData.portfolio_url || '',
             photoUrl: userData.photo_url || null,
-            education_history: Array.isArray(userData.education_history) ? userData.education_history : [],
-            experience: Array.isArray(userData.resume_experience) ? userData.resume_experience : []
+            education_history: Array.isArray(userData.resume?.education_history) 
+              ? userData.resume?.education_history
+              : [],
+            experience: Array.isArray(userData.resume?.experience) 
+              ? userData.resume?.experience
+              : []
           };
 
 

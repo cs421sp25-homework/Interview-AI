@@ -25,3 +25,23 @@ class Profile(BaseModel):
     preferred_role: str | None = None
     expectations: str | None = None
     resume: ResumeData | None = None
+    education_history: List[dict] | None = None
+    resume_experience: List[dict] | None = None
+
+def fix_profile_model():
+    # Add this debug code to check if the model is correctly handling the fields
+    from models.profile_model import Profile
+    
+    # Create a test profile with education_history and resume_experience
+    test_profile = Profile(
+        username="test",
+        password="test",
+        first_name="Test",
+        last_name="User",
+        email="test@example.com",
+        education_history=[{"institution": "Test University", "degree": "Test Degree", "dates": "2020-2022", "location": "Test Location", "description": "Test Description"}],
+        resume_experience=[{"title": "Test Job", "organization": "Test Company", "dates": "2020-2022", "location": "Test Location", "description": "Test Description"}]
+    )
+    
+    # Print the model dump
+    print("Test profile dump:", test_profile.model_dump())

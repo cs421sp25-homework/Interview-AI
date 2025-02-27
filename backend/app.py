@@ -46,6 +46,7 @@ def signup():
     Handles user signup, including resume upload and profile creation.
     """
     try:
+        print("signup")
         if 'resume' not in request.files:
             return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
         data = request.form.to_dict()
@@ -68,10 +69,11 @@ def signup():
         profile_data = {
             **data,
             "resume_url": file_url,
-            "resume": extraction_result
+            "resume": extraction_result,
+            "education_history": extraction_result.education_history if hasattr(extraction_result, 'education_history') else [],
+            "resume_experience": extraction_result.experience if hasattr(extraction_result, 'experience') else []
         }
         
-        print(f"profile_data: {profile_data}")
 
         # No need to create a Profile object here, let the service handle it
         profile_service.create_profile(profile_data)

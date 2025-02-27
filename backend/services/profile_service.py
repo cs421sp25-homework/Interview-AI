@@ -40,7 +40,6 @@ class ProfileService:
             # Create Profile object
 
             profile = self.map_profile_data(profile_data)
-            print(f"successfully mapped profile data")
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
             signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password":profile.password})
@@ -80,5 +79,7 @@ class ProfileService:
             key_skills=profile_data.get('keySkills') or None,
             preferred_role=profile_data.get('preferredRole') or None,
             expectations=profile_data.get('expectations') or None,
-            resume=resume
+            resume=resume,
+            education_history=profile_data.get('education_history') or None,
+            resume_experience=profile_data.get('resume_experience') or None
         )
