@@ -6,6 +6,14 @@ __MACOSX
 *.swo
 Thumbs.db
 *.log
+*.pdf
+
+*.pyc
+*.pyo
+*.pyd
+
+__pycache__/
+*/__pycache__/
 
 backend/.venv/
 backend/__pycache__/

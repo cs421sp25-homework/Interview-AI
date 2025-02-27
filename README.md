@@ -138,6 +138,11 @@ python app.py
 ```
 Our backend, Flask, will run on **`http://127.0.0.1:5001`**.
 
+Run all the Unit Tests in the tests folder with this command:
+```bash
+poetry run python -m unittest discover tests
+```
+
 ---
 
 ## Summary
