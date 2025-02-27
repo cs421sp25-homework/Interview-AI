@@ -3,12 +3,15 @@ import { Bot, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styles from './LoginPage.module.css';
+import { useAuth } from '../context/AuthContext';
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     // Check if redirected from OAuth with token
@@ -23,32 +26,14 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/login', {
-        email,
-        password
-      });
-
-      if (response.data.user) {
-        // Store auth token
-        localStorage.setItem('auth_token', response.data.user.token);
-        localStorage.setItem('user_email', response.data.user.email);
-        
-        // Fetch user profile data
-        const profileResponse = await axios.get(
-          `http://localhost:5001/api/profile/${response.data.user.email}`,
-          {
-            headers: {
-              Authorization: `Bearer ${response.data.user.token}`
-            }
-          }
-        );
-
-        if (profileResponse.data.data) {
-          // Store profile data
-          localStorage.setItem('user_profile', JSON.stringify(profileResponse.data.data));
-        }
-
-        // Navigate to dashboard
+      const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+      
+      if (response.status === 200) {
+        console.log('Login successful');
+        // Store the email and generate a simple token
+        // In a real app, you'd get a proper token from the backend
+        const token = btoa(`${email}:${Date.now()}`); // Simple token generation
+        login(email, token);
         navigate('/dashboard');
       }
     } catch (error) {
@@ -58,7 +43,9 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
+    console.log(`Logging in with ${provider}`);
+    // Redirect to backend OAuth endpoint (update with actual URL)
+    window.location.href = `http://localhost:5001/api/auth/${provider}`;
   };
 
   return (
