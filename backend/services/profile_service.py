@@ -9,23 +9,61 @@ class ProfileService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
 
-    def get_profile(self, username: str):
-        result = self.supabase.table('profiles').select('*').eq('username', username).execute()
-        print(f"test")
+    def get_profile(self, email: str):
+        result = self.supabase.table('profiles').select('*').eq('email', email).execute()
         if not result.data:
             return None
         return Profile(**result.data[0])
 
-    def update_profile(self, username: str, data: dict):
-        # Fetch current profile
-        current_profile = self.get_profile(username)
-        if not current_profile:
-            return None
+    def update_profile(self, email: str, data: dict):
+        # First check if user exists and get current data
+        check_result = self.supabase.table("profiles").select("*").eq('email', email).execute()
+        if not check_result.data:
+            return None  # User not found
 
-        # Update fields
-        updated_profile = current_profile.copy(update=data)
-        result = self.supabase.table('profiles').upsert(updated_profile.dict()).execute()
-        return result.data[0] if result.data else None
+        # Get the complete current profile
+        current_data = check_result.data[0]
+
+        # Create update dict with all original fields
+        update_dict = {
+            "id": current_data.get("id"),  # Important: Include the primary key
+            "email": email,  # Use email
+            "password": current_data.get("password", ""),
+            "first_name": data.get("firstName", current_data.get("first_name", "")),
+            "last_name": data.get("lastName", current_data.get("last_name", "")),
+            "phone": data.get("phone", current_data.get("phone", "")),
+            "job_title": data.get("jobTitle", current_data.get("job_title", "")),
+            "experience": current_data.get("experience", ""),
+            "industry": current_data.get("industry", ""),
+            "career_level": current_data.get("career_level", ""),
+            "interview_type": current_data.get("interview_type", ""),
+            "preferred_language": current_data.get("preferred_language", ""),
+            "specialization": current_data.get("specialization", ""),
+            "resume_url": current_data.get("resume_url", ""),
+            "key_skills": data.get("keySkills", current_data.get("key_skills", "")),
+            "about": data.get("about", current_data.get("about", "")),
+            "linkedin_url": data.get("linkedinUrl", current_data.get("linkedin_url", "")),
+            "github_url": data.get("githubUrl", current_data.get("github_url", "")),
+            "portfolio_url": data.get("portfolioUrl", current_data.get("portfolio_url", "")),
+            "photo_url": data.get("photo_url", current_data.get("photo_url", "")),
+            "preferred_role": current_data.get("preferred_role", ""),
+            "expectations": current_data.get("expectations", ""),
+            "resume_summary": current_data.get("resume_summary", ""),
+            "education_history": data.get("education_history", current_data.get("education_history", [])),
+            "resume_experience": data.get("resume_experience", current_data.get("resume_experience", []))
+        }
+
+        # Use upsert to update the record
+        result = self.supabase.table("profiles").upsert(update_dict).execute()
+        if not result.data:
+            return None  # Failed to update record
+
+        # Get the latest data after update
+        updated_result = self.supabase.table("profiles").select("*").eq('email', email).execute()
+        if not updated_result.data:
+            return None  # Failed to retrieve updated data
+
+        return updated_result.data[0]  # Return updated profile data
     
     def create_profile(self, profile_data: dict) -> dict:
         """
@@ -80,6 +118,4 @@ class ProfileService:
             preferred_role=profile_data.get('preferredRole') or None,
             expectations=profile_data.get('expectations') or None,
             resume=resume,
-            education_history=profile_data.get('education_history') or None,
-            resume_experience=profile_data.get('resume_experience') or None
         )

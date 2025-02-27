@@ -1,13 +1,13 @@
-# The mode for profile data, including basic user info and a ResumeData
+# The model for profile data, including basic user info and a ResumeData
 from pydantic import BaseModel
 from typing import List, Optional
-from models.resume_model import ResumeData
+from models.resume_model import ResumeData, EducationHistory, Experience
 
 class Profile(BaseModel):
     username: str 
     password: str
-    first_name: str
-    last_name: str
+    first_name: str | None = None
+    last_name: str | None = None
     email: str
     phone: str | None = None
     job_title: str | None = None
@@ -24,24 +24,17 @@ class Profile(BaseModel):
     key_skills: str | None = None
     preferred_role: str | None = None
     expectations: str | None = None
-    resume: ResumeData | None = None
     education_history: List[dict] | None = None
     resume_experience: List[dict] | None = None
+    resume: ResumeData | None = None
+    photo_url: str | None = None
 
-def fix_profile_model():
-    # Add this debug code to check if the model is correctly handling the fields
-    from models.profile_model import Profile
-    
-    # Create a test profile with education_history and resume_experience
-    test_profile = Profile(
-        username="test",
-        password="test",
-        first_name="Test",
-        last_name="User",
-        email="test@example.com",
-        education_history=[{"institution": "Test University", "degree": "Test Degree", "dates": "2020-2022", "location": "Test Location", "description": "Test Description"}],
-        resume_experience=[{"title": "Test Job", "organization": "Test Company", "dates": "2020-2022", "location": "Test Location", "description": "Test Description"}]
-    )
-    
-    # Print the model dump
-    print("Test profile dump:", test_profile.model_dump())
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        if self.resume:
+            resume_data = self.resume.model_dump()
+            if not data.get('education_history'):
+                data['education_history'] = resume_data.get('education_history', [])
+            if not data.get('resume_experience'):
+                data['resume_experience'] = resume_data.get('experience', [])
+        return data

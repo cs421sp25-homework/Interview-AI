@@ -19,3 +19,10 @@ class Experience(BaseModel):
 class ResumeData(BaseModel):
     education_history: List[EducationHistory]
     experience: List[Experience]
+
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        # Convert nested models to dictionaries
+        data['education_history'] = [edu.model_dump() for edu in self.education_history]
+        data['experience'] = [exp.model_dump() for exp in self.experience]
+        return data
