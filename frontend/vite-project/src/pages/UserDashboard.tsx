@@ -21,9 +21,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import styles from './UserDashboard.module.css';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const { userEmail, logout } = useAuth();
   const [userData, setUserData] = useState({
     name: '',
     title: '',
@@ -88,24 +90,10 @@ const UserDashboard = () => {
     'Quick Learner'
   ];
 
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      await axios.post('http://localhost:5001/api/auth/logout', {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      // Clear local storage
-      localStorage.removeItem('auth_token');
-      
-      // Redirect to login page
-      navigate('/login');
-      
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    logout();
+    
+    navigate('/');
   };
 
   return (
