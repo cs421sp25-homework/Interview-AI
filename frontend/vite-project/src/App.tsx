@@ -7,6 +7,7 @@ import UserDashboard from './pages/UserDashboard';
 import InterviewPage from './pages/InterviewPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import AuthCallback from './pages/AuthCallback';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <Route path="/interview" element={<InterviewPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
     </Routes>
   );
 }

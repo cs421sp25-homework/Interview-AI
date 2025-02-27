@@ -4,24 +4,24 @@ from typing import List, Optional
 from models.resume_model import ResumeData
 
 class Profile(BaseModel):
-    username: str
+    username: str 
     password: str
     first_name: str
     last_name: str
     email: str
-    phone: str
-    job_title: str
-    experience: str
-    industry: str
-    career_level: str
-    interview_type: str
-    preferred_language: str
-    specialization: str
-    resume_url: str
-    portfolio_url: str
-    linkedin_url: str
-    github_url: str
-    key_skills: str
-    preferred_role: str
-    expectations: str
-    resume: ResumeData
+    phone: str | None = None
+    job_title: str | None = None
+    experience: str | None = None
+    industry: str | None = None
+    career_level: str | None = None
+    interview_type: str | None = None
+    preferred_language: str | None = None
+    specialization: str | None = None
+    resume_url: str | None = None
+    portfolio_url: str | None = None
+    linkedin_url: str | None = None
+    github_url: str | None = None
+    key_skills: str | None = None
+    preferred_role: str | None = None
+    expectations: str | None = None
+    resume: ResumeData | None = None

@@ -1,0 +1,16 @@
+.container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+}
+
+.loader {
+  text-align: center;
+  color: #4b5563;
+}
+
+.loader p {
+  margin-top: 1rem;
+} 
