@@ -31,7 +31,6 @@ const LoginPage = () => {
       if (response.status === 200) {
         console.log('Login successful');
         // Store the email and generate a simple token
-        // In a real app, you'd get a proper token from the backend
         const token = btoa(`${email}:${Date.now()}`); // Simple token generation
         login(email, token);
         navigate('/dashboard');

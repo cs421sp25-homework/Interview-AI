@@ -8,7 +8,7 @@ import InterviewPage from './pages/InterviewPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
-import 'antd/dist/reset.css';
+// import 'antd/dist/reset.css';
 
 function App() {
   return (
