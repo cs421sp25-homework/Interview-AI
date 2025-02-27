@@ -33,7 +33,7 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl: string | null;
+  photoUrl: string | null | undefined;
   education_history: EducationItem[];
   experience: ExperienceItem[];
 }
