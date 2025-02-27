@@ -20,7 +20,7 @@ const LoginPage = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', { email, password });
+      const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
       
       if (response.status === 200) {
         console.log('Login successful');
@@ -34,7 +34,7 @@ const LoginPage = () => {
   const handleOAuthLogin = (provider: string) => {
     console.log(`Logging in with ${provider}`);
     // Redirect to backend OAuth endpoint (update with actual URL)
-    window.location.href = `http://localhost:5000/api/auth/${provider}`;
+    window.location.href = `http://localhost:5001/api/auth/${provider}`;
   };
 
   return (

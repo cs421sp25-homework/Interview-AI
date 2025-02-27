@@ -9,6 +9,8 @@ from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from models.profile_model import Profile
 from models.resume_model import ResumeData
+from services.authorization_service import AuthorizationService
+
 
 # Load environment variables
 load_dotenv()
@@ -23,7 +25,7 @@ supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
-
+authorization_service = AuthorizationService(supabase_url, supabase_key)
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -35,6 +37,7 @@ def profile():
         "about": "A full stack developer who loves Python and JavaScript"
     }
     return jsonify(data)
+
 
 
 @app.route('/api/signup', methods=['POST'])
@@ -170,6 +173,34 @@ def upload_image():
         }), 200
     except Exception as e:
         return jsonify({"error": "Failed to upload image", "message": str(e)}), 500
+
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def email_login():
+    try:
+        data = request.json
+        print(f"data: {data}")
+        email = data.get('email')
+        password = data.get('password')
+
+        if not authorization_service.check_email_exists(email):
+            return jsonify({"error": "You don't have an account with this email"}), 400
+        
+        result = authorization_service.check_user_login(email, password)
+
+        if not result:
+            return jsonify({"error": "Invalid password"}), 401
+        
+        return jsonify({"message": "Login successful"}), 200
+    except Exception as e:
+        print(f"error: {str(e)}")
+        return jsonify({"error": "Login failed"}), 500
+    # except Exception as e:
+    #     print(f"Error in email login: {str(e)}")
+    #     return jsonify({"error": str(e)}), 500
+
+
 
 
 if __name__ == '__main__':
