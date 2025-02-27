@@ -3,12 +3,14 @@ import { Bot, Github, Linkedin, LogIn, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './LoginPage.module.css';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +26,10 @@ const LoginPage = () => {
       
       if (response.status === 200) {
         console.log('Login successful');
+        // Store the email and generate a simple token
+        // In a real app, you'd get a proper token from the backend
+        const token = btoa(`${email}:${Date.now()}`); // Simple token generation
+        login(email, token);
         navigate('/dashboard');
       }
     } catch (error) {
