@@ -4,6 +4,14 @@ from typing import List, Optional
 from models.resume_model import ResumeData
 
 class Profile(BaseModel):
+
+    # Auto-generated or optional columns
+    id: Optional[str] = None
+    created_at: Optional[str] = None
+    about: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_provider: Optional[str] = None
+
     username: str
     password: str
     first_name: str

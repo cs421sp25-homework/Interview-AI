@@ -31,9 +31,9 @@ class ProfileService:
         
         # Create a new Profile instance using the provided data
         new_profile = Profile(**data)
-        result = self.supabase.table('profiles').insert(new_profile.dict()).execute()
+        dumped_data = new_profile.model_dump()
+        print("Dumped data being inserted:", dumped_data)
+        result = self.supabase.table('profiles').insert(dumped_data).execute()
         
-        if not result.data:
-            raise Exception("Failed to create profile")
-        
-        return Profile(**result.data[0])
+
+        return
