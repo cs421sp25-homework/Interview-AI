@@ -109,3 +109,18 @@
 .sendButton:hover {
   background: #db2777;
 } 
+
+
+.ant-menu {
+  background-color: #ec4899 !important;
+}
+
+.ant-menu-item {
+  background-color: #ec4899 !important;
+  color: white !important;
+}
+
+.ant-menu-item-selected {
+  background-color: #c12767 !important; /* Darker pink */
+  color: white !important;
+}

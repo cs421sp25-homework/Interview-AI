@@ -7,8 +7,11 @@ from services.resume_service import ResumeService
 from services.storage_service import StorageService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
+from services.chat_service import ChatService
 from models.profile_model import Profile
 from models.resume_model import ResumeData
+from llm.llm_graph import LLMGraph
+from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 
 
@@ -26,6 +29,7 @@ profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
+llm_graph = LLMGraph()
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -227,6 +231,22 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
+# Chat API
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    user_input = data["message"]
+    thread_id = data.get("thread_id", "default_thread")
+
+    input_message = HumanMessage(content=user_input)
+
+    output = llm_graph.invoke(input_message, thread_id=thread_id)
+
+    if output.get("messages"):
+        ai_response = output["messages"][-1].content
+        return jsonify({"response": ai_response})
+    else:
+        return jsonify({"error": "No response from AI"}), 500
 
 
 if __name__ == '__main__':
