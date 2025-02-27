@@ -74,9 +74,9 @@ def signup():
         print(f"profile_data: {profile_data}")
 
         # No need to create a Profile object here, let the service handle it
-        result = profile_service.create_profile(profile_data)
+        profile_service.create_profile(profile_data)
 
-        return jsonify({"message": "Signup successful", "data": result}), 200
+        return jsonify({"message": "Signup successful"}), 200
     except Exception as e:
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
 

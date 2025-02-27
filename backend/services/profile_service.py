@@ -45,7 +45,7 @@ class ProfileService:
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
             signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password":profile.password})
             
-            return result.data[0] if result.data else None
+            return
         except Exception as e:
             print(f"Error creating profile: {str(e)}")
             raise
