@@ -99,7 +99,9 @@ def get_profile(email):
         profile = profile_service.get_profile(email)
         if not profile:
             return jsonify({"error": "User not found"}), 404
-        print(f"model dumped profile: {profile.model_dump()}")
+        # print(f"model dumped profile: {profile.model_dump()}")
+
+        print(f"profile get")
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
@@ -117,7 +119,7 @@ def get_profile(email):
 def update_profile(email):
     try:
         data = request.json
-        print("hahaReceived data:", data)
+        print("Received data:")
 
         # Call the service to update the profile
         updated_profile = profile_service.update_profile(email, data)

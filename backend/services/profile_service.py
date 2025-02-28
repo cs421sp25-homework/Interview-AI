@@ -24,6 +24,8 @@ class ProfileService:
         # Get the complete current profile
         current_data = check_result.data[0]
 
+        print(f"current_data: {current_data}")
+
         # Create update dict with all original fields
         update_dict = {
             "id": current_data.get("id"),  # Important: Include the primary key
@@ -62,6 +64,8 @@ class ProfileService:
         updated_result = self.supabase.table("profiles").select("*").eq('email', email).execute()
         if not updated_result.data:
             return None  # Failed to retrieve updated data
+        
+        print(f"updated_result: {updated_result.data[0]}")
 
         return updated_result.data[0]  # Return updated profile data
     
