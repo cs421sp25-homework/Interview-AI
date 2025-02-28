@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Bot, User, Save, ArrowLeft, PlusCircle, Trash, FileText } from 'lucide-react';
 import styles from './SettingsPage.module.css';
+import { useAuth } from '../context/AuthContext';
 
 
 interface EducationItem {
@@ -41,6 +42,7 @@ interface UserProfile {
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { userEmail } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -81,10 +83,14 @@ const SettingsPage: React.FC = () => {
  
 
 
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const email = 'jlin111@jh.edu';
+
+        console.log("Fetching profile for email:", userEmail);
+        const email = userEmail || 'test@example.com';
+
         const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
         if (response.data?.data) {
           const userData = response.data.data;
@@ -123,7 +129,7 @@ const SettingsPage: React.FC = () => {
     fetchProfile();
 
 
-  }, []);
+  }, [userEmail]);
   const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
     textarea.style.height = 'auto'; // Reset height
@@ -146,14 +152,15 @@ const SettingsPage: React.FC = () => {
       setPhotoPreview(URL.createObjectURL(file));
     }
   };
+
   const handlePhotoUpload = async () => {
     if (!photoFile) return null;
 
 
     const formData = new FormData();
     formData.append('file', photoFile);
-    // TODO
-    formData.append('email', "jlin111@jh.edu")
+    formData.append('email', userEmail || "test@example.com");
+    console.log("Uploading image for email:", userEmail);
 
 
     try {
@@ -173,6 +180,9 @@ const SettingsPage: React.FC = () => {
       return null;
     }
   };
+
+
+
   const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -189,8 +199,9 @@ const SettingsPage: React.FC = () => {
 
     const formData = new FormData();
     formData.append("resume", file);
-    formData.append("email", "jlin111@jh.edu"); // Adjust as needed
 
+    formData.append("email", userEmail || "test@example.com");
+ 
     try {
       const response = await axios.post('http://localhost:5001/api/parse-resume', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -255,6 +266,7 @@ const SettingsPage: React.FC = () => {
       let imageUrl = profile.photoUrl;
       if (photoFile) {
         imageUrl = await handlePhotoUpload();
+        console.log("Image URL:", imageUrl);
       }
       // Split the name into first and last name
       const [firstName = "", lastName = ""] = profile.name.split(" ", 2);
@@ -280,7 +292,9 @@ const SettingsPage: React.FC = () => {
       console.log("Sending profile update:", updatedProfile);
 
 
-      const email = "jlin111@jh.edu";
+
+      const email = userEmail || "test@example.com";
+
       const response = await axios.put(
         `http://localhost:5001/api/profile/${email}`,
         updatedProfile,

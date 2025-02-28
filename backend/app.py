@@ -97,6 +97,9 @@ def get_profile(email):
     """
     try:
         profile = profile_service.get_profile(email)
+
+        
+
         if not profile:
             return jsonify({"error": "User not found"}), 404
         print(f"model dumped profile: {profile.model_dump()}")
@@ -104,6 +107,8 @@ def get_profile(email):
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
         }), 200
+    
+
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 401
     except Exception as e:
@@ -117,12 +122,15 @@ def get_profile(email):
 def update_profile(email):
     try:
         data = request.json
-        print("hahaReceived data:", data)
+
+        print(f"data: {data}")
 
         # Call the service to update the profile
         updated_profile = profile_service.update_profile(email, data)
         if not updated_profile:
             return jsonify({"error": "User not found or failed to update"}), 404
+        
+        print(f"updated_profile: {updated_profile}")
 
         formatted_response = {
             "name": f"{updated_profile.get('first_name', '')} {updated_profile.get('last_name', '')}".strip(),
@@ -138,6 +146,8 @@ def update_profile(email):
             "education_history": updated_profile.get('education_history', []),
             "experience": updated_profile.get('resume_experience', [])
         }
+
+        print(f"formatted_response: {formatted_response}")
 
         return jsonify({
             "message": "Profile updated successfully",
@@ -192,12 +202,19 @@ def upload_image():
         image_file = request.files['file']
         email = request.form.get('email', 'default_user')
 
+        print(f"Uploading image for email: {email}")
+
         # Validate file
         validate_file(image_file, allowed_types=['image/jpeg', 'image/png', 'image/gif'])
+
+        print(f"Image validated")
 
         # Upload image
         file_path = f"{email}/{image_file.filename}"
         storage_service.upload_file('profile_pics', file_path, image_file.read(), image_file.content_type)
+
+        print(f"File path: {file_path}")
+
         file_url = storage_service.get_public_url('profile_pics', file_path)
 
         return jsonify({
