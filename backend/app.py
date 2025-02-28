@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -242,7 +242,8 @@ def oauth_login(provider):
                 "error": "Invalid provider",
                 "message": f"Provider must be one of: {', '.join(allowed_providers)}"
             }), 400
-        
+        callback_url = f"http://localhost:5001/api/oauth/callback/{provider}"
+
         auth_url = (
             f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
             f"?provider={provider}"
@@ -254,7 +255,7 @@ def oauth_login(provider):
             auth_url = (
                 f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
                 f"?provider=google"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+                f"&redirect_to={callback_url}"
             )
         else:    
             # Build the Supabase OAuth URL with access token
@@ -262,10 +263,12 @@ def oauth_login(provider):
                 f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
                 f"?provider={provider}"
                 f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+                f"&redirect_to={callback_url}"
             )
             
-        print("auth url", auth_url)
+        print("redirecting to", auth_url)
+        print("callback url", callback_url)
+
         # Return a redirect response
         return redirect(auth_url)
 
@@ -275,9 +278,54 @@ def oauth_login(provider):
             "error": "OAuth failed",
             "message": str(e)
         }), 500
-      
-      
-      
+
+
+@app.route('/api/oauth/callback/<provider>', methods=['GET'])
+def oauth_callback(provider):
+    print(f"OAuth callback for {provider}")
+    try:
+        # Log all request data
+        print(f"OAuth callback received for {provider}")
+        print(f"Request args: {request.args}")
+        
+        # Get the access token and other data
+        # access_token = request.args.get('access_token')
+        
+        # Get user info using the token
+        try:
+            user_data = authorization_service.get_current_user()
+            # if access_token:
+            #     user_data = authorization_service.get_user_from_token(access_token)
+            
+            # if not user_data:
+            #     user_data = authorization_service.get_current_user()
+                
+            print(f"User data: {user_data}")
+            
+            if user_data and hasattr(user_data, 'email'):
+                email = user_data.email
+                print(f"User email: {email}")
+                
+                # Check if user exists in your database
+                user_exists = profile_service.get_profile(email) is not None
+                print(f"User exists in database: {user_exists}")
+                
+                if not user_exists:
+                    # Redirect to signup with email
+                    return redirect(f"{os.getenv('FRONTEND_URL')}/signup-oauth?email={email}")
+            else:
+                print("No email found in user data")
+        except Exception as e:
+            print(f"Error getting user data: {str(e)}")
+        
+        # Redirect to dashboard
+        return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard")
+        
+    except Exception as e:
+        print(f"Error in OAuth callback: {str(e)}")
+        return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=callback_failed")
+
+
 # Chat API
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -294,6 +342,39 @@ def chat():
         return jsonify({"response": ai_response})
     else:
         return jsonify({"error": "No response from AI"}), 500
+
+
+
+@app.route('/api/oauth/email', methods=['GET'])
+def get_oauth_email():
+    try:
+        # Get session ID from query params if available
+        session_id = request.args.get('session_id')
+        
+        user = None
+        
+        # If session_id is provided, use it to get the user
+        if session_id:
+            # Get user from session
+            user = authorization_service.get_user_from_session(session_id)
+        else:
+            # Try to get user from cookies or other auth methods
+            user = authorization_service.get_current_user()
+        
+        if not user:
+            # For testing/development, return a dummy email
+            if app.debug:
+                return jsonify({"email": "test@example.com"}), 200
+            return jsonify({"error": "No authenticated user found"}), 401
+            
+        return jsonify({"email": user.email}), 200
+        
+    except Exception as e:
+        print(f"Error getting OAuth email: {str(e)}")
+        # For testing/development, return a dummy email
+        if app.debug:
+            return jsonify({"email": "test@example.com"}), 200
+        return jsonify({"error": "Failed to get OAuth email"}), 500
 
 
 if __name__ == '__main__':

@@ -21,20 +21,17 @@ const LoginPage = () => {
       localStorage.setItem('authToken', token);
       navigate('/dashboard');
     }
-  }, []);
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
+    
+    // Validation
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
     }
-  }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    
     try {
       const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
       
