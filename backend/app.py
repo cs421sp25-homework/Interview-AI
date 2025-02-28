@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -7,9 +7,12 @@ from services.resume_service import ResumeService
 from services.storage_service import StorageService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
+from services.chat_service import ChatService
 from models.profile_model import Profile
 from models.resume_model import ResumeData
-from supabase import create_client
+from llm.llm_graph import LLMGraph
+from langchain.schema.messages import HumanMessage
+from services.authorization_service import AuthorizationService
 
 # Load environment variables
 load_dotenv()
@@ -24,11 +27,9 @@ supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
+authorization_service = AuthorizationService(supabase_url, supabase_key)
+llm_graph = LLMGraph()
 
-supabase = create_client(
-    os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_KEY")
-)
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -42,35 +43,22 @@ def profile():
     return jsonify(data)
 
 
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     """
     Handles user signup, including resume upload and profile creation.
     """
     try:
+        print("signup")
         if 'resume' not in request.files:
             return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
+        
         data = request.form.to_dict()
-
-        # Ensure required fields
-        required_fields = ["email", "password", "firstName", "lastName"]
-        for field in required_fields:
-            if field not in data or not data[field].strip():
-                return jsonify({"error": f"{field} is required"}), 400
-
-        email = data["email"]
-        password = data["password"]
-
-        # Sign up user using Supabase Authentication
-        auth_response = supabase.auth.sign_up({"email": email, "password": password})
-
-        if auth_response.user is None or auth_response.user.id is None:
-            return jsonify({"error": "Failed to create account"}), 401
-
         resume_file = request.files['resume']
 
         # Validate file
-        validate_file(resume_file, allowed_types=['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+        validate_file(resume_file, allowed_types=['application/pdf'])
 
         # Upload resume
         file_path = f"{data['email']}/{resume_file.filename}"
@@ -81,60 +69,87 @@ def signup():
         resume_file.seek(0)
         extraction_result = resume_service.process_resume(resume_file)
 
-        # Insert profile data
+        # Prepare profile data
         profile_data = {
             **data,
             "resume_url": file_url,
-            "resume": extraction_result
+            "education_history": extraction_result.education_history,
+            "resume_experience": extraction_result.experience,
+            "resume": extraction_result.model_dump()
         }
-        result = profile_service.update_profile(data['username'], profile_data)
 
-        return jsonify({"message": "Signup successful", "data": result}), 200
+        # Create profile
+        result = profile_service.create_profile(profile_data)
+
+        return jsonify({
+            "message": "Signup successful",
+            "data": result
+        }), 200
     except Exception as e:
+        print(f"Signup error: {str(e)}")
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
 
 
-@app.route('/api/profile/<username>', methods=['GET'])
-def get_profile(username):
+@app.route('/api/profile/<email>', methods=['GET'])
+def get_profile(email):
     """
-    Retrieves a user's profile by username.
+    Retrieves a user's profile by email.
     """
     try:
-        profile = profile_service.get_profile(username)
+        profile = profile_service.get_profile(email)
         if not profile:
             return jsonify({"error": "User not found"}), 404
-
+        print(f"model dumped profile: {profile.model_dump()}")
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
         }), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 401
     except Exception as e:
+        print(f"Error in get_profile route: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get profile", "message": str(e)}), 500
 
 
-@app.route('/api/profile/<username>', methods=['PUT'])
-def update_profile(username):
-    """
-    Updates a user's profile.
-    """
+@app.route('/api/profile/<email>', methods=['PUT'])
+def update_profile(email):
     try:
         data = request.json
+        print("hahaReceived data:", data)
 
-        # Fetch current profile
-        current_profile = profile_service.get_profile(username)
-        if not current_profile:
-            return jsonify({"error": "User not found"}), 404
+        # Call the service to update the profile
+        updated_profile = profile_service.update_profile(email, data)
+        if not updated_profile:
+            return jsonify({"error": "User not found or failed to update"}), 404
 
-        # Update profile
-        updated_profile = current_profile.model_copy(update=data)
-        result = profile_service.update_profile(username, updated_profile.model_dump())
+        formatted_response = {
+            "name": f"{updated_profile.get('first_name', '')} {updated_profile.get('last_name', '')}".strip(),
+            "title": updated_profile.get('job_title', ''),
+            "email": updated_profile.get('email', ''),
+            "phone": updated_profile.get('phone', ''),
+            "skills": updated_profile.get('key_skills', '').split(',') if updated_profile.get('key_skills') else [],
+            "about": updated_profile.get('about', ''),
+            "linkedin": updated_profile.get('linkedin_url', ''),
+            "github": updated_profile.get('github_url', ''),
+            "portfolio": updated_profile.get('portfolio_url', ''),
+            "photoUrl": updated_profile.get('photo_url', ''),
+            "education_history": updated_profile.get('education_history', []),
+            "experience": updated_profile.get('resume_experience', [])
+        }
 
         return jsonify({
             "message": "Profile updated successfully",
-            "data": result
+            "data": formatted_response
         }), 200
+
     except Exception as e:
-        return jsonify({"error": "Failed to update profile", "message": str(e)}), 500
+        print("Error updating profile:", str(e))
+        return jsonify({
+            "error": "Failed to update profile",
+            "message": str(e)
+        }), 500
 
 
 @app.route('/api/parse-resume', methods=['POST'])
@@ -175,13 +190,13 @@ def upload_image():
             return jsonify({"message": "No image uploaded", "url": None}), 200
 
         image_file = request.files['file']
-        username = request.form.get('username', 'default_user')
+        email = request.form.get('email', 'default_user')
 
         # Validate file
         validate_file(image_file, allowed_types=['image/jpeg', 'image/png', 'image/gif'])
 
         # Upload image
-        file_path = f"{username}/{image_file.filename}"
+        file_path = f"{email}/{image_file.filename}"
         storage_service.upload_file('profile_pics', file_path, image_file.read(), image_file.content_type)
         file_url = storage_service.get_public_url('profile_pics', file_path)
 
@@ -192,50 +207,31 @@ def upload_image():
     except Exception as e:
         return jsonify({"error": "Failed to upload image", "message": str(e)}), 500
 
-# Email/Password Login 
+
+
 @app.route('/api/auth/login', methods=['POST'])
 def email_login():
     try:
         data = request.json
+        print(f"data: {data}")
         email = data.get('email')
         password = data.get('password')
 
-        if not email or not password:
-            return jsonify({"error": "Email and password are required"}), 400
+        if not authorization_service.check_email_exists(email):
+            return jsonify({"error": "You don't have an account with this email"}), 400
+        
+        result = authorization_service.check_user_login(email, password)
 
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-
-        if "error" in response:
-            return jsonify({"error": "Invalid email or password"}), 401
-
-        user = response.user
-        user_id = user.id
-
-        existing_user = supabase.table('profiles').select('*').eq('email', email).execute()
-
-        if not existing_user.data:
-            supabase.table('profiles').insert({
-                "id": user_id, 
-                "email": email,
-                "first_name": user.user_metadata.get("first_name", ""),
-                "last_name": user.user_metadata.get("last_name", ""),
-                "auth_provider": "email"
-            }).execute()
-
-        return jsonify({
-            "message": "Login successful",
-            "user": {
-                "id": user_id,
-                "email": email,
-                "token": response.session.access_token
-            }
-        }), 200
-
+        if not result:
+            return jsonify({"error": "Invalid password"}), 401
+        
+        return jsonify({"message": "Login successful"}), 200
     except Exception as e:
-        print(f"Error in email login: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print(f"error: {str(e)}")
+        return jsonify({"error": "Login failed"}), 500
 
-# OAuth Login 
+
+
 @app.route('/api/oauth/<provider>', methods=['GET'])
 def oauth_login(provider):
     try:
@@ -279,48 +275,25 @@ def oauth_login(provider):
             "error": "OAuth failed",
             "message": str(e)
         }), 500
+      
+      
+      
+# Chat API
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    user_input = data["message"]
+    thread_id = data.get("thread_id", "default_thread")
 
-@app.route('/api/auth/callback', methods=['GET'])
-def auth_callback():
-    try:
-        print("auth callback")
-        access_token = request.args.get("access_token")
-        if not access_token:
-            return jsonify({"error": "Access token missing"}), 400
+    input_message = HumanMessage(content=user_input)
 
-        supabase.auth.session = {"access_token": access_token}
-        user = supabase.auth.get_user()
+    output = llm_graph.invoke(input_message, thread_id=thread_id)
 
-        if "error" in user:
-            return jsonify({"error": "Invalid token"}), 401
-
-        user_data = user["user"]
-        user_email = user_data["email"]
-        user_id = user_data["id"]
-        provider = user_data["app_metadata"]["provider"]
-
-        existing_user = supabase.table('profiles').select('*').eq('email', user_email).execute()
-
-        if not existing_user.data:
-            supabase.table('profiles').insert({
-                "id": user_id, 
-                "email": user_email,
-                "first_name": user_data.get("user_metadata", {}).get("first_name", ""),
-                "last_name": user_data.get("user_metadata", {}).get("last_name", ""),
-                "auth_provider": provider
-            }).execute()
-
-        return jsonify({
-            "message": "OAuth login successful",
-            "user": {
-                "id": user_id,
-                "email": user_email,
-                "provider": provider
-            }
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if output.get("messages"):
+        ai_response = output["messages"][-1].content
+        return jsonify({"response": ai_response})
+    else:
+        return jsonify({"error": "No response from AI"}), 500
 
 
 if __name__ == '__main__':

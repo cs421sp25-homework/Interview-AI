@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Bot, User, Save, ArrowLeft, PlusCircle, Trash } from 'lucide-react';
+import { Bot, User, Save, ArrowLeft, PlusCircle, Trash, FileText } from 'lucide-react';
 import styles from './SettingsPage.module.css';
 
 
@@ -33,7 +33,7 @@ interface UserProfile {
   linkedin: string;
   github: string;
   portfolio: string;
-  photoUrl: string | null;
+  photoUrl: string | null | undefined;
   education_history: EducationItem[];
   experience: ExperienceItem[];
 }
@@ -81,23 +81,18 @@ const SettingsPage: React.FC = () => {
  
 
 
-
-
-
-
-
-
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const username = 'RyanTestNew';
-        const response = await axios.get(`http://localhost:5001/api/profile/${username}`);
+        const email = 'jlin111@jh.edu';
+        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
         if (response.data?.data) {
           const userData = response.data.data;
+          console.log(response.data)
           const profileData: UserProfile = {
             name: `${userData.first_name} ${userData.last_name}`,
             title: userData.job_title || '',
-            email: userData.email || '',
+            email: email || '',
             phone: userData.phone || '',
             skills: Array.isArray(userData.key_skills)
               ? userData.key_skills
@@ -109,8 +104,8 @@ const SettingsPage: React.FC = () => {
             github: userData.github_url || '',
             portfolio: userData.portfolio_url || '',
             photoUrl: userData.photo_url || null,
-            education_history: Array.isArray(userData.education_history) ? userData.education_history : [],
-            experience: Array.isArray(userData.resume_experience) ? userData.resume_experience : []
+            education_history: userData.education_history || userData.resume?.education_history,
+            experience: userData.resume_experience || userData.resume?.experience
           };
 
 
@@ -124,6 +119,7 @@ const SettingsPage: React.FC = () => {
         setLoading(false);
       }
     };
+
     fetchProfile();
 
 
@@ -157,7 +153,7 @@ const SettingsPage: React.FC = () => {
     const formData = new FormData();
     formData.append('file', photoFile);
     // TODO
-    formData.append('username', "RyanTestNew")
+    formData.append('email', "jlin111@jh.edu")
 
 
     try {
@@ -180,38 +176,53 @@ const SettingsPage: React.FC = () => {
   const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
- 
+
     // Ensure it's a PDF file
     if (file.type !== "application/pdf") {
       alert("Please upload a valid PDF file.");
       return;
     }
- 
+
     setResumeFile(file);
     setResumeName(file.name);
     setUploading(true);
- 
+
     const formData = new FormData();
     formData.append("resume", file);
-    formData.append("username", "RyanTestNew"); // Adjust as needed
- 
+    formData.append("email", "jlin111@jh.edu"); // Adjust as needed
+
     try {
       const response = await axios.post('http://localhost:5001/api/parse-resume', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
- 
+
       if (response.status === 200) {
-        const data = response.data;
-        setProfile((prev) => ({
+        const resumeData = response.data.resume;
+        console.log("Parsed resume data:", resumeData);
+
+        setProfile(prev => ({
           ...prev,
-          education_history: data.education_history || prev.education_history,
-          experience: data.experience || prev.experience
+          education_history: resumeData.education_history || [],
+          experience: resumeData.experience || []
         }));
-        console.log("Resume parsed and profile updated:", data);
+
+        const email = "jlin111@jh.edu"
+        const updateResponse = await axios.put(
+          `http://localhost:5001/api/profile/${email}`,
+          {
+            education_history: resumeData.education_history,
+            resume_experience: resumeData.experience
+          },
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+
+        console.log("Profile updated with new resume data:", updateResponse.data);
       }
     } catch (error) {
-      console.error("Error parsing resume:", error);
-      alert("Failed to parse resume. Please try again.");
+      console.error("Error processing resume:", error);
+      alert("Failed to process resume. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -250,17 +261,17 @@ const SettingsPage: React.FC = () => {
 
 
       const updatedProfile = {
-        firstName: firstName,
-        lastName: lastName,
-        jobTitle: profile.title,
+        first_name: firstName,
+        last_name: lastName,
+        job_title: profile.title,
         email: profile.email,
         phone: profile.phone,
-        keySkills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
+        key_skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
         about: profile.about,
-        linkedinUrl: profile.linkedin,
-        githubUrl: profile.github,
-        portfolioUrl: profile.portfolio,
-        photoUrl: imageUrl || profile.photoUrl || null,
+        linkedin_url: profile.linkedin,
+        github_url: profile.github,
+        portfolio_url: profile.portfolio,
+        photo_url: imageUrl || profile.photoUrl || null,
         education_history: profile.education_history || [],
         resume_experience: profile.experience || []
       };
@@ -269,9 +280,9 @@ const SettingsPage: React.FC = () => {
       console.log("Sending profile update:", updatedProfile);
 
 
-      const username = "RyanTestNew";
+      const email = "jlin111@jh.edu";
       const response = await axios.put(
-        `http://localhost:5001/api/profile/${username}`,
+        `http://localhost:5001/api/profile/${email}`,
         updatedProfile,
         {
           headers: {
@@ -380,7 +391,11 @@ const SettingsPage: React.FC = () => {
   {/* Avatar Image or Default Icon */}
   <div className={styles.avatar}>
     {photoPreview || profile?.photoUrl ? (
-      <img src={photoPreview || profile?.photoUrl} alt="Profile" className={styles.avatarImage} />
+      <img 
+        src={photoPreview || profile?.photoUrl || ''} 
+        alt="Profile" 
+        className={styles.avatarImage} 
+      />
     ) : (
       <User size={48} color="#ec4899" />
     )}
@@ -397,8 +412,12 @@ const SettingsPage: React.FC = () => {
 
 
   {/* Change Photo Button */}
-  <button className={styles.uploadButton} onClick={() => document.getElementById('photoUpload')?.click()}>
-    Change Photo
+  <button 
+    className={styles.uploadButton} 
+    onClick={() => document.getElementById('photoUpload')?.click()}
+  >
+    <User size={20} />
+    <span>Change Photo</span>
   </button>
 
 
@@ -410,15 +429,31 @@ const SettingsPage: React.FC = () => {
     style={{ display: 'none' }}
     id="resumeUpload"
   />
-  <button
-    className={styles.uploadButton}
-    onClick={() => document.getElementById('resumeUpload')?.click()}
-    disabled={uploading} // Disable button when uploading
-  >
-    {uploading ? "Uploading & Parsing..." : "Upload Resume PDF"}
-  </button>
-  {uploading && <p className={styles.loadingText}>Processing resume, please wait...</p>}
-  {resumeName && !uploading && <p className={styles.fileName}>Selected: {resumeName}</p>}
+  <div className={styles.resumeUploadContainer}>
+    <button
+      className={`${styles.uploadButton} ${uploading ? styles.uploading : ''}`}
+      onClick={() => document.getElementById('resumeUpload')?.click()}
+      disabled={uploading}
+    >
+      {uploading ? (
+        <div className={styles.uploadingMessage}>
+          <div className={styles.uploadSpinner}></div>
+          <span>Processing your resume...</span>
+        </div>
+      ) : (
+        <>
+          <FileText size={20} />
+          <span>Upload Resume PDF</span>
+        </>
+      )}
+    </button>
+    {resumeName && !uploading && (
+      <div className={styles.fileInfo}>
+        <FileText size={16} />
+        <span className={styles.fileName}>{resumeName}</span>
+      </div>
+    )}
+  </div>
 </div>
 
 

@@ -1,23 +1,31 @@
-# The interactive window for using langchain, might not be used in actual app
+# llm_graph.py
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from .llm_interface import LLMInterface
+
 
 class LLMGraph:
     def __init__(self):
         self.llm_interface = LLMInterface()
         self.workflow = StateGraph(state_schema=MessagesState)
+
         self._setup_workflow()
 
     def _setup_workflow(self):
         """Set up the LangGraph workflow."""
+
         def call_model(state: MessagesState):
+            # state["messages"] contains the entire conversation so far
             response = self.llm_interface.invoke(state["messages"])
             return {"messages": response}
 
+        # Single node in the graph
         self.workflow.add_node("model", call_model)
         self.workflow.add_edge(START, "model")
-        self.chat_app = self.workflow.compile(checkpointer=MemorySaver())
+
+        # MemorySaver to persist conversation
+        self.memory = MemorySaver()
+        self.chat_app = self.workflow.compile(checkpointer=self.memory)
 
     def invoke(self, input_message, thread_id="default_thread"):
         """

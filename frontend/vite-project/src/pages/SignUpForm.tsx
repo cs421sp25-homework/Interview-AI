@@ -32,6 +32,7 @@ interface FormData {
 const MultiStepForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     username: '',
     password: '',
@@ -175,13 +176,13 @@ const MultiStepForm = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // e.preventDefault(); // Already prevented in the onSubmit callback.
+    e.preventDefault();
     if (currentStep !== 6) return;
-
+    
     try {
+      setIsSubmitting(true);
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        // Optionally skip fields not needed on the backend (e.g., confirmPasswordError)
         if (value !== null) {
           formDataToSend.append(key, value);
         }
@@ -199,7 +200,9 @@ const MultiStepForm = () => {
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      // Optionally display an error message to the user
+      alert('Failed to submit form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -511,14 +514,11 @@ const MultiStepForm = () => {
               }
             }
           }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (currentStep === 6) {
-              handleSubmit(e);
-            }
-          }}
+          onSubmit={handleSubmit}
       >
-        <div className={styles.formContent}>{renderStep()}</div>
+        <div className={styles.formContent}>
+          {renderStep()}
+        </div>
 
         <div className={styles.formNavigation}>
           {currentStep > 1 && (
@@ -544,16 +544,20 @@ const MultiStepForm = () => {
           ) : (
               <button 
                   type="submit" 
-                  className={styles.buttonPrimary}
-                  onClick={(e) => {
-                    if (currentStep !== 6) {
-                      e.preventDefault();
-                      return;
-                    }
-                  }}
+                  className={`${styles.buttonPrimary} ${isSubmitting ? styles.submitting : ''}`}
+                  disabled={isSubmitting}
               >
-                Submit
-                <CheckCircle size={20}/>
+                {isSubmitting ? (
+                  <div className={styles.loadingMessage}>
+                    <div className={styles.spinner}></div>
+                    <p>Processing your resume, please wait a moment...</p>
+                  </div>
+                ) : (
+                  <>
+                    Submit
+                    <CheckCircle size={20}/>
+                  </>
+                )}
               </button>
           )}
         </div>

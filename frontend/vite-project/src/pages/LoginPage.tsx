@@ -3,12 +3,15 @@ import { Bot, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styles from './LoginPage.module.css';
+import { useAuth } from '../context/AuthContext';
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     // Check if redirected from OAuth with token
@@ -28,20 +31,25 @@ const LoginPage = () => {
       setError('Please enter both email and password.');
       return;
     }
+  }, []);
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const response = await axios.post(
-        'http://localhost:5001/api/auth/login',
-        { email, password },
-      );
-
+      const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+      
       if (response.status === 200) {
         localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
+        // Store the email and generate a simple token
+        // In a real app, you'd get a proper token from the backend
+        const token = btoa(`${email}:${Date.now()}`); // Simple token generation
+        login(email, token);
         navigate('/dashboard');
       }
     } catch (error) {
-      setError('Invalid email or password. Please try again.');
+      console.error('Login failed:', error);
+      setError('Invalid email or password');
     }
   };
 
@@ -66,7 +74,7 @@ const LoginPage = () => {
           <p>Access your interview practice portal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.formCard}>
+        <form onSubmit={handleLogin} className={styles.formCard}>
           {error && <p className={styles.errorMessage}>{error}</p>}
 
           <div className={styles.formGroup}>
