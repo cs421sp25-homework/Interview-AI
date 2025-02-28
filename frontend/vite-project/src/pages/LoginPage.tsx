@@ -21,14 +21,22 @@ const LoginPage = () => {
       localStorage.setItem('authToken', token);
       navigate('/dashboard');
     }
-  }, []);
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    
     try {
       const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
       
       if (response.status === 200) {
+        localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
         // Store the email and generate a simple token
         const token = btoa(`${email}:${Date.now()}`); // Simple token generation
@@ -42,9 +50,7 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    console.log(`Logging in with ${provider}`);
-    // Redirect to backend OAuth endpoint (update with actual URL)
-    window.location.href = `http://localhost:5001/api/auth/${provider}`;
+    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
   };
 
   return (

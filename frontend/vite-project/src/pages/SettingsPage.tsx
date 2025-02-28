@@ -25,7 +25,8 @@ interface ExperienceItem {
 
 
 interface UserProfile {
-  name: string;
+  firstName: string;
+  lastName: string;
   title: string;
   email: string;
   phone: string;
@@ -52,7 +53,8 @@ const SettingsPage: React.FC = () => {
 
 
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
+    firstName: '',
+    lastName: '',
     title: '',
     email: '',
     phone: '',
@@ -68,7 +70,8 @@ const SettingsPage: React.FC = () => {
 
 
   const [errors, setErrors] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     linkedin: '',
@@ -96,7 +99,8 @@ const SettingsPage: React.FC = () => {
           const userData = response.data.data;
           console.log(response.data)
           const profileData: UserProfile = {
-            name: `${userData.first_name} ${userData.last_name}`,
+            firstName: userData.first_name || '',
+            lastName: userData.last_name || '',
             title: userData.job_title || '',
             email: email || '',
             phone: userData.phone || '',
@@ -110,8 +114,8 @@ const SettingsPage: React.FC = () => {
             github: userData.github_url || '',
             portfolio: userData.portfolio_url || '',
             photoUrl: userData.photo_url || null,
-            education_history: userData.education_history || userData.resume?.education_history,
-            experience: userData.resume_experience || userData.resume?.experience
+            education_history: userData.education_history || userData.resume?.education_history || [],
+            experience: userData.resume_experience || userData.resume?.experience || []
           };
 
 
@@ -246,76 +250,97 @@ const SettingsPage: React.FC = () => {
 
 
   const handleSave = async () => {
+    // Validate inputs
+    let hasErrors = false;
+    const newErrors = { ...errors };
+    
+    if (!validateName(profile.firstName)) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+      hasErrors = true;
+    } else {
+      newErrors.firstName = '';
+    }
+    
+    if (!validateName(profile.lastName)) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+      hasErrors = true;
+    } else {
+      newErrors.lastName = '';
+    }
+    
+    if (!validateEmail(profile.email)) {
+      newErrors.email = 'Invalid email address';
+      hasErrors = true;
+    } else {
+      newErrors.email = '';
+    }
+    
+    if (!validatePhone(profile.phone)) {
+      newErrors.phone = 'Invalid phone number';
+      hasErrors = true;
+    } else {
+      newErrors.phone = '';
+    }
+    
+    if (!validateURL(profile.linkedin)) {
+      newErrors.linkedin = 'Invalid URL';
+      hasErrors = true;
+    } else {
+      newErrors.linkedin = '';
+    }
+    
+    if (!validateURL(profile.github)) {
+      newErrors.github = 'Invalid URL';
+      hasErrors = true;
+    } else {
+      newErrors.github = '';
+    }
+    
+    if (!validateURL(profile.portfolio)) {
+      newErrors.portfolio = 'Invalid URL';
+      hasErrors = true;
+    } else {
+      newErrors.portfolio = '';
+    }
+    
+    setErrors(newErrors);
+    if (hasErrors) return;
+    
     try {
-      const newErrors = {
-        name: validateName(profile.name) ? '' : 'Name must be at least 2 characters',
-        email: validateEmail(profile.email) ? '' : 'Invalid email address',
-        phone: validatePhone(profile.phone) ? '' : 'Invalid phone number',
-        linkedin: validateURL(profile.linkedin) ? '' : 'Invalid URL',
-        github: validateURL(profile.github) ? '' : 'Invalid URL',
-        portfolio: validateURL(profile.portfolio) ? '' : 'Invalid URL'
-      };
-
-
-      setErrors(newErrors);
-
-
-      if (Object.values(newErrors).some((error) => error !== '')) {
-        return;
-      }
+      setUploading(true);
+      
+      // Upload photo if changed
       let imageUrl = profile.photoUrl;
       if (photoFile) {
         imageUrl = await handlePhotoUpload();
         console.log("Image URL:", imageUrl);
       }
-      // Split the name into first and last name
-      const [firstName = "", lastName = ""] = profile.name.split(" ", 2);
-
-
-      const updatedProfile = {
-        first_name: firstName,
-        last_name: lastName,
-        job_title: profile.title,
-        email: profile.email,
+      
+      // Update profile
+      const updateData = {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        jobTitle: profile.title,
         phone: profile.phone,
-        key_skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
+        keySkills: profile.skills.join(', '),
         about: profile.about,
-        linkedin_url: profile.linkedin,
-        github_url: profile.github,
-        portfolio_url: profile.portfolio,
+        linkedinUrl: profile.linkedin,
+        githubUrl: profile.github,
+        portfolioUrl: profile.portfolio,
         photo_url: imageUrl || profile.photoUrl || null,
-        education_history: profile.education_history || [],
-        resume_experience: profile.experience || []
+        education_history: profile.education_history,
+        resume_experience: profile.experience
       };
-
-
-      console.log("Sending profile update:", updatedProfile);
-
-
-
-      const email = userEmail || "test@example.com";
-
-      const response = await axios.put(
-        `http://localhost:5001/api/profile/${email}`,
-        updatedProfile,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-
-      console.log("Update response:", response.data);
+      
+      await axios.put(`http://localhost:5001/api/profile/${profile.email}`, updateData);
+      alert('Profile updated successfully!');
+      
       navigate('/dashboard');
     } catch (err) {
-      console.error('Error saving profile:', err);
-      if (axios.isAxiosError(err)) {
-        console.error('Response data:', err.response?.data);
-        setError(err.response?.data?.message || 'Failed to save profile changes');
-      } else {
-        setError('Failed to save profile changes');
-      }
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -480,8 +505,17 @@ const SettingsPage: React.FC = () => {
     {/* Form Fields */}
     {[
       {
-        label: 'Full Name',
-        value: profile.name, error: errors.name, onChange: (v: string) => setProfile({ ...profile, name: v }) },
+        label: 'First Name',
+        value: profile.firstName,
+        error: errors.firstName,
+        onChange: (v: string) => setProfile({ ...profile, firstName: v })
+      },
+      {
+        label: 'Last Name',
+        value: profile.lastName,
+        error: errors.lastName,
+        onChange: (v: string) => setProfile({ ...profile, lastName: v })
+      },
       { label: 'Job Title', value: profile.title, error: '', onChange: (v: string) => setProfile({ ...profile, title: v }) },
       { label: 'Email', value: profile.email, error: errors.email, onChange: (v: string) => setProfile({ ...profile, email: v }) },
       { label: 'Phone', value: profile.phone, error: errors.phone, onChange: (v: string) => setProfile({ ...profile, phone: v }) },
@@ -616,8 +650,6 @@ const SettingsPage: React.FC = () => {
 {/* Save Button */}
 <button className={styles.saveButton} onClick={handleSave}><Save size={20}/> Save Changes</button>
       </main>
-
-
     </div>
   );
 };

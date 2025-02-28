@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
+import requests
 from dotenv import load_dotenv
 import os
 from services.profile_service import ProfileService
@@ -13,7 +14,6 @@ from models.resume_model import ResumeData
 from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
-
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +30,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
+
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -102,7 +103,9 @@ def get_profile(email):
 
         if not profile:
             return jsonify({"error": "User not found"}), 404
-        print(f"model dumped profile: {profile.model_dump()}")
+        # print(f"model dumped profile: {profile.model_dump()}")
+
+        print(f"profile get")
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
@@ -122,8 +125,7 @@ def get_profile(email):
 def update_profile(email):
     try:
         data = request.json
-
-        print(f"data: {data}")
+        print("Received data:")
 
         # Call the service to update the profile
         updated_profile = profile_service.update_profile(email, data)
@@ -248,6 +250,72 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
+
+# @app.route('/api/oauth/<provider>', methods=['GET'])
+# def oauth_login(provider):
+#     allowed_providers = ['google', 'github']
+#     if provider not in allowed_providers:
+#         return jsonify({"error": "Invalid provider"}), 400
+
+#     callback_url = f"{os.getenv('BACKEND_URL')}/api/oauth/callback/{provider}"
+
+#     # Build PKCE-based OAuth URL (server-side flow)
+#     # with Google-specific query params if you want offline access (refresh token).
+#     from urllib.parse import urlencode
+
+#     base_url = f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+#     query = {
+#         "provider": provider,
+#         "response_type": "code",       # ensure we get a 'code'
+#         "type": "pkce",                # PKCE flow
+#         "redirect_to": callback_url,   # must match one in your Supabase redirect list
+#         "scopes": "openid email"
+#     }
+
+#     # If you want a Google refresh token:
+#     if provider == 'google':
+#         query["access_type"] = "offline"
+#         query["prompt"] = "consent"
+
+#     auth_url = f"{base_url}?{urlencode(query)}"
+#     print("Redirecting to:", auth_url)
+#     return redirect(auth_url)
+
+
+
+# @app.route('/api/oauth/callback/<provider>', methods=['GET'])
+# def oauth_callback(provider):
+#     code = request.args.get('code')
+#     if not code:
+#         # Possibly user arrived with an existing session (no code).
+#         print("No 'code' param - checking for existing session...")
+
+#         # If your 'authorization_service' checks cookies or session for an existing user:
+#         user_data = authorization_service.get_current_user()
+#         if user_data:
+#             # Return user’s profile info
+#             return jsonify({
+#                 "message": "User already has a session",
+#                 "user": {
+#                     "email": user_data.email,
+#                     # ...any other fields
+#                 }
+#             }), 200
+#         else:
+#             # No code, no existing session => redirect or error
+#             return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=no_code_no_session")
+    
+#     # Otherwise handle the normal code-exchange flow...
+#     try:
+#         # Exchange code for tokens
+#         # ...
+#         return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard")
+#     except Exception as exc:
+#         return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=callback_failed")
+
+
+
+
 # Chat API
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -264,6 +332,39 @@ def chat():
         return jsonify({"response": ai_response})
     else:
         return jsonify({"error": "No response from AI"}), 500
+
+
+
+@app.route('/api/oauth/email', methods=['GET'])
+def get_oauth_email():
+    try:
+        # Get session ID from query params if available
+        session_id = request.args.get('session_id')
+        
+        user = None
+        
+        # If session_id is provided, use it to get the user
+        if session_id:
+            # Get user from session
+            user = authorization_service.get_user_from_session(session_id)
+        else:
+            # Try to get user from cookies or other auth methods
+            user = authorization_service.get_current_user()
+        
+        if not user:
+            # For testing/development, return a dummy email
+            if app.debug:
+                return jsonify({"email": "test@example.com"}), 200
+            return jsonify({"error": "No authenticated user found"}), 401
+            
+        return jsonify({"email": user.email}), 200
+        
+    except Exception as e:
+        print(f"Error getting OAuth email: {str(e)}")
+        # For testing/development, return a dummy email
+        if app.debug:
+            return jsonify({"email": "test@example.com"}), 200
+        return jsonify({"error": "Failed to get OAuth email"}), 500
 
 
 if __name__ == '__main__':

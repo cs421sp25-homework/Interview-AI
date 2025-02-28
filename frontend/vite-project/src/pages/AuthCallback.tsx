@@ -31,6 +31,7 @@ const AuthCallback = () => {
       return;
     }
 
+
     if (access_token) {
       // Store tokens
       localStorage.setItem('auth_token', access_token);
