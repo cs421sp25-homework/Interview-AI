@@ -14,7 +14,6 @@ from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 
-
 # Load environment variables
 load_dotenv()
 
@@ -30,6 +29,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
+
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -231,6 +231,53 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
+
+@app.route('/api/oauth/<provider>', methods=['GET'])
+def oauth_login(provider):
+    try:
+        # Validate provider
+        allowed_providers = ['google', 'github']
+        if provider not in allowed_providers:
+            return jsonify({
+                "error": "Invalid provider",
+                "message": f"Provider must be one of: {', '.join(allowed_providers)}"
+            }), 400
+        
+        auth_url = (
+            f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+            f"?provider={provider}"
+            f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
+            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+        )
+        
+        if provider == "google":
+            auth_url = (
+                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+                f"?provider=google"
+                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+            )
+        else:    
+            # Build the Supabase OAuth URL with access token
+            auth_url = (
+                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+                f"?provider={provider}"
+                f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
+                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
+            )
+            
+        print("auth url", auth_url)
+        # Return a redirect response
+        return redirect(auth_url)
+
+    except Exception as e:
+        print(f"Error in {provider} OAuth: {str(e)}")
+        return jsonify({
+            "error": "OAuth failed",
+            "message": str(e)
+        }), 500
+      
+      
+      
 # Chat API
 @app.route("/api/chat", methods=["POST"])
 def chat():

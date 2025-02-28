@@ -23,12 +23,23 @@ const LoginPage = () => {
     }
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
       
       if (response.status === 200) {
+        localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
         // Store the email and generate a simple token
         // In a real app, you'd get a proper token from the backend
@@ -43,9 +54,7 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    console.log(`Logging in with ${provider}`);
-    // Redirect to backend OAuth endpoint (update with actual URL)
-    window.location.href = `http://localhost:5001/api/auth/${provider}`;
+    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
   };
 
   return (
