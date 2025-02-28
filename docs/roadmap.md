@@ -3,7 +3,7 @@ Dates: 2/17 - 3/2\
 Goal: Foundational user authentication, profile setup, resume analysis.
 
 #### Must-Have Features:
-- As a user, I want to sign up/login using email/password or third-party authentication (Google, Github) and log out, so that I can easily access my interview preparation account and keep my account protected when I am done using the app.
+- As a user, I want to sign up/login using email/password or third-party authentication (Google) and log out, so that I can easily access my interview preparation account and keep my account protected when I am done using the app.
 
 - As a user, I want to have a profile page that allows me to upload my resume to generate my profile and also manually edit any fields, including name, role, past experience, area of expertise, etc, so that the app can tailor my interview sessions to my background.
 
