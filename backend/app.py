@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
+import requests
 from dotenv import load_dotenv
 import os
 from services.profile_service import ProfileService
@@ -234,98 +235,69 @@ def email_login():
 
 
 
-@app.route('/api/oauth/<provider>', methods=['GET'])
-def oauth_login(provider):
-    try:
-        # Validate provider
-        allowed_providers = ['google', 'github']
-        if provider not in allowed_providers:
-            return jsonify({
-                "error": "Invalid provider",
-                "message": f"Provider must be one of: {', '.join(allowed_providers)}"
-            }), 400
-        callback_url = f"http://localhost:5001/api/oauth/callback/{provider}"
+# @app.route('/api/oauth/<provider>', methods=['GET'])
+# def oauth_login(provider):
+#     allowed_providers = ['google', 'github']
+#     if provider not in allowed_providers:
+#         return jsonify({"error": "Invalid provider"}), 400
 
-        auth_url = (
-            f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-            f"?provider={provider}"
-            f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
-        )
-        
-        if provider == "google":
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider=google"
-                f"&redirect_to={callback_url}"
-            )
-        else:    
-            # Build the Supabase OAuth URL with access token
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider={provider}"
-                f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-                f"&redirect_to={callback_url}"
-            )
-            
-        print("redirecting to", auth_url)
-        print("callback url", callback_url)
+#     callback_url = f"{os.getenv('BACKEND_URL')}/api/oauth/callback/{provider}"
 
-        # Return a redirect response
-        return redirect(auth_url)
+#     # Build PKCE-based OAuth URL (server-side flow)
+#     # with Google-specific query params if you want offline access (refresh token).
+#     from urllib.parse import urlencode
 
-    except Exception as e:
-        print(f"Error in {provider} OAuth: {str(e)}")
-        return jsonify({
-            "error": "OAuth failed",
-            "message": str(e)
-        }), 500
+#     base_url = f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+#     query = {
+#         "provider": provider,
+#         "response_type": "code",       # ensure we get a 'code'
+#         "type": "pkce",                # PKCE flow
+#         "redirect_to": callback_url,   # must match one in your Supabase redirect list
+#         "scopes": "openid email"
+#     }
+
+#     # If you want a Google refresh token:
+#     if provider == 'google':
+#         query["access_type"] = "offline"
+#         query["prompt"] = "consent"
+
+#     auth_url = f"{base_url}?{urlencode(query)}"
+#     print("Redirecting to:", auth_url)
+#     return redirect(auth_url)
 
 
-@app.route('/api/oauth/callback/<provider>', methods=['GET'])
-def oauth_callback(provider):
-    print(f"OAuth callback for {provider}")
-    try:
-        # Log all request data
-        print(f"OAuth callback received for {provider}")
-        print(f"Request args: {request.args}")
-        
-        # Get the access token and other data
-        # access_token = request.args.get('access_token')
-        
-        # Get user info using the token
-        try:
-            user_data = authorization_service.get_current_user()
-            # if access_token:
-            #     user_data = authorization_service.get_user_from_token(access_token)
-            
-            # if not user_data:
-            #     user_data = authorization_service.get_current_user()
-                
-            print(f"User data: {user_data}")
-            
-            if user_data and hasattr(user_data, 'email'):
-                email = user_data.email
-                print(f"User email: {email}")
-                
-                # Check if user exists in your database
-                user_exists = profile_service.get_profile(email) is not None
-                print(f"User exists in database: {user_exists}")
-                
-                if not user_exists:
-                    # Redirect to signup with email
-                    return redirect(f"{os.getenv('FRONTEND_URL')}/signup-oauth?email={email}")
-            else:
-                print("No email found in user data")
-        except Exception as e:
-            print(f"Error getting user data: {str(e)}")
-        
-        # Redirect to dashboard
-        return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard")
-        
-    except Exception as e:
-        print(f"Error in OAuth callback: {str(e)}")
-        return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=callback_failed")
+
+# @app.route('/api/oauth/callback/<provider>', methods=['GET'])
+# def oauth_callback(provider):
+#     code = request.args.get('code')
+#     if not code:
+#         # Possibly user arrived with an existing session (no code).
+#         print("No 'code' param - checking for existing session...")
+
+#         # If your 'authorization_service' checks cookies or session for an existing user:
+#         user_data = authorization_service.get_current_user()
+#         if user_data:
+#             # Return user’s profile info
+#             return jsonify({
+#                 "message": "User already has a session",
+#                 "user": {
+#                     "email": user_data.email,
+#                     # ...any other fields
+#                 }
+#             }), 200
+#         else:
+#             # No code, no existing session => redirect or error
+#             return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=no_code_no_session")
+    
+#     # Otherwise handle the normal code-exchange flow...
+#     try:
+#         # Exchange code for tokens
+#         # ...
+#         return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard")
+#     except Exception as exc:
+#         return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=callback_failed")
+
+
 
 
 # Chat API
