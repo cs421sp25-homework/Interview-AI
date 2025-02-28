@@ -334,6 +334,7 @@ const SettingsPage: React.FC = () => {
       
       await axios.put(`http://localhost:5001/api/profile/${profile.email}`, updateData);
       alert('Profile updated successfully!');
+      
       navigate('/dashboard');
     } catch (err) {
       console.error('Error updating profile:', err);

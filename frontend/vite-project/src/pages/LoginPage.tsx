@@ -39,7 +39,6 @@ const LoginPage = () => {
         localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
         // Store the email and generate a simple token
-        // In a real app, you'd get a proper token from the backend
         const token = btoa(`${email}:${Date.now()}`); // Simple token generation
         login(email, token);
         navigate('/dashboard');
