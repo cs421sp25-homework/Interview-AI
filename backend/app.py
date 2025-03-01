@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, redirect, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -13,6 +13,7 @@ from models.resume_model import ResumeData
 from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
+from supabase import create_client
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +30,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
+supabase = create_client(supabase_url, supabase_key)
 
 
 @app.route('/api/profile', methods=['GET'])
@@ -231,7 +233,6 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
-
 @app.route('/api/oauth/<provider>', methods=['GET'])
 def oauth_login(provider):
     try:
@@ -243,18 +244,10 @@ def oauth_login(provider):
                 "message": f"Provider must be one of: {', '.join(allowed_providers)}"
             }), 400
         
-        auth_url = (
-            f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-            f"?provider={provider}"
-            f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-            f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
-        )
-        
         if provider == "google":
             auth_url = (
                 f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
                 f"?provider=google"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
             )
         else:    
             # Build the Supabase OAuth URL with access token
@@ -262,7 +255,6 @@ def oauth_login(provider):
                 f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
                 f"?provider={provider}"
                 f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-                f"&redirect_to={os.getenv('FRONTEND_URL')}/login"
             )
             
         print("auth url", auth_url)
@@ -275,9 +267,30 @@ def oauth_login(provider):
             "error": "OAuth failed",
             "message": str(e)
         }), 500
-      
-      
-      
+         
+@app.route('/auth/callback', methods=['GET'])
+def auth_callback():
+    try:
+        code = request.args.get('code')
+        if not code:
+            return jsonify({"error": "No authorization code provided"}), 400
+        
+        session = supabase.auth.exchange_code_for_session({"code": code})
+
+        if session.get("error"):
+            return jsonify({"error": "Token exchange failed", "message": session["error"]}), 400
+
+        # Get the access token
+        access_token = session['session']['access_token']
+        refresh_token = session['session']['refresh_token']
+
+        # Redirect to frontend with tokens
+        return redirect(f"{os.getenv("FRONTEND_URL")}/auth/callback#access_token={access_token}&refresh_token={refresh_token}")
+
+    except Exception as e:
+        return jsonify({"error": "Callback handling failed", "message": str(e)}), 500
+
+
 # Chat API
 @app.route("/api/chat", methods=["POST"])
 def chat():

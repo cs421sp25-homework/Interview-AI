@@ -5,7 +5,6 @@ import axios from 'axios';
 import styles from './LoginPage.module.css';
 import { useAuth } from '../context/AuthContext';
 
-
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,16 +19,6 @@ const LoginPage = () => {
     if (token) {
       localStorage.setItem('authToken', token);
       navigate('/dashboard');
-    }
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
     }
   }, []);
 

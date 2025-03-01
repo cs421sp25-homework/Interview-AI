@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import styles from './AuthCallback.module.css';
 
 const AuthCallback = () => {
@@ -8,13 +7,14 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+
     const error = searchParams.get('error');
     // Get access token from URL hash
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     const access_token = params.get('access_token');
     const refresh_token = params.get('refresh_token');
-
+    
     console.log('Hash:', hash);
     console.log('Access token:', access_token);
     console.log('Search params:', Object.fromEntries(searchParams.entries()));
@@ -30,7 +30,6 @@ const AuthCallback = () => {
       });
       return;
     }
-
 
     if (access_token) {
       // Store tokens
