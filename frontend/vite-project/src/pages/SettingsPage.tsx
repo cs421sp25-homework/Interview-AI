@@ -221,9 +221,8 @@ const SettingsPage: React.FC = () => {
           experience: resumeData.experience || []
         }));
 
-        const email = "jlin111@jh.edu"
         const updateResponse = await axios.put(
-          `http://localhost:5001/api/profile/${email}`,
+          `http://localhost:5001/api/profile/${userEmail}`,
           {
             education_history: resumeData.education_history,
             resume_experience: resumeData.experience
