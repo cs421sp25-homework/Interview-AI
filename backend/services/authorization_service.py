@@ -19,7 +19,7 @@ class AuthorizationService:
         print(f"email: {email}, password: {password}")
         response = self.supabase.table('profiles').select('*').eq('email', email).eq('password', password).execute()
         print(f"response: {response}")
-        return response is not None
+        return len(response.data) > 0
 
     def get_user_from_session(self, session_id):
         """Get user information from a session ID"""
