@@ -47,7 +47,7 @@ class ProfileService:
             "linkedin_url": data.get("linkedinUrl", current_data.get("linkedin_url", "")),
             "github_url": data.get("githubUrl", current_data.get("github_url", "")),
             "portfolio_url": data.get("portfolioUrl", current_data.get("portfolio_url", "")),
-            "photo_url": data.get("photoUrl", current_data.get("photo_url", "")),
+            "photo_url": data.get("photo_url", current_data.get("photo_url", "")),
             "preferred_role": current_data.get("preferred_role", ""),
             "expectations": current_data.get("expectations", ""),
             "resume_summary": current_data.get("resume_summary", ""),
