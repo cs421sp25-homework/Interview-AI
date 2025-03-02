@@ -71,7 +71,7 @@ my-project/
      }
      ```
 
-4. **Running the Frontend**  
+3. **Running the Frontend**  
    From within the `frontend/vite-project/` directory:
    ```bash
    pnpm dev
@@ -114,19 +114,31 @@ This command:
 
 ---
 
-### **3. Project Structure**  
+
+### **3. Create .env file**
+Create a file in `backend/` directory named `.env` with the contents:
+```bash
+SUPABASE_URL=https://chhjeubwrutwsczytirn.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoaGpldWJ3cnV0d3Njenl0aXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMjUwOTgsImV4cCI6MjA1NTYwMTA5OH0.anu5Du32kdRJ5zHrvY8MDFkouD_2ip1rvjkDguaso1g
+
+OPENAI_API_KEY=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
+FRONTEND_URL=http://localhost:5173
+```
+
+### **4. Project Structure**  
 After setup, your `backend/` directory should look like this:  
 ```
 backend/
 ├── pyproject.toml    # Poetry config file
 ├── poetry.lock       # Dependency lock file
-└── app.py            # Main Flask application
+├── app.py            # Main Flask application
+└── .env              # .env file
 ```
 - **`app.py`** contains your Flask routes and logic.
 
 ---
 
-### **4. Run the Flask Server**  
+### **5. Run the Flask Server**  
 Start the server using:  
 ```bash
 poetry run python app.py
