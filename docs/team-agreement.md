@@ -34,11 +34,6 @@
 
 - Every member is required to participate in the meetings. This could include progress updates, idea discussion, debugging, or asking/answering questions.
 
-- Slack will be the primary communication tool, while texting via cell phone or WeChat will be used for urgent correspondence.
-    - A response on Slack is expected within 12 hours. If a response is not received in time, the person responsible will buy coffee for everyone!
-    - Use the 👍 emoji to indicate agreement or acknowledgment.
-    - Engage in a conversation in a dedicated thread (click "Reply to thread") for questions, comments, objections, etc.
-    - Use the ✅ emoji to show that action has been taken in response to a thread.
-    - Use the 👀 emoji to indicate that you will look into the matter later.
+- Slack and WeChat will be the primary communication tools, we may use WeChat more (especially for urgent correspondence) due to the group members' familiarity with the platform.
     
 - Issues must be brought up and discussed as they arise.
