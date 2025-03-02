@@ -14,10 +14,12 @@ const AuthCallback = () => {
     const params = new URLSearchParams(hash);
     const access_token = params.get('access_token');
     const refresh_token = params.get('refresh_token');
+    const email = params.get('email');
     
     console.log('Hash:', hash);
     console.log('Access token:', access_token);
     console.log('Search params:', Object.fromEntries(searchParams.entries()));
+    console.log('Email', email)
 
     if (error) {
       console.error('Auth Error:', error);
@@ -37,7 +39,11 @@ const AuthCallback = () => {
       if (refresh_token) {
         localStorage.setItem('refresh_token', refresh_token);
       }
-      
+      // Store email
+      if (email) {
+        localStorage.setItem('user_email', email);
+      }
+
       // Navigate to dashboard
       navigate('/dashboard');
     } else {

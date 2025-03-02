@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Bot, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -12,16 +12,6 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  useEffect(() => {
-    // Check if redirected from OAuth with token
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      localStorage.setItem('authToken', token);
-      navigate('/dashboard');
-    }
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -30,10 +20,7 @@ const LoginPage = () => {
       if (response.status === 200) {
         localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
-        // Store the email and generate a simple token
-        // In a real app, you'd get a proper token from the backend
-        const token = btoa(`${email}:${Date.now()}`); // Simple token generation
-        login(email, token);
+        login(email, response.data.token); // Use actual token
         navigate('/dashboard');
       }
     } catch (error) {
@@ -91,6 +78,7 @@ const LoginPage = () => {
           <button type="submit" className={styles.buttonPrimary}>
             <LogIn size={18} /> Login
           </button>
+          </form>
 
           <div className={styles.oauthContainer}>
             <p className={styles.orText}>Or continue with</p>
@@ -103,11 +91,11 @@ const LoginPage = () => {
               </button>
             </div>
           </div>
-
+          <div className={styles.oauthContainer}>
           <p className={styles.signupLink}>
             Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span>
           </p>
-        </form>
+          </div>
       </main>
 
       <footer className={styles.footer}>

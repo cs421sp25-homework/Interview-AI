@@ -275,6 +275,7 @@ def auth_callback():
         if not code:
             return jsonify({"error": "No authorization code provided"}), 400
         
+        print("hi")
         session = supabase.auth.exchange_code_for_session({"code": code})
 
         if session.get("error"):
@@ -284,8 +285,12 @@ def auth_callback():
         access_token = session['session']['access_token']
         refresh_token = session['session']['refresh_token']
 
+        # Extract user information
+        user = session['user']
+        email = user.get('email')
+
         # Redirect to frontend with tokens
-        return redirect(f"{os.getenv("FRONTEND_URL")}/auth/callback#access_token={access_token}&refresh_token={refresh_token}")
+        return redirect(f"{os.getenv("FRONTEND_URL")}/auth/callback#access_token={access_token}&refresh_token={refresh_token}&email={email}")
 
     except Exception as e:
         return jsonify({"error": "Callback handling failed", "message": str(e)}), 500
