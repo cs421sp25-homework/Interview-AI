@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, Plus, Trash2, Save, MessageSquare, Sparkles, Settings } from 'lucide-react';
 import styles from './PromptPage.module.css';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 interface Prompt {
   id: number;
@@ -17,6 +18,7 @@ interface Settings {
 
 const PromptPage = () => {
   const navigate = useNavigate();
+  const { userEmail } = useAuth();
   const [activeTab, setActiveTab] = useState('custom');
   const [customPrompts, setCustomPrompts] = useState<Prompt[]>([
     { id: 1, text: 'Tell me about your experience with project management.' },
@@ -29,6 +31,15 @@ const PromptPage = () => {
     behavioral: true,
     feedback: true
   });
+
+  useEffect(() => {
+    // Check if the user is authenticated
+    if (!userEmail) {
+      navigate('/login'); // Redirect to the login page if not authenticated
+      return;
+    }
+    // ... rest of the useEffect logic ...
+  }, [userEmail, navigate]);
 
   const handleAddPrompt = () => {
     if (newPrompt.trim()) {
