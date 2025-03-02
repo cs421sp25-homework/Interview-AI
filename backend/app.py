@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, redirect, request, jsonify, make_response
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -14,6 +14,10 @@ from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 from supabase import create_client
+from urllib.parse import urlparse, parse_qs
+import secrets
+import hashlib
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -233,49 +237,48 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
-@app.route('/api/oauth/<provider>', methods=['GET'])
+
+
+@app.route('/api/oauths/<provider>', methods=['GET'])
 def oauth_login(provider):
     try:
-        # Validate provider
-        allowed_providers = ['google', 'github']
-        if provider not in allowed_providers:
-            return jsonify({
-                "error": "Invalid provider",
-                "message": f"Provider must be one of: {', '.join(allowed_providers)}"
-            }), 400
+        # Generate a code verifier - this should be a random string
+        code_verifier = secrets.token_urlsafe(64)
         
-        redirect_uri = f"{os.getenv('FRONTEND_URL')}/auth/callback"
-
-        # if provider == "google":
-        #     auth_url = (
-        #         f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-        #         f"?provider=google"
-        #         f"&redirect_to={redirect_uri}"
-        #     )
-        # else:    
-        #     # Build the Supabase OAuth URL with access token
-        #     auth_url = (
-        #         f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-        #         f"?provider={provider}"
-        #         f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-        #         f"&redirect_to={redirect_uri}"
-        #     )
-            
-        # print("auth url", auth_url)
-        # # Return a redirect response
-        # return redirect(auth_url)
-
+        # Create code_challenge from code_verifier
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode()).digest()
+        ).decode().rstrip('=')
+        
+        # Set the redirect to our backend callback endpoint
+        callback_url = f"{request.host_url.rstrip('/')}/api/oauth/callback"
+        
+        print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
+        print(f"Code verifier: {code_verifier}")
+        print(f"Code challenge: {code_challenge}")
+        
+        # First get the response
         response = supabase.auth.sign_in_with_oauth(
             {
-                "provider": provider,
+                "provider": "google",
                 "options": {
-                    "redirect_to": redirect_uri,
+                    "redirect_to": callback_url,
+                    "scopes": "email profile",
+                    "code_challenge": code_challenge,
+                    "code_challenge_method": "S256"
                 }
             }
         )
-        print(response)
-        return
-        # return response
+        
+        # Then create the response with cookie
+        resp = make_response(redirect(response.url))
+        resp.set_cookie('code_verifier', code_verifier, httponly=True, secure=True, samesite='Lax')
+
+        print(f"code_verifier: {code_verifier}")
+        
+        print(f"Response URL: {response.url}")
+        
+        return resp
 
     except Exception as e:
         print(f"Error in {provider} OAuth: {str(e)}")
@@ -283,32 +286,63 @@ def oauth_login(provider):
             "error": "OAuth failed",
             "message": str(e)
         }), 500
-         
+
+
 @app.route('/api/oauth/callback', methods=['GET'])
 def auth_callback():
     try:
+        print(f"Request received at callback endpoint")
+        
+        # Get the code from the request URL
         code = request.args.get('code')
+        code_challenge = request.args.get('code_challenge')
+        print(f"Code from query params: {code}")
+
         if not code:
             return jsonify({"error": "No authorization code provided"}), 400
         
-        session = supabase.auth.exchange_code_for_session({"code": code})
+        # Get code verifier from cookie
+        code_verifier = request.cookies.get('code_verifier')
+        print(f"Code verifier from cookie: {code_verifier}")
+        
+        if code_verifier == None:
+            # If no code verifier in cookie, redirect to frontend
+            print("No code verifier in cookie, redirecting to frontend")
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+            return redirect(f"{frontend_url}/auth/callback?code={code}")
+        
+        # Exchange the code for a session
+        print(f"Exchanging code: {code} with verifier: {code_verifier}")
+        
+        try:
+            result = supabase.auth.exchange_code_for_session({
+                "auth_code": code
+                # "code_verifier": code_verifier
+            })
+            
+            print(f"Exchange result: {result}")
+            
+            if not result or not result.session:
+                return jsonify({"error": "Failed to exchange code for session"}), 400
+            
+            # Get user info and redirect to frontend
+            session = result.session
+            user = result.user
+            
+            email = user.email
+            print(f"email: {email}")
+            return email
 
-        if session.get("error"):
-            return jsonify({"error": "Token exchange failed", "message": session["error"]}), 400
-
-        # Get the access token
-        access_token = session['session']['access_token']
-        refresh_token = session['session']['refresh_token']
-
-        # Extract user information
-        user = session['user']
-        email = user.get('email')
-
-        # Redirect to frontend with tokens
-        return redirect(f"{os.getenv("FRONTEND_URL")}/auth/callback#access_token={access_token}&refresh_token={refresh_token}&email={email}")
-
+        except Exception as exchange_error:
+            print(f"Exchange error: {str(exchange_error)}")
+            # Redirect to frontend for client-side handling
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+            return redirect(f"{frontend_url}/auth/callback?code={code}")
+        
     except Exception as e:
-        return jsonify({"error": "Callback handling failed", "message": str(e)}), 500
+        print(f"Auth callback error: {str(e)}")
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+        return redirect(f"{frontend_url}/auth/error?message={str(e)}")
 
 
 # Chat API
