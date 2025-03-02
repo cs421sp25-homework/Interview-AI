@@ -25,11 +25,7 @@ const AuthCallback = () => {
     }
     if (email) {
       localStorage.setItem('user_email', email);
-      
-      //if (email in profiles table)
       navigate('/dashboard');
-      //else 
-      // navigate('/signup')
       return;
     } else {
       console.error('No email found in URL');
