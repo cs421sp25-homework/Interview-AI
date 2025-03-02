@@ -88,9 +88,14 @@ const SettingsPage: React.FC = () => {
 
 
   useEffect(() => {
+    // Check if the user is authenticated
+    if (!userEmail) {
+      navigate('/login'); // Redirect to the login page if not authenticated
+      return;
+    }
+
     const fetchProfile = async () => {
       try {
-
         console.log("Fetching profile for email:", userEmail);
         const email = userEmail || 'test@example.com';
 
@@ -125,6 +130,7 @@ const SettingsPage: React.FC = () => {
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile data');
+        navigate('/login'); // Redirect to the login page in case of an error
       } finally {
         setLoading(false);
       }
@@ -133,7 +139,7 @@ const SettingsPage: React.FC = () => {
     fetchProfile();
 
 
-  }, [userEmail]);
+  }, [userEmail, navigate]);
   const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
     textarea.style.height = 'auto'; // Reset height

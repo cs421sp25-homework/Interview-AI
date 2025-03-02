@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Bot, Mic, MicOff, Send } from 'lucide-react';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined } from '@ant-design/icons';
 import { Layout, Menu, Button, theme } from 'antd';
@@ -9,6 +11,8 @@ import { ConfigProvider } from 'antd';
 const { Header, Sider, Content } = Layout;
 
 const InterviewPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { userEmail } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -38,6 +42,14 @@ const InterviewPage: React.FC = () => {
     icon: <UserOutlined />,
     label: `${log.date}`,
   }));
+
+  useEffect(() => {
+    // Check if the user is authenticated
+    if (!userEmail) {
+      navigate('/login'); // Redirect to the login page if not authenticated
+      return;
+    }
+  }, [userEmail, navigate]);
 
   // Handle sending a message
   const handleSend = async () => {
