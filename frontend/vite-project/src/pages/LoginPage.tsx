@@ -29,8 +29,8 @@ const LoginPage = () => {
     }
   };
 
-  const handleOAuthLogin = (provider: string) => {
-    window.location.href = `http://localhost:5001/api/oauths/${provider}`;
+  const handleOAuthLogin = async(provider: string) => {
+    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
   };
 
   return (

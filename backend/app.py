@@ -214,7 +214,6 @@ def upload_image():
         return jsonify({"error": "Failed to upload image", "message": str(e)}), 500
 
 
-
 @app.route('/api/auth/login', methods=['POST'])
 def email_login():
     try:
@@ -237,9 +236,7 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
-
-
-@app.route('/api/oauths/<provider>', methods=['GET'])
+@app.route('/api/oauth/<provider>', methods=['GET'])
 def oauth_login(provider):
     try:
         # Generate a code verifier - this should be a random string
@@ -251,7 +248,7 @@ def oauth_login(provider):
         ).decode().rstrip('=')
         
         # Set the redirect to our backend callback endpoint
-        callback_url = f"{request.host_url.rstrip('/')}/api/oauth/callback"
+        callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
         
         print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
         print(f"Code verifier: {code_verifier}")
@@ -270,15 +267,7 @@ def oauth_login(provider):
             }
         )
         
-        # Then create the response with cookie
-        resp = make_response(redirect(response.url))
-        resp.set_cookie('code_verifier', code_verifier, httponly=True, secure=True, samesite='Lax')
-
-        print(f"code_verifier: {code_verifier}")
-        
-        print(f"Response URL: {response.url}")
-        
-        return resp
+        return redirect(response.url)
 
     except Exception as e:
         print(f"Error in {provider} OAuth: {str(e)}")
@@ -288,36 +277,18 @@ def oauth_login(provider):
         }), 500
 
 
-@app.route('/api/oauth/callback', methods=['GET'])
+@app.route('/api/auth/callback', methods=['GET'])
 def auth_callback():
     try:
         print(f"Request received at callback endpoint")
         
         # Get the code from the request URL
         code = request.args.get('code')
-        code_challenge = request.args.get('code_challenge')
         print(f"Code from query params: {code}")
 
-        if not code:
-            return jsonify({"error": "No authorization code provided"}), 400
-        
-        # Get code verifier from cookie
-        code_verifier = request.cookies.get('code_verifier')
-        print(f"Code verifier from cookie: {code_verifier}")
-        
-        if code_verifier == None:
-            # If no code verifier in cookie, redirect to frontend
-            print("No code verifier in cookie, redirecting to frontend")
-            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-            return redirect(f"{frontend_url}/auth/callback?code={code}")
-        
-        # Exchange the code for a session
-        print(f"Exchanging code: {code} with verifier: {code_verifier}")
-        
         try:
             result = supabase.auth.exchange_code_for_session({
                 "auth_code": code
-                # "code_verifier": code_verifier
             })
             
             print(f"Exchange result: {result}")
@@ -326,12 +297,12 @@ def auth_callback():
                 return jsonify({"error": "Failed to exchange code for session"}), 400
             
             # Get user info and redirect to frontend
-            session = result.session
             user = result.user
-            
             email = user.email
             print(f"email: {email}")
-            return email
+            
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+            return redirect(f"{frontend_url}/auth/callback?email={email}")
 
         except Exception as exchange_error:
             print(f"Exchange error: {str(exchange_error)}")
