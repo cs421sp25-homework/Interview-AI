@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Bot, Briefcase, Clock, Star } from 'lucide-react';
+import { Bot, Briefcase, Star } from 'lucide-react';
 import styles from './Home.module.css';
 import { useNavigate } from 'react-router-dom';
 

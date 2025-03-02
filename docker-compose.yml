@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend  # 确保路径正确
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+    restart: always
+  frontend:
+    build: ./frontend/vite-project  # 确保路径正确
+    ports:
+      - "5173:80"
+    environment:
+      - REACT_APP_API_URL=http://backend:5001
+    depends_on:
+      - backend
