@@ -5,9 +5,16 @@ services:
       - "5001:5001"
     environment:
       - FLASK_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    env_file:
+      - .env  
+    volumes:
+      - ./backend:/app  
     restart: always
+
   frontend:
-    build: ./frontend/vite-project 
+    build: ./frontend/vite-project
     ports:
       - "5173:80"
     environment:
