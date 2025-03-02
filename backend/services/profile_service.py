@@ -91,6 +91,28 @@ class ProfileService:
             print(f"Error creating profile: {str(e)}")
             raise
 
+
+    def create_oauth_profile(self, profile_data: dict) -> dict:
+        """
+        Creates a new user profile in the database.
+        """
+        try:
+            # Convert resume data to ResumeData object if it exists
+            if 'resume' in profile_data and isinstance(profile_data['resume'], dict):
+                from models.resume_model import ResumeData
+                profile_data['resume'] = ResumeData(**profile_data['resume'])
+            
+            # Create Profile object
+
+            profile = self.map_profile_data(profile_data)
+            # Insert into database
+            result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
+            
+            return
+        except Exception as e:
+            print(f"Error creating profile: {str(e)}")
+            raise
+
     def map_profile_data(self, profile_data: dict) -> Profile:
         """
         Maps the input profile_data dictionary with camelCase keys to a Profile instance with snake_case fields.

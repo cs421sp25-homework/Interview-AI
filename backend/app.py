@@ -3,6 +3,9 @@ from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
 import os
+import secrets
+import hashlib
+import base64
 from services.profile_service import ProfileService
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
@@ -14,6 +17,7 @@ from models.resume_model import ResumeData
 from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
+from supabase import create_client
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +34,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
+supabase = create_client(supabase_url, supabase_key)
 
 
 @app.route('/api/profile', methods=['GET'])
@@ -89,6 +94,56 @@ def signup():
     except Exception as e:
         print(f"Signup error: {str(e)}")
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
+    
+
+
+@app.route('/api/oauth/signup', methods=['POST'])
+def oauth_signup():
+    """
+    Handles user signup, including resume upload and profile creation.
+    """
+    try:
+        print("signup")
+        if 'resume' not in request.files:
+            return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
+        
+        data = request.form.to_dict()
+        resume_file = request.files['resume']
+
+        # Validate file
+        validate_file(resume_file, allowed_types=['application/pdf'])
+
+        # Upload resume
+        file_path = f"{data['email']}/{resume_file.filename}"
+        storage_service.upload_file('resumes', file_path, resume_file.read(), resume_file.content_type)
+        file_url = storage_service.get_public_url('resumes', file_path)
+
+        # Process resume
+        resume_file.seek(0)
+        extraction_result = resume_service.process_resume(resume_file)
+
+        # Prepare profile data
+        profile_data = {
+            **data,
+            "resume_url": file_url,
+            "education_history": extraction_result.education_history,
+            "resume_experience": extraction_result.experience,
+            "resume": extraction_result.model_dump()
+        }
+
+        # Create profile
+        result = profile_service.create_oauth_profile(profile_data)
+
+        return jsonify({
+            "message": "Signup successful",
+            "data": result
+        }), 200
+    except Exception as e:
+        print(f"Signup error: {str(e)}")
+        return jsonify({"error": "Signup failed", "message": str(e)}), 500
+
+
+
 
 
 @app.route('/api/profile/<email>', methods=['GET'])
@@ -250,71 +305,85 @@ def email_login():
         return jsonify({"error": "Login failed"}), 500
 
 
+@app.route('/api/oauth/<provider>', methods=['GET'])
+def oauth_login(provider):
+    try:
+        # Generate a code verifier - this should be a random string
+        code_verifier = secrets.token_urlsafe(64)
+        
+        # Create code_challenge from code_verifier
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode()).digest()
+        ).decode().rstrip('=')
+        
+        # Set the redirect to our backend callback endpoint
+        callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
+        
+        print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
+        print(f"Code verifier: {code_verifier}")
+        print(f"Code challenge: {code_challenge}")
+        
+        # First get the response
+        response = supabase.auth.sign_in_with_oauth(
+            {
+                "provider": "google",
+                "options": {
+                    "redirect_to": callback_url,
+                    "scopes": "email profile",
+                    "code_challenge": code_challenge,
+                    "code_challenge_method": "S256"
+                }
+            }
+        )
+        return redirect(response.url)
 
-# @app.route('/api/oauth/<provider>', methods=['GET'])
-# def oauth_login(provider):
-#     allowed_providers = ['google', 'github']
-#     if provider not in allowed_providers:
-#         return jsonify({"error": "Invalid provider"}), 400
-
-#     callback_url = f"{os.getenv('BACKEND_URL')}/api/oauth/callback/{provider}"
-
-#     # Build PKCE-based OAuth URL (server-side flow)
-#     # with Google-specific query params if you want offline access (refresh token).
-#     from urllib.parse import urlencode
-
-#     base_url = f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-#     query = {
-#         "provider": provider,
-#         "response_type": "code",       # ensure we get a 'code'
-#         "type": "pkce",                # PKCE flow
-#         "redirect_to": callback_url,   # must match one in your Supabase redirect list
-#         "scopes": "openid email"
-#     }
-
-#     # If you want a Google refresh token:
-#     if provider == 'google':
-#         query["access_type"] = "offline"
-#         query["prompt"] = "consent"
-
-#     auth_url = f"{base_url}?{urlencode(query)}"
-#     print("Redirecting to:", auth_url)
-#     return redirect(auth_url)
-
-
-
-# @app.route('/api/oauth/callback/<provider>', methods=['GET'])
-# def oauth_callback(provider):
-#     code = request.args.get('code')
-#     if not code:
-#         # Possibly user arrived with an existing session (no code).
-#         print("No 'code' param - checking for existing session...")
-
-#         # If your 'authorization_service' checks cookies or session for an existing user:
-#         user_data = authorization_service.get_current_user()
-#         if user_data:
-#             # Return user’s profile info
-#             return jsonify({
-#                 "message": "User already has a session",
-#                 "user": {
-#                     "email": user_data.email,
-#                     # ...any other fields
-#                 }
-#             }), 200
-#         else:
-#             # No code, no existing session => redirect or error
-#             return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=no_code_no_session")
-    
-#     # Otherwise handle the normal code-exchange flow...
-#     try:
-#         # Exchange code for tokens
-#         # ...
-#         return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard")
-#     except Exception as exc:
-#         return redirect(f"{os.getenv('FRONTEND_URL')}/login?error=callback_failed")
+    except Exception as e:
+        print(f"Error in {provider} OAuth: {str(e)}")
+        return jsonify({
+            "error": "OAuth failed",
+            "message": str(e)
+        }), 500
 
 
+@app.route('/api/auth/callback', methods=['GET'])
+def auth_callback():
+    try:
+        print(f"Request received at callback endpoint")
+        
+        # Get the code from the request URL
+        code = request.args.get('code')
+        print(f"Code from query params: {code}")
 
+        try:
+            result = supabase.auth.exchange_code_for_session({
+                "auth_code": code
+            })
+            
+            print(f"Exchange result: {result}")
+            
+            if not result or not result.session:
+                return jsonify({"error": "Failed to exchange code for session"}), 400
+            
+            # Get user info and redirect to frontend
+            user = result.user
+            email = user.email
+            is_new_user = True
+            if authorization_service.check_email_exists(email):
+                is_new_user = False
+
+            print(f"email: {email}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}&is_new_user={is_new_user}")
+
+
+
+        except Exception as exchange_error:
+            print(f"Exchange error: {str(exchange_error)}")
+            # Redirect to frontend for client-side handling
+            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?code={code}")
+        
+    except Exception as e:
+        print(f"Auth callback error: {str(e)}")
+        return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?error={str(e)}")
 
 # Chat API
 @app.route("/api/chat", methods=["POST"])

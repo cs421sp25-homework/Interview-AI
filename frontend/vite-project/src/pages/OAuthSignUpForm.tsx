@@ -33,7 +33,12 @@ const MultiStepForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const email = queryParams.get('email') || '';
+  
+  // First try to get email from query params, then from localStorage
+  const emailFromQuery = queryParams.get('email');
+  const emailFromStorage = localStorage.getItem('user_email');
+  const email = emailFromQuery || emailFromStorage || '';
+  console.log(email);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +49,7 @@ const MultiStepForm = () => {
     confirmPasswordError: '',
     firstName: '',
     lastName: '',
-    email: email, // Prefilled from OAuth
+    email: email, // Prefilled from OAuth or localStorage
     phone: '',
     jobTitle: '',
     experience: '',
@@ -241,7 +246,7 @@ const MultiStepForm = () => {
                 className={styles.formInput}
                 value={formData.password}
                 onChange={(e) => updateFormData('password', e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter your password" 
               />
             </div>
             <div className={styles.formGroup}>

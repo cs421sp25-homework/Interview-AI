@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface AuthContextType {
   isAuthenticated: boolean;
   userEmail: string | null;
-  login: (email: string, token: string) => void;
+  login: (email: string) => void;
   logout: () => void;
 }
 
@@ -15,24 +15,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('auth_token');
     const email = localStorage.getItem('user_email');
     
-    if (token && email) {
+    if (email) {
       setIsAuthenticated(true);
       setUserEmail(email);
     }
   }, []);
 
-  const login = (email: string, token: string) => {
-    localStorage.setItem('auth_token', token);
+  const login = (email: string) => {
     localStorage.setItem('user_email', email);
     setIsAuthenticated(true);
     setUserEmail(email);
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('user_email');
     setIsAuthenticated(false);
     setUserEmail(null);
@@ -51,4 +48,4 @@ export const useAuth = (): AuthContextType => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};
