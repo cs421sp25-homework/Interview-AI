@@ -8,6 +8,7 @@ import InterviewPage from './pages/InterviewPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
+import OAuthSignUpForm from './pages/OAuthSignUpForm';
 // import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
 
@@ -17,7 +18,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/signup" element={<SignUpForm />} />
-      {/* <Route path="/signup-oauth" element={<SignUpFormOauth />} /> */}
+      <Route path="/signup-oauth" element={<OAuthSignUpForm />} />
       <Route path="/prompts" element={<PromptPage />} />
       <Route path="/dashboard" element={<UserDashboard />} />
       <Route path="/interview" element={<InterviewPage />} />
