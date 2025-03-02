@@ -193,3 +193,14 @@ By default, Flask will run on **`http://127.0.0.1:5000`**.
    - In production, build the React app and optionally serve static files from Flask or a dedicated static hosting solution. 
 
 By following these steps, you can maintain a clean and modern setup for both your frontend and backend while leveraging the benefits of **pnpm** (faster, disk-space efficient package management) and **Poetry** (reliable, isolated Python environments with clear dependency management).
+
+---
+
+## Run the project with Docker Compose
+
+1. Make sure you have Docker or Docker Desktop installed.
+2. Run the following command to start the project:
+```bash
+docker-compose up --build
+```
+3. Navigate to `http://127.0.0.1:5173` to use our app.

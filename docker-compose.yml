@@ -1,13 +1,13 @@
 services:
   backend:
-    build: ./backend  # 确保路径正确
+    build: ./backend
     ports:
       - "5001:5001"
     environment:
       - FLASK_ENV=production
     restart: always
   frontend:
-    build: ./frontend/vite-project  # 确保路径正确
+    build: ./frontend/vite-project 
     ports:
       - "5173:80"
     environment:
