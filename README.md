@@ -118,12 +118,13 @@ This command:
 ### **3. Create .env file**
 Create a file in `backend/` directory named `.env` with the contents:
 ```bash
-SUPABASE_URL=https://chhjeubwrutwsczytirn.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoaGpldWJ3cnV0d3Njenl0aXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMjUwOTgsImV4cCI6MjA1NTYwMTA5OH0.anu5Du32kdRJ5zHrvY8MDFkouD_2ip1rvjkDguaso1g
+SUPABASE_URL=______
+SUPABASE_KEY=_____
 
-OPENAI_API_KEY=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
+OPENAI_API_KEY=________
 FRONTEND_URL=http://localhost:5173
 ```
+Please ask us for the supabase url & key!
 
 ### **4. Project Structure**  
 After setup, your `backend/` directory should look like this:  
