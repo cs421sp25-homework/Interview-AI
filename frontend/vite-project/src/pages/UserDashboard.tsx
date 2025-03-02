@@ -39,18 +39,14 @@ const UserDashboard = () => {
     const fetchUserProfile = async () => {
       try {
         const email = localStorage.getItem('user_email');
-        const token = localStorage.getItem('auth_token');
+        console.log('Dashboard Email', email);
         
-        if (!email || !token) {
+        if (!email) {
           navigate('/login');
           return;
         }
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
 
         if (response.data.data) {
           const profile = response.data.data;

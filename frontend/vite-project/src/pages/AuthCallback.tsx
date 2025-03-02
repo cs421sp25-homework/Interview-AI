@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import styles from './AuthCallback.module.css';
 
 const AuthCallback = () => {
@@ -8,16 +7,10 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    console.log('Search params', searchParams);
     const error = searchParams.get('error');
-    // Get access token from URL hash
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
-
-    console.log('Hash:', hash);
-    console.log('Access token:', access_token);
-    console.log('Search params:', Object.fromEntries(searchParams.entries()));
+    const email = searchParams.get('email');
+    const isNewUser = searchParams.get('is_new_user') === 'True';
 
     if (error) {
       console.error('Auth Error:', error);
@@ -31,18 +24,17 @@ const AuthCallback = () => {
       return;
     }
 
-
-    if (access_token) {
-      // Store tokens
-      localStorage.setItem('auth_token', access_token);
-      if (refresh_token) {
-        localStorage.setItem('refresh_token', refresh_token);
+    if (email) {
+      if (isNewUser) {  
+        localStorage.setItem('user_email', email);
+        navigate(`/signup-oauth`);
+      } else {
+        localStorage.setItem('user_email', email);
+        navigate('/dashboard');
       }
-      
-      // Navigate to dashboard
-      navigate('/dashboard');
+      return;
     } else {
-      console.error('No access token found in URL');
+      console.error('No email found in URL');
       navigate('/login', {
         state: { error: 'No authentication token received. Please try again.' }
       });

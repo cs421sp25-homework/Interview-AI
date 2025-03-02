@@ -104,24 +104,23 @@
 }
 
 .pageContainer {
-  height: 100vh; 
-  width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(to bottom, #fdf2f8, #ffffff);
 }
 
 .nav {
-  background: white;
-  padding: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
 }
 
 .navContent {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
   display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -133,125 +132,73 @@
 }
 
 .logoIcon {
-  width: 2rem;
-  height: 2rem;
   color: #ec4899;
 }
 
 .logoText {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #111827;
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem 1rem;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.header h1 {
-  font-size: 2rem;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.header p {
-  color: #4b5563;
-}
-
-.formContainer {
-  max-width: 800px;
+  align-items: center;
+  padding: 2rem 1rem 3rem;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
 }
 
-.stepNumber {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #4b5563;
-  font-weight: 500;
+.header {
+  text-align: center;
+  margin-bottom: 0;
 }
 
-.stepNumber.active {
-  background: #ec4899;
-  color: white;
+.header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
 }
 
-.stepLabel {
-  font-size: 0.875rem;
-  color: #4b5563;
+.header p {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
 .formCard {
   background: white;
   border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem 2.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 450px;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.formContent {
-  margin-bottom: 2rem;
+.formCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
 }
 
-.formNavigation {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.buttonPrimary,
-.buttonSecondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+.errorMessage {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.buttonPrimary {
-  background: #ec4899;
-  color: white;
-}
-
-.buttonPrimary:hover {
-  background: #db2777;
-}
-
-.buttonSecondary {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.buttonSecondary:hover {
-  background: #e5e7eb;
-}
-
-.footer {
-  text-align: center;
-  padding: 2rem;
-  background: white;
-  color: #4b5563;
-  border-top: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border-left: 4px solid #ef4444;
 }
 
 .formGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .formLabel {
@@ -264,77 +211,161 @@
 
 .formInput {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1rem;
-  color: #1f2937;
-  background-color: white;
   transition: all 0.2s;
 }
 
 .formInput:focus {
+  outline: none;
   border-color: #ec4899;
   box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
-  outline: none;
 }
 
-.formInput::placeholder {
-  color: #9ca3af;
+.buttonPrimary {
+  width: 100%;
+  background-color: #ec4899;
+  color: white;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
 }
 
-.formSelect {
-  composes: formInput;
-  appearance: none;
-  background-image: url("data:image/svg+xml,...");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2.5rem;
-}
-
-.formTextarea {
-  composes: formInput;
-  min-height: 100px;
-  resize: vertical;
+.buttonPrimary:hover {
+  background-color: #db2777;
 }
 
 .oauthContainer {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem 2.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 450px;
   text-align: center;
-  margin: 1.5rem 0;
+  margin-bottom: 1.5rem;
 }
 
 .orText {
-  color: var(--text-light);
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.875rem;
   margin-bottom: 1rem;
+  position: relative;
+}
+
+.orText::before,
+.orText::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.orText::before {
+  left: 0;
+}
+
+.orText::after {
+  right: 0;
 }
 
 .oauthButtons {
   display: flex;
+  gap: 1rem;
   justify-content: center;
-  gap: 0.75rem;
 }
 
 .oauthButton {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
+  background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  cursor: pointer;
-  background: white;
+  font-size: 0.875rem;
   font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
 }
 
 .oauthButton:hover {
-  background: #f9fafb;
-  box-shadow: var(--shadow-sm);
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-2px);
 }
 
 .oauthIcon {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.signupContainer {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 450px;
+  text-align: center;
+}
+
+.signupLink {
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.signupLink span {
+  color: #ec4899;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.signupLink span:hover {
+  color: #db2777;
+  text-decoration: underline;
+}
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 2rem 1rem;
+  }
+  
+  .formCard, .oauthContainer, .signupContainer {
+    padding: 1.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .oauthButtons {
+    flex-direction: column;
+  }
 }

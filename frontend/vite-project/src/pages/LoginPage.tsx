@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, LogIn } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import styles from './LoginPage.module.css';
 import { useAuth } from '../context/AuthContext';
-
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   useEffect(() => {
-    // Check if redirected from OAuth with token
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      localStorage.setItem('authToken', token);
-      navigate('/dashboard');
+    // Check if there's an error message in the location state (from redirect)
+    if (location.state && location.state.error) {
+      setError(location.state.error);
     }
-  });
+  }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +33,8 @@ const LoginPage = () => {
       const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
       
       if (response.status === 200) {
-        localStorage.setItem('authToken', response.data.token);
         console.log('Login successful');
-        // Store the email and generate a simple token
-        const token = btoa(`${email}:${Date.now()}`); // Simple token generation
-        login(email, token);
+        login(email); // Updated to match new AuthContext
         navigate('/dashboard');
       }
     } catch (error) {
@@ -98,23 +92,33 @@ const LoginPage = () => {
           <button type="submit" className={styles.buttonPrimary}>
             <LogIn size={18} /> Login
           </button>
+        </form>
 
-          <div className={styles.oauthContainer}>
-            <p className={styles.orText}>Or continue with</p>
-            <div className={styles.oauthButtons}>
-              <button className={styles.oauthButton} onClick={() => handleOAuthLogin('google')}>
-                <img src="/google.svg" alt="Google" className={styles.oauthIcon} /> Google
-              </button>
-              <button className={styles.oauthButton} onClick={() => handleOAuthLogin('github')}>
-                <img src="/github.svg" alt="Github" className={styles.oauthIcon} /> GitHub
-              </button>
-            </div>
+        <div className={styles.oauthContainer}>
+          <p className={styles.orText}>Or continue with</p>
+          <div className={styles.oauthButtons}>
+            <button 
+              type="button"
+              className={styles.oauthButton} 
+              onClick={() => handleOAuthLogin('google')}
+            >
+              <img src="/google.svg" alt="Google" className={styles.oauthIcon} /> Google
+            </button>
+            {/* <button 
+              type="button"
+              className={styles.oauthButton} 
+              onClick={() => handleOAuthLogin('github')}
+            >
+              <img src="/github.svg" alt="Github" className={styles.oauthIcon} /> GitHub
+            </button> */}
           </div>
-
+        </div>
+        
+        <div className={styles.signupContainer}>
           <p className={styles.signupLink}>
             Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span>
           </p>
-        </form>
+        </div>
       </main>
 
       <footer className={styles.footer}>

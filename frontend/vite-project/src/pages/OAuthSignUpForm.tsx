@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, FileText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import styles from './SignUpForm.module.css';
+import { useNavigate, useLocation } from 'react-router-dom';
+import styles from './OAuthSignUpForm.module.css';
 import axios from 'axios';
 
 interface FormData {
@@ -31,6 +31,15 @@ interface FormData {
 
 const MultiStepForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // First try to get email from query params, then from localStorage
+  const emailFromQuery = queryParams.get('email');
+  const emailFromStorage = localStorage.getItem('user_email');
+  const email = emailFromQuery || emailFromStorage || '';
+  console.log(email);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -40,7 +49,7 @@ const MultiStepForm = () => {
     confirmPasswordError: '',
     firstName: '',
     lastName: '',
-    email: '',
+    email: email, // Prefilled from OAuth or localStorage
     phone: '',
     jobTitle: '',
     experience: '',
@@ -61,6 +70,9 @@ const MultiStepForm = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const updateFormData = (field: keyof FormData, value: string | File | null) => {
+    // Don't allow email to be updated
+    if (field === 'email') return;
+    
     setFormData(prev => {
       const newFormData = { ...prev, [field]: value };
 
@@ -130,25 +142,20 @@ const MultiStepForm = () => {
         if (
           !formData.firstName.trim() ||
           !formData.lastName.trim() ||
-          !formData.email.trim() ||
           !formData.phone.trim()
         ) {
           alert('Please fill in all required fields.');
           return false;
         }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-          alert('Please enter a valid email address.');
-          return false;
-        }
         return true;
       }
-      case 3:
+      case 3: {
         if (!formData.resume) {
           alert('Please upload your resume.');
           return false;
         }
         return true;
+      }
       case 4:
       case 5:
       case 6:
@@ -195,7 +202,10 @@ const MultiStepForm = () => {
         }
       });
 
-      const response = await axios.post('http://localhost:5001/api/signup', formDataToSend, {
+      // Add OAuth flag to indicate this is an OAuth signup
+      formDataToSend.append('isOAuth', 'true');
+
+      const response = await axios.post('http://localhost:5001/api/oauth/signup', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -236,7 +246,7 @@ const MultiStepForm = () => {
                 className={styles.formInput}
                 value={formData.password}
                 onChange={(e) => updateFormData('password', e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter your password" 
               />
             </div>
             <div className={styles.formGroup}>
@@ -284,9 +294,11 @@ const MultiStepForm = () => {
                 type="email"
                 className={styles.formInput}
                 value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                placeholder="Enter your email"
+                readOnly
+                disabled
+                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
               />
+              <p className={styles.helperText}>Email provided by OAuth authentication</p>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phone</label>
@@ -522,6 +534,7 @@ const MultiStepForm = () => {
             }
           }}
           onSubmit={handleSubmit}
+          className={styles.formCard}
       >
         <div className={styles.formContent}>
           {renderStep()}
@@ -573,7 +586,7 @@ const MultiStepForm = () => {
   );
 };
 
-const SignUpForm = () => {
+const OAuthSignUpForm = () => {
   const navigate = useNavigate();
 
   return (
@@ -589,8 +602,8 @@ const SignUpForm = () => {
 
       <main className={styles.main}>
         <div className={styles.header}>
-          <h1>Set Up Your Interview Profile</h1>
-          <p>Complete the following steps to personalize your interview experience</p>
+          <h1>Complete Your OAuth Profile</h1>
+          <p>We've already got your email - just fill in the rest to personalize your interview experience</p>
         </div>
         <MultiStepForm />
       </main>
@@ -602,4 +615,4 @@ const SignUpForm = () => {
   );
 };
 
-export default SignUpForm;
+export default OAuthSignUpForm; 
