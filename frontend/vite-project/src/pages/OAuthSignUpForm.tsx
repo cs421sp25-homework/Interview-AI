@@ -72,8 +72,12 @@ const MultiStepForm = () => {
       const newFormData = { ...prev, [field]: value };
 
       if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
-        newFormData.confirmPasswordError =
-          newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
+        if (newFormData.password.length < 8) {
+          newFormData.confirmPasswordError = 'Password must be at least 8 characters long';
+        } else {
+          newFormData.confirmPasswordError =
+            newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
+        }
       }
 
       return newFormData;
@@ -117,6 +121,10 @@ const MultiStepForm = () => {
           !formData.confirmPassword.trim()
         ) {
           alert('Please fill in all required fields.');
+          return false;
+        }
+        if (formData.password.length < 8) {
+          alert('Password must be at least 8 characters long.');
           return false;
         }
         if (formData.password !== formData.confirmPassword) {
