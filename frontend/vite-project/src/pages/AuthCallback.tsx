@@ -7,7 +7,6 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-
     const error = searchParams.get('error');
     // Get access token from URL hash
     const hash = window.location.hash.substring(1);
@@ -32,8 +31,8 @@ const AuthCallback = () => {
       });
       return;
     }
-
     if (access_token) {
+      console.log("hi")
       // Store tokens
       localStorage.setItem('auth_token', access_token);
       if (refresh_token) {
@@ -43,16 +42,17 @@ const AuthCallback = () => {
       if (email) {
         localStorage.setItem('user_email', email);
       }
-
+      console.log("hi")
       // Navigate to dashboard
       navigate('/dashboard');
+      return;
     } else {
       console.error('No access token found in URL');
       navigate('/login', {
         state: { error: 'No authentication token received. Please try again.' }
       });
     }
-  }, [navigate, searchParams]);
+  }, []);
 
   return (
     <div className={styles.container}>

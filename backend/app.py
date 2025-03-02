@@ -244,22 +244,38 @@ def oauth_login(provider):
                 "message": f"Provider must be one of: {', '.join(allowed_providers)}"
             }), 400
         
-        if provider == "google":
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider=google"
-            )
-        else:    
-            # Build the Supabase OAuth URL with access token
-            auth_url = (
-                f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
-                f"?provider={provider}"
-                f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
-            )
+        redirect_uri = f"{os.getenv('FRONTEND_URL')}/auth/callback"
+
+        # if provider == "google":
+        #     auth_url = (
+        #         f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+        #         f"?provider=google"
+        #         f"&redirect_to={redirect_uri}"
+        #     )
+        # else:    
+        #     # Build the Supabase OAuth URL with access token
+        #     auth_url = (
+        #         f"{os.getenv('SUPABASE_URL')}/auth/v1/authorize"
+        #         f"?provider={provider}"
+        #         f"&access_token={os.getenv('SUPABASE_ANON_KEY')}"
+        #         f"&redirect_to={redirect_uri}"
+        #     )
             
-        print("auth url", auth_url)
-        # Return a redirect response
-        return redirect(auth_url)
+        # print("auth url", auth_url)
+        # # Return a redirect response
+        # return redirect(auth_url)
+
+        response = supabase.auth.sign_in_with_oauth(
+            {
+                "provider": provider,
+                "options": {
+                    "redirect_to": redirect_uri,
+                }
+            }
+        )
+        print(response)
+        return
+        # return response
 
     except Exception as e:
         print(f"Error in {provider} OAuth: {str(e)}")
@@ -268,14 +284,13 @@ def oauth_login(provider):
             "message": str(e)
         }), 500
          
-@app.route('/auth/callback', methods=['GET'])
+@app.route('/api/oauth/callback', methods=['GET'])
 def auth_callback():
     try:
         code = request.args.get('code')
         if not code:
             return jsonify({"error": "No authorization code provided"}), 400
         
-        print("hi")
         session = supabase.auth.exchange_code_for_session({"code": code})
 
         if session.get("error"):
