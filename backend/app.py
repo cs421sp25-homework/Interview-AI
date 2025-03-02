@@ -266,7 +266,6 @@ def oauth_login(provider):
                 }
             }
         )
-        
         return redirect(response.url)
 
     except Exception as e:
@@ -300,20 +299,19 @@ def auth_callback():
             user = result.user
             email = user.email
             print(f"email: {email}")
-            
-            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-            return redirect(f"{frontend_url}/auth/callback?email={email}")
+            if authorization_service.check_email_exists(email):
+                return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}")
+            else: 
+                return redirect(f"{os.getenv('FRONTEND_URL')}/signup")
 
         except Exception as exchange_error:
             print(f"Exchange error: {str(exchange_error)}")
             # Redirect to frontend for client-side handling
-            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-            return redirect(f"{frontend_url}/auth/callback?code={code}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?code={code}")
         
     except Exception as e:
         print(f"Auth callback error: {str(e)}")
-        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-        return redirect(f"{frontend_url}/auth/error?message={str(e)}")
+        return redirect(f"{os.getenv('FRONTEND_URL')}/auth/error?message={str(e)}")
 
 
 # Chat API
