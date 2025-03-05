@@ -38,15 +38,12 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const email = localStorage.getItem('user_email');
-        console.log('Dashboard Email', email);
-        
-        if (!email) {
+        if (!userEmail) {
           navigate('/login');
           return;
         }
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
+        const response = await axios.get(`http://localhost:5001/api/profile/${userEmail}`);
 
         if (response.data.data) {
           const profile = response.data.data;
@@ -69,7 +66,7 @@ const UserDashboard = () => {
     };
 
     fetchUserProfile();
-  }, [navigate]);
+  }, [userEmail, navigate]);
 
   const skillStats = [
     { subject: 'Technical Skills', A: 85 },
