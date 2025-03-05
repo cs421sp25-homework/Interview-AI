@@ -3,6 +3,7 @@ import { Bot, FileText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import styles from './SignUpForm.module.css';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 interface FormData {
   username: string;
@@ -31,6 +32,7 @@ interface FormData {
 
 const MultiStepForm = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -203,6 +205,10 @@ const MultiStepForm = () => {
 
       if (response.status === 200) {
         console.log('Form submitted successfully');
+        
+        localStorage.clear();
+        login(formData.email);
+        
         navigate('/dashboard');
       }
     } catch (error) {
