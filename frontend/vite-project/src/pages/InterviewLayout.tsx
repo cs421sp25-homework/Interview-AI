@@ -115,17 +115,28 @@ const InterviewLayout: React.FC = () => {
           />
         </ConfigProvider>
 
-            
-        <Modal 
-        title="Add New Item"
-        // If using Ant Design v5, use open={isModalVisible} instead of visible={isModalVisible}
-        open={modalVisible}
-        onOk={handleOk}
-        onCancel={handleCancel}
-      >
-        <p>Put your modal content here.</p>
-        <p>You can add forms or other content as needed.</p>
-        </Modal>
+        <ConfigProvider
+          theme={{
+            components: {
+              Button: {
+                colorPrimary: 'rgba(209, 123, 123, 0.82)',
+                colorPrimaryHover: 'rgba(209, 123, 123, 1.0)',
+                colorPrimaryActive: 'rgba(209, 123, 123, 0.82)',
+              },
+            },
+          }}
+        >
+          <Modal
+            title="Add New Item"
+            // If using Ant Design v5, use open={isModalVisible} instead of visible={isModalVisible}
+            open={modalVisible}
+            onOk={handleOk}
+            onCancel={handleCancel}
+          >
+            <p>Put your modal content here.</p>
+            <p>You can add forms or other content as needed.</p>
+          </Modal>
+        </ConfigProvider>
         
       </Sider>
       <Layout>
