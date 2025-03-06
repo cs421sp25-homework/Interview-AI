@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Flex, Layout, Menu, Button, ConfigProvider, theme } from 'antd';
+import { Flex, Layout, Menu, Button, ConfigProvider, theme, Input, Modal, Form} from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, SoundOutlined, PlusOutlined} from '@ant-design/icons';
 import { Bot } from 'lucide-react';
 import type { ConfigProviderProps } from 'antd';
@@ -11,6 +11,8 @@ type SizeType = ConfigProviderProps['componentSize'];
 
 const InterviewLayout: React.FC = () => {
   const navigate = useNavigate();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [form] = Form.useForm();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const {
@@ -24,6 +26,18 @@ const InterviewLayout: React.FC = () => {
     { id: 1, title: 'Interview 1 - John Doe', date: '2025-02-26', form: 'text' },
     { id: 2, title: 'Interview 2 - Jane Smith', date: '2025-02-25', form: 'voice' },
   ];
+
+  const showModal = () => {
+    setModalVisible(true);
+  };
+
+  const handleOk = () => {
+    setModalVisible(false);
+  };
+
+  const handleCancel = () => {
+    setModalVisible(false);
+  };
 
   // Map logs to Menu items. (Customize the icon as needed)
   const menuItems = logs.map((log) => ({
@@ -76,14 +90,14 @@ const InterviewLayout: React.FC = () => {
           }}
         >
 
-
-            <Flex vertical gap="big" style={{ width: '80%', margin: '0 auto', alignItems: 'center',}}>
-                <Button type="primary" block>
+          
+          <Flex vertical gap="big" style={{ width: '80%', margin: '0 auto', alignItems: 'center',}}>
+                <Button type="primary" block onClick={showModal}>
                     Add
                 </Button>
-            </Flex>
+          </Flex>
 
-
+          
 
           <Menu
             mode="inline"
@@ -100,6 +114,19 @@ const InterviewLayout: React.FC = () => {
             }}
           />
         </ConfigProvider>
+
+            
+        <Modal 
+        title="Add New Item"
+        // If using Ant Design v5, use open={isModalVisible} instead of visible={isModalVisible}
+        open={modalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+      >
+        <p>Put your modal content here.</p>
+        <p>You can add forms or other content as needed.</p>
+        </Modal>
+        
       </Sider>
       <Layout>
         <Header
