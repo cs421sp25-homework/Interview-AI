@@ -36,6 +36,10 @@ authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
 supabase = create_client(supabase_url, supabase_key)
 
+@app.route("/")  # Test route
+def home():
+    return "Flask Backend is Running!"
+
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
