@@ -16,7 +16,7 @@ class LLMInterviewAgent:
          or an LLM signal (e.g., a special token).
     """
 
-    def __init__(self, llm_graph: LLMGraph, question_threshold: int = 5):
+    def __init__(self, llm_graph: LLMGraph, question_threshold: int = 5, thread_id = "default_thread"):
         """
         Args:
             llm_graph (LLMGraph): The LLM wrapper (with memory saver) to manage conversation.
@@ -27,6 +27,7 @@ class LLMInterviewAgent:
         self.question_count = 0
         self.interviewer = None
         self.conversation = []
+        self.thread_id = thread_id
 
     def initialize(self, interviewer: Interviewer):
         """
@@ -65,7 +66,7 @@ class LLMInterviewAgent:
         )
 
         # Insert the system message to seed the context
-        self.llm_graph.invoke(SystemMessage(content=system_message_content))
+        self.llm_graph.invoke(SystemMessage(content=system_message_content), thread_id=self.thread_id)
 
     def greet(self) -> str:
         """
@@ -74,7 +75,8 @@ class LLMInterviewAgent:
         """
         # Ask the LLM to greet the candidate explicitly
         response = self.llm_graph.invoke(
-            HumanMessage(content="Please greet the candidate and ask them for a self-introduction.")
+            HumanMessage(content="Please greet the candidate and ask them for a self-introduction."),
+            thread_id=self.thread_id
         )
         ai_message = response["messages"][-1]  # The last message should be the AI's response
         self.conversation.append({"role": "assistant", "content": ai_message.content})
@@ -86,7 +88,7 @@ class LLMInterviewAgent:
         If the LLM decides the interview should end, it will return 'END_INTERVIEW'.
         """
         # Send the candidate's response to the LLM
-        response = self.llm_graph.invoke(HumanMessage(content=user_response))
+        response = self.llm_graph.invoke(HumanMessage(content=user_response), thread_id=self.thread_id)
         ai_message = response["messages"][-1]
         next_q = ai_message.content
         self.conversation.append({"role": "assistant", "content": next_q})
