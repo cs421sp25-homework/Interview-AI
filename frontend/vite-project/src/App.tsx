@@ -11,6 +11,8 @@ import AuthCallback from './pages/AuthCallback';
 import OAuthSignUpForm from './pages/OAuthSignUpForm';
 // import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
+import InterviewLayout from './pages/InterviewLayout';
+import VoiceInterviewPage from './pages/VoiceInterviewPage';
 
 function App() {
   return (
@@ -21,10 +23,18 @@ function App() {
       <Route path="/signup-oauth" element={<OAuthSignUpForm />} />
       <Route path="/prompts" element={<PromptPage />} />
       <Route path="/dashboard" element={<UserDashboard />} />
-      <Route path="/interview" element={<InterviewPage />} />
+      
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+
+
+      <Route path="/interview" element={<InterviewLayout />}>
+          {/* Default route for text interview */}
+          <Route index element={<InterviewPage />} />
+          <Route path="text" element={<InterviewPage />} />
+          <Route path="voice" element={<VoiceInterviewPage />} />
+      </Route>
     </Routes>
   );
 }
