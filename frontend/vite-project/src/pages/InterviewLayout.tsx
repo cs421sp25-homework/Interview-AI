@@ -1,17 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Flex, Layout, Menu, Button, ConfigProvider, theme, Input, Modal, Form} from 'antd';
+import { Flex, Layout, Menu, Button, ConfigProvider, theme, Input, Modal, Form, message, Tag, Space} from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, SoundOutlined, PlusOutlined} from '@ant-design/icons';
-import { Bot } from 'lucide-react';
+import { Bot} from 'lucide-react';
 import type { ConfigProviderProps } from 'antd';
+import axios from 'axios';
 
 const { Header, Sider, Content } = Layout;
 
 type SizeType = ConfigProviderProps['componentSize'];
 
+// Define a type for configuration
+interface Config {
+  id: string;
+  name: string;
+  description?: string;
+  email: string;
+  // Add other fields as needed
+}
+
 const InterviewLayout: React.FC = () => {
   const navigate = useNavigate();
   const [modalVisible, setModalVisible] = useState(false);
+  const [configs, setConfigs] = useState<Config[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [form] = Form.useForm();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -27,26 +39,58 @@ const InterviewLayout: React.FC = () => {
     { id: 2, title: 'Interview 2 - Jane Smith', date: '2025-02-25', form: 'voice' },
   ];
 
+  const fetchConfigurations = async () => {
+    try {
+      console.log("fetching configurations")
+      const userEmail = localStorage.getItem('userEmail') || 'ericeason2003@gmail.com'; // Assuming email is stored in localStorage
+      console.log("userEmail: ", userEmail)
+      const response = await axios.get(`http://localhost:5001/api/config/${userEmail}`);
+      
+      if (response.status !== 200) {
+        throw new Error('Failed to fetch configurations');
+      }
+      
+      const data = response.data;
+      setConfigs(data.data || []);
+    } catch (error) {
+      console.error('Error fetching configurations:', error);
+      message.error('Failed to load configurations');
+    }
+  };
+
   const showModal = () => {
+    fetchConfigurations();
     setModalVisible(true);
   };
 
   const handleOk = () => {
+    if (!selectedConfigId) {
+      message.warning('Please select a configuration');
+      return;
+    }
+    
+    // Process the selected configuration
+    console.log('Selected configuration ID:', selectedConfigId);
+    
+    // Close the modal
     setModalVisible(false);
   };
 
   const handleCancel = () => {
     setModalVisible(false);
+    setSelectedConfigId(null);
   };
 
-  // Map logs to Menu items. (Customize the icon as needed)
+  const handleMenuClick = (e: { key: string }) => {
+    setSelectedConfigId(e.key);
+  };
+
   const menuItems = logs.map((log) => ({
     key: log.id.toString(),
     icon: log.form === 'voice' ? <SoundOutlined /> : <UserOutlined />,
     label: `${log.title} - ${log.date}`,
   }));
 
-  // Optionally, set the selected key based on the current URL
   const selectedKey =
     logs.find((log) =>
       location.pathname.includes(log.form === 'voice' ? 'voice' : 'text')
@@ -126,15 +170,37 @@ const InterviewLayout: React.FC = () => {
             },
           }}
         >
-          <Modal
-            title="Select a Configuration"
-            open={modalVisible}
-            onOk={handleOk}
-            onCancel={handleCancel}
-          >
-            <p>Put your modal content here.</p>
-            <p>You can add forms or other content as needed.</p>
-          </Modal>
+        <Modal
+          title="Select a Configuration"
+          open={modalVisible}
+          onOk={handleOk}
+          onCancel={handleCancel}
+          okButtonProps={{ disabled: !selectedConfigId }}
+        >
+          {configs.length > 0 ? (
+            <Space wrap>
+              {configs.map((config) => (
+                <Button
+                  key={config.id}
+                  type={selectedConfigId === config.id ? "primary" : "default"}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    margin: '4px'
+                  }}
+                  onClick={() => setSelectedConfigId(config.id)}
+                >
+                  {config.name || `Configuration ${config.id}`}
+                </Button>
+              ))}
+            </Space>
+          ) : (
+            <p style={{ textAlign: 'center', color: 'gray' }}>
+              No configurations found. Create a configuration first.
+            </p>
+          )}
+        </Modal>
         </ConfigProvider>
         
       </Sider>

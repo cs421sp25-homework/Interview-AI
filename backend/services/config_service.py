@@ -4,14 +4,17 @@ class ConfigService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
 
-    def get_config(self, config_id: int):
+    def get_config(self, email: str):
         """
-        Retrieves a configuration entry by ID.
+        Retrieves all configuration entries associated with the given email.
         """
-        result = self.supabase.table('config').select('*').eq('id', config_id).execute()
+        result = self.supabase.table('interview_config').select('*').eq('email', email).execute()
+        print(f"get_config result: {result.data}")
+
         if not result.data:
             return None
-        return result.data[0]  
+        return result.data
+
 
     def update_config(self, config_id: int, data: dict):
         """

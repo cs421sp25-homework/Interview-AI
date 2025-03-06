@@ -18,6 +18,7 @@ from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 from supabase import create_client
+from services.config_service import ConfigService
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +31,7 @@ app.register_error_handler(400, handle_bad_request)
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
+config_service = ConfigService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
@@ -144,6 +146,33 @@ def oauth_signup():
 
 
 
+
+@app.route('/api/config/<email>', methods=['GET'])
+def get_config(email):
+    """
+    Retrieves a user's configurations by email.
+    """
+    try:
+        print(f"email: {email}")
+        configs = config_service.get_config(email)  # Now returns a list
+        print(f"configs: {configs}")
+
+        if not configs:
+            return jsonify({"error": "No configurations found"}), 404
+
+        print("Configurations retrieved:", configs)
+        return jsonify({
+            "message": "Configurations retrieved successfully",
+            "data": configs
+        }), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 401
+    except Exception as e:
+        print(f"Error in get_config route: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": "Failed to get configurations", "message": str(e)}), 500
 
 
 @app.route('/api/profile/<email>', methods=['GET'])
