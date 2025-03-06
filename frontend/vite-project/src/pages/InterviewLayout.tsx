@@ -127,8 +127,7 @@ const InterviewLayout: React.FC = () => {
           }}
         >
           <Modal
-            title="Add New Item"
-            // If using Ant Design v5, use open={isModalVisible} instead of visible={isModalVisible}
+            title="Select a Configuration"
             open={modalVisible}
             onOk={handleOk}
             onCancel={handleCancel}
