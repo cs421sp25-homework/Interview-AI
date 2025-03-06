@@ -1,3 +1,6 @@
+import uuid
+from characters.interviewer import Interviewer
+from llm.interview_agent import LLMInterviewAgent
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import requests
@@ -9,6 +12,7 @@ import base64
 from services.profile_service import ProfileService
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
+from services.config_service import ConfigService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from services.chat_service import ChatService
@@ -32,10 +36,12 @@ supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
+config_service = ConfigService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
 supabase = create_client(supabase_url, supabase_key)
 
+active_interviews = {}
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -385,23 +391,89 @@ def auth_callback():
         print(f"Auth callback error: {str(e)}")
         return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?error={str(e)}")
 
-# Chat API
+@app.route("/api/new_chat", methods=["POST"])
+def new_chat():
+    """
+    1) Fetch config row from the DB by name & email
+    2) Create and initialize an InterviewAgent
+    3) Return the AI's greeting plus a thread_id
+    """
+    data = request.get_json()
+    email = data.get("email")
+    name = data.get("name")
+
+    if not email or not name:
+        return jsonify({"error": "Missing 'email' or 'name' in request."}), 400
+
+    # 1) Get config from DB
+    config_row = config_service.get_single_config(name=name, email=email)
+    if not config_row:
+        return jsonify({"error": "No config found for given name and email."}), 404
+
+    # Suppose your configs table has columns:
+    #   name, email, config_value, ...
+    # We'll assume config_value is a dict that might contain job_description, etc.
+    config_value = config_row.get("config_value", {})
+
+    #TODO fetch resume and put it into interviewer
+
+    # 2) Build an Interviewer object from config
+    interviewer = Interviewer(
+        # name=config_value.get("interviewer_name", ""), 
+        # personality=config_value.get("interviewer_personality", ""),
+        age=config_value.get("interviewer_age", ""),
+        language=config_value.get("interviewer_language", "English"),
+        job_description=config_value.get("job_description", ""),
+        company_name=config_value.get("company_name", ""),
+        # interviewee_resume=config_value.get("interviewee_resume", "")
+    )
+
+    thread_id = str(uuid.uuid4())
+    # 3) Create and initialize the LLMInterviewAgent
+    agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5, thread_id=thread_id)  
+    agent.initialize(interviewer)
+
+    # 4) Agent greet
+    greeting = agent.greet()
+
+    # Store this agent in our active_interviews
+    active_interviews[thread_id] = agent
+
+    # 5) Return greeting + thread_id
+    return jsonify({
+        "thread_id": thread_id,
+        "response": greeting
+    })
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    """
+    1) Receives thread_id and user response
+    2) Retrieves the existing agent from memory
+    3) Calls next_question on the agent
+    4) If the interview ended, return wrap up message
+       Otherwise, return the next question
+    """
     data = request.get_json()
-    user_input = data["message"]
-    thread_id = data.get("thread_id", "default_thread")
+    thread_id = data.get("thread_id")
+    user_input = data.get("message", "")
 
-    input_message = HumanMessage(content=user_input)
+    if not thread_id:
+        return jsonify({"error": "Missing 'thread_id' in request."}), 400
 
-    output = llm_graph.invoke(input_message, thread_id=thread_id)
-
-    if output.get("messages"):
-        ai_response = output["messages"][-1].content
-        return jsonify({"response": ai_response})
+    if thread_id not in active_interviews:
+        return jsonify({"error": "Invalid thread_id or session expired."}), 404
+    agent = active_interviews[thread_id]
+    # Next question from the agent
+    next_ai_response = agent.next_question(user_input)
+    # Check if interview is ended
+    if agent.is_end(next_ai_response):
+        # We can optionally remove the agent from active_interviews
+        # or keep it if you want to retrieve the conversation later
+        wrap_up_message = agent.end_interview()
+        return jsonify({"response": wrap_up_message, "ended": True})
     else:
-        return jsonify({"error": "No response from AI"}), 500
-
+        return jsonify({"response": next_ai_response, "ended": False})
 
 
 @app.route('/api/oauth/email', methods=['GET'])
