@@ -353,11 +353,7 @@ def auth_callback():
     try:
         print(f"Request received at callback endpoint")
         
-        # 获取并打印 FRONTEND_URL 环境变量
-        frontend_url = os.getenv('FRONTEND_URL')
-        print(f"FRONTEND_URL from env: {frontend_url}")
-        
-        # 获取代码
+        # Get the code from the request URL
         code = request.args.get('code')
         print(f"Code from query params: {code}")
 
@@ -371,32 +367,26 @@ def auth_callback():
             if not result or not result.session:
                 return jsonify({"error": "Failed to exchange code for session"}), 400
             
-            # 获取用户信息并重定向到前端
+            # Get user info and redirect to frontend
             user = result.user
             email = user.email
             is_new_user = True
             if authorization_service.check_email_exists(email):
                 is_new_user = False
 
-            print(f"Email: {email}, Is new user: {is_new_user}")
-            
-            # 构建完整的重定向 URL 并打印
-            redirect_url = f"{frontend_url}/auth/callback?email={email}&is_new_user={is_new_user}"
-            print(f"Redirecting to: {redirect_url}")
-            
-            return redirect(redirect_url)
+            print(f"email: {email}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}&is_new_user={is_new_user}")
+
+
 
         except Exception as exchange_error:
             print(f"Exchange error: {str(exchange_error)}")
-            # 重定向到前端进行客户端处理
-            redirect_url = f"{frontend_url}/auth/callback?code={code}"
-            print(f"Redirecting to: {redirect_url}")
-            return redirect(redirect_url)
+            # Redirect to frontend for client-side handling
+            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?code={code}")
         
     except Exception as e:
         print(f"Auth callback error: {str(e)}")
-        frontend_url = os.getenv('FRONTEND_URL', 'https://interviewai-hack.onrender.com')
-        return redirect(f"{frontend_url}/auth/callback?error={str(e)}")
+        return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?error={str(e)}")
 
 # Chat API
 @app.route("/api/chat", methods=["POST"])

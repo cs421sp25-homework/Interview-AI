@@ -7,9 +7,7 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    console.log('AuthCallback component mounted');
-    console.log('Search params:', Object.fromEntries(searchParams.entries()));
-    
+    console.log('Search params', searchParams);
     const error = searchParams.get('error');
     const email = searchParams.get('email');
     const isNewUser = searchParams.get('is_new_user') === 'True' || searchParams.get('is_new_user') === 'true';
