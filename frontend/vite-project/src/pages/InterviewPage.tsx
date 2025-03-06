@@ -6,6 +6,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined } from '@ant-design/
 import { Layout, Menu, Button, theme } from 'antd';
 import styles from './InterviewPage.module.css';
 import { ConfigProvider } from 'antd';
+import API_BASE_URL from '../config/api';
 
 
 const { Header, Sider, Content } = Layout;
@@ -58,7 +59,7 @@ const InterviewPage: React.FC = () => {
     const userInput = input;
     setInput('');
     try {
-      const res = await fetch('http://localhost:5001/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userInput, threadId: 'default_thread' }),
