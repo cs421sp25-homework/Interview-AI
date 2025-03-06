@@ -16,7 +16,7 @@ interface Config {
   name: string;
   description?: string;
   email: string;
-  // Add other fields as needed
+  interview_type: 'voice' | 'text';
 }
 
 const InterviewLayout: React.FC = () => {
@@ -27,6 +27,8 @@ const InterviewLayout: React.FC = () => {
   const [form] = Form.useForm();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -34,10 +36,10 @@ const InterviewLayout: React.FC = () => {
   
   const [size, setSize] = useState<SizeType>('large');
 
-  const logs = [
+  const [logs, setLogs] = useState([
     { id: 1, title: 'Interview 1 - John Doe', date: '2025-02-26', form: 'text' },
     { id: 2, title: 'Interview 2 - Jane Smith', date: '2025-02-25', form: 'voice' },
-  ];
+  ]);
 
   const fetchConfigurations = async () => {
     try {
@@ -69,11 +71,37 @@ const InterviewLayout: React.FC = () => {
       return;
     }
     
-    // Process the selected configuration
+    
     console.log('Selected configuration ID:', selectedConfigId);
+    
+    const selectedConfig = configs.find((config) => config.id === selectedConfigId);
+    if (!selectedConfig) {
+      message.error('Configuration not found');
+      return;
+    }
+
+    const newLog = {
+      id: logs.length + 1,
+      title: selectedConfig.name,
+      date: new Date().toISOString(),
+      form: selectedConfig.interview_type,
+    };
+
+    setLogs([...logs, newLog]);
+
+    setActiveConversationId(newLog.id.toString());
+
+    if (selectedConfig.interview_type === 'voice') {
+      navigate('/interview/voice/ongoing');
+    } else {
+      navigate('/interview/text');
+    }
+
+
     
     // Close the modal
     setModalVisible(false);
+    setSelectedConfigId(null);
   };
 
   const handleCancel = () => {
@@ -91,10 +119,12 @@ const InterviewLayout: React.FC = () => {
     label: `${log.title} - ${log.date}`,
   }));
 
-  const selectedKey =
-    logs.find((log) =>
-      location.pathname.includes(log.form === 'voice' ? 'voice' : 'text')
-    )?.id.toString() || '1';
+  const computedSelectedKey =
+  logs.find((log) => location.pathname.includes(log.form === 'voice' ? 'voice' : 'text'))?.id.toString() || '1';
+
+
+  const selectedKey = activeConversationId || computedSelectedKey;
+
 
   return (
     <Layout style={{ height: '100vh' }}>
@@ -150,6 +180,7 @@ const InterviewLayout: React.FC = () => {
             style={{ background: '#ec4899' }}
             onClick={(info) => {
               const selectedLog = logs.find((log) => log.id.toString() === info.key);
+              setActiveConversationId(info.key);
               if (selectedLog?.form === 'voice') {
                 navigate('/interview/voice');
               } else {
