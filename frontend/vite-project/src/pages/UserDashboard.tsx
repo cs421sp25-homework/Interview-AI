@@ -43,7 +43,7 @@ const UserDashboard = () => {
         const email = localStorage.getItem('user_email') || 'test@example.com';
 
         const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
-
+        
         if (response.data.data) {
           const profile = response.data.data;
           setUserData({

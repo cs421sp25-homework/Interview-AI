@@ -206,7 +206,11 @@ const MultiStepForm = () => {
       // Add OAuth flag to indicate this is an OAuth signup
       formDataToSend.append('isOAuth', 'true');
 
-      const response = await axios.post(`${API_BASE_URL}/api/oauth/signup`, formDataToSend, {
+      // Use CORS proxy
+      const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+      const apiUrl = `${corsProxy}https://interviewai-backend-7zxo.onrender.com/api/oauth/signup`;
+      
+      const response = await axios.post(apiUrl, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
