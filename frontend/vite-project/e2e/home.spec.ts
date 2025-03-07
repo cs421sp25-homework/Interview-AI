@@ -6,15 +6,15 @@ test.describe('Home Page', () => {
     await page.goto('/');
     
     // Check that the logo is visible
-    await expect(page.getByText('InterviewAI')).toBeVisible();
+    await expect(page.getByRole('navigation').getByText('InterviewAI')).toBeVisible();
     
     // Check that the hero section is visible
-    await expect(page.getByRole('heading', { name: 'Ace Your Next Interview with AI' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ace Your Next Interview with AI', exact: true })).toBeVisible();
     
     // Check that the features section is visible
-    await expect(page.getByRole('heading', { name: 'AI-Powered Interviews' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Personalized Feedback' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Industry-Specific' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'AI-Powered Interviews', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Personalized Feedback', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Industry-Specific', exact: true })).toBeVisible();
     
     // Check that the stats section is visible
     await expect(page.getByText('10,000+')).toBeVisible();

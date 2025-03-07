@@ -69,7 +69,7 @@ test.describe('Login Page', () => {
     
         // Submit the form
     await page.getByRole('button', { name: 'Login' }).click();
-    
+
     // Intercept the API call
     await page.route('http://localhost:5001/api/auth/login', async route => {
       // Mock a successful response 
@@ -78,8 +78,6 @@ test.describe('Login Page', () => {
         body: JSON.stringify({ success: true })
       });
     });
-    
-
     
     // Verify navigation to dashboard after successful login
     await expect(page).toHaveURL(/dashboard/);
@@ -92,20 +90,20 @@ test.describe('Signup Page', () => {
     await page.goto('http://localhost:5173/signup');
     
     // Check that the form elements are visible
-    await expect(page.getByText('Set Up Your Interview Profile')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Set Up Your Interview Profile' })).toBeVisible();
     await expect(page.getByText('Create Your Account')).toBeVisible();
-    await expect(page.getByLabel('Username')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
-    await expect(page.getByLabel('Confirm Password')).toBeVisible();
+    await expect(page.getByText('Username', { exact: true })).toBeVisible();
+    await expect(page.getByText('Password', { exact: true })).toBeVisible();
+    await expect(page.getByText('Confirm Password', { exact: true })).toBeVisible();
   });
 
   test('should validate password match', async ({ page }) => {
     await page.goto('http://localhost:5173/signup');
     
     // Fill in mismatched passwords
-    await page.getByLabel('Username').fill('testuser');
-    await page.getByLabel('Password').fill('password123');
-    await page.getByLabel('Confirm Password').fill('password456');
+    await page.getByPlaceholder('Enter your username').fill('testuser');
+    await page.getByPlaceholder('Enter your password').fill('password123');
+    await page.getByPlaceholder('Confirm your password').fill('password456');
     
     // Check for error message
     await expect(page.getByText('Passwords do not match')).toBeVisible();
@@ -115,17 +113,17 @@ test.describe('Signup Page', () => {
     await page.goto('http://localhost:5173/signup');
     
     // Step 1: Account creation
-    await page.getByLabel('Username').fill('testuser');
-    await page.getByLabel('Password').fill('password123');
-    await page.getByLabel('Confirm Password').fill('password123');
+    await page.getByPlaceholder('Enter your username').fill('testuser');
+    await page.getByPlaceholder('Enter your password').fill('password123');
+    await page.getByPlaceholder('Confirm your password').fill('password123');
     await page.getByRole('button', { name: 'Next' }).click();
     
     // Step 2: Personal information
     await expect(page.getByText('Personal Information')).toBeVisible();
-    await page.getByLabel('First Name').fill('Test');
-    await page.getByLabel('Last Name').fill('User');
-    await page.getByLabel('Email').fill('test@example.com');
-    await page.getByLabel('Phone').fill('1234567890');
+    await page.getByPlaceholder('Enter your first name').fill('Test');
+    await page.getByPlaceholder('Enter your last name').fill('User');
+    await page.getByPlaceholder('Enter your email').fill('test@example.com');
+    await page.getByPlaceholder('Enter your phone number').fill('1234567890');
     await page.getByRole('button', { name: 'Next' }).click();
     
     // Step 3: Upload documents
@@ -159,16 +157,16 @@ test.describe('Signup Page', () => {
     
     // Complete all steps quickly
     // Step 1
-    await page.getByLabel('Username').fill('testuser');
-    await page.getByLabel('Password').fill('password123');
-    await page.getByLabel('Confirm Password').fill('password123');
+    await page.getByPlaceholder('Enter your username').fill('testuser');
+    await page.getByPlaceholder('Enter your password').fill('password123');
+    await page.getByPlaceholder('Confirm your password').fill('password123');
     await page.getByRole('button', { name: 'Next' }).click();
     
     // Step 2
-    await page.getByLabel('First Name').fill('Test');
-    await page.getByLabel('Last Name').fill('User');
-    await page.getByLabel('Email').fill('test@example.com');
-    await page.getByLabel('Phone').fill('1234567890');
+    await page.getByPlaceholder('Enter your first name').fill('Test');
+    await page.getByPlaceholder('Enter your last name').fill('User');
+    await page.getByPlaceholder('Enter your email').fill('test@example.com');
+    await page.getByPlaceholder('Enter your phone number').fill('1234567890');
     await page.getByRole('button', { name: 'Next' }).click();
     
     // Step 3
