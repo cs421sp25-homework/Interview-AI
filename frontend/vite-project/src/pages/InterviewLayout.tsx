@@ -5,6 +5,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, SoundOutlined, Plus
 import { Bot} from 'lucide-react';
 import type { ConfigProviderProps } from 'antd';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 const { Header, Sider, Content } = Layout;
 
@@ -44,9 +45,9 @@ const InterviewLayout: React.FC = () => {
   const fetchConfigurations = async () => {
     try {
       console.log("fetching configurations")
-      const userEmail = localStorage.getItem('userEmail') || 'ericeason2003@gmail.com'; // Assuming email is stored in localStorage
+      const userEmail = localStorage.getItem('user_email') || 'ericeason2003@gmail.com'; // Assuming email is stored in localStorage
       console.log("userEmail: ", userEmail)
-      const response = await axios.get(`http://localhost:5001/api/config/${userEmail}`);
+      const response = await axios.get(`${API_BASE_URL}/api/config/${userEmail}`);
       
       if (response.status !== 200) {
         throw new Error('Failed to fetch configurations');
