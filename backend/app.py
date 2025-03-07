@@ -27,16 +27,7 @@ from supabase import create_client
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            os.getenv('FRONTEND_URL', 'http://localhost:5173'),
-            "https://interviewai-hack.onrender.com"
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
 app.register_error_handler(400, handle_bad_request)
 
 # Initialize services
@@ -112,15 +103,11 @@ def signup():
     
 
 
-@app.route('/api/oauth/signup', methods=['POST', 'OPTIONS'])
+@app.route('/api/oauth/signup', methods=['POST'])
 def oauth_signup():
     """
     Handles user signup, including resume upload and profile creation.
     """
-    # 处理 OPTIONS 请求（预检请求）
-    if request.method == 'OPTIONS':
-        return '', 200
-        
     try:
         print("signup")
         if 'resume' not in request.files:
