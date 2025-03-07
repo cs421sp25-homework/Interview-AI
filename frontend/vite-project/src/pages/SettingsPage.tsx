@@ -89,11 +89,15 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
 
+    if (!userEmail) {
+      navigate('/login'); // Redirect to the login page if not authenticated
+      return;
+    }
 
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for email:", userEmail);
-        const email = localStorage.getItem('user_email') || 'test@example.com';
+        const email = userEmail || 'test@example.com';
 
         const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
         if (response.data?.data) {

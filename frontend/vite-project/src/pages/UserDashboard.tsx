@@ -38,10 +38,12 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        console.log("Fetching profile for email:", userEmail);
-        const email = localStorage.getItem('user_email') || 'test@example.com';
+        if (!userEmail) {
+          navigate('/login');
+          return;
+        }
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
+        const response = await axios.get(`http://localhost:5001/api/profile/${userEmail}`);
 
         if (response.data.data) {
           const profile = response.data.data;
