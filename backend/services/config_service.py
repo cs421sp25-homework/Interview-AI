@@ -4,6 +4,7 @@ class ConfigService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
 
+
     def get_config(self, email: str):
         """
         Retrieves all configuration entries associated with the given email.
@@ -16,73 +17,56 @@ class ConfigService:
         return result.data
 
 
-    def update_config(self, config_id: int, data: dict):
+
+    def get_single_config(self, name: str, email: str):
         """
-        Updates a configuration entry while keeping existing fields intact.
+        Fetch a config row by matching both name and email.
+        Returns:
+            dict: The config row if it exists, otherwise None.
         """
-        # Fetch the current config entry
-        check_result = self.supabase.table("config").select("*").eq('id', config_id).execute()
-        if not check_result.data:
-            return None 
-
-        current_data = check_result.data[0]
-
-        print(f"current_data: {current_data}")
-
-        
-        update_dict = {
-            "id": config_id,  
-            "created_at": current_data.get("created_at"), 
-            "email": data.get("email", current_data.get("email")),
-            "job_description": data.get("job_description", current_data.get("job_description")),
-            "question_type": data.get("question_type", current_data.get("question_type")),
-            "company_name": data.get("company_name", current_data.get("company_name")),
-            "interview_type": data.get("interview_type", current_data.get("interview_type")),
-            "name": data.get("name", current_data.get("name")),
-        }
-
-        
-        result = self.supabase.table("config").upsert(update_dict).execute()
+        result = (
+            self.supabase
+            .table("interview_config")
+            .select("*")
+            .eq("name", name)
+            .eq("email", email)
+            .execute()
+        )
         if not result.data:
-            return None  # Failed update
-
-        
-        updated_result = self.supabase.table("config").select("*").eq('id', config_id).execute()
-        if not updated_result.data:
             return None
+        return result.data[0]
 
-        print(f"updated_result: {updated_result.data[0]}")
 
-        return updated_result.data[0]  # Return updated config data
-
-    def create_config(self, config_data: dict):
+# TODO: not checked
+    def create_config(self, name: str, email: str, config_data: dict):
         """
-        Creates a new configuration entry in the database.
+        Create a new config row (if it doesn't exist) or upsert (replace) if one exists.
+        This ensures only one config row per (name, email) pair.
+        
+        Args:
+            name (str): The config name (e.g., 'my_config').
+            email (str): The user email.
+            config_data (dict): Any arbitrary configuration data.
+        
+        Returns:
+            dict: The newly created or updated config row.
         """
-        try:
-            # Prepare the config data
-            config_entry = self.map_config_data(config_data)
-
-            # Insert into the database
-            result = self.supabase.table('config').insert(config_entry).execute()
-
-            if not result.data:
-                return None  # Failed insert
-
-            return result.data[0]  # Return created config entry
-        except Exception as e:
-            print(f"Error creating config entry: {str(e)}")
-            raise
-
-    def map_config_data(self, config_data: dict) -> dict:
-        """
-        Maps incoming configuration data to match the database column names.
-        """
-        return {
-            "email": config_data.get("email"),
-            "job_description": config_data.get("job_description"),
-            "question_type": config_data.get("question_type"),
-            "company_name": config_data.get("company_name"),
-            "interview_type": config_data.get("interview_type"),
-            "name": config_data.get("name"),
+        # We’ll use an upsert that matches on (name, email) to avoid duplicates.
+        update_dict = {
+            "name": name,
+            "email": email,
+            "config_value": config_data
         }
+        result = (
+            self.supabase
+            .table("configs")
+            .upsert(update_dict, on_conflict="name,email")
+            .execute()
+        )
+        if not result.data:
+            return None  # Failed to create/upsert
+        
+        # Return the newly upserted row
+        return result.data[0]
+
+#TODO might need update and delete operations
