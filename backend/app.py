@@ -406,7 +406,7 @@ def auth_callback():
                 is_new_user = False
 
             print(f"email: {email}")
-            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}&is_new_user={is_new_user}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/#/auth/callback?email={email}&is_new_user={is_new_user}")
 
 
 
