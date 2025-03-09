@@ -11,7 +11,7 @@ const { Header, Sider, Content } = Layout;
 
 type SizeType = ConfigProviderProps['componentSize'];
 
-// Define a type for configuration
+
 interface Config {
   id: string;
   name: string;
@@ -45,7 +45,7 @@ const InterviewLayout: React.FC = () => {
   const fetchConfigurations = async () => {
     try {
       console.log("fetching configurations")
-      const userEmail = localStorage.getItem('user_email') || 'ericeason2003@gmail.com'; // Assuming email is stored in localStorage
+      const userEmail = localStorage.getItem('user_email') || ''; 
       console.log("userEmail: ", userEmail)
       const response = await axios.get(`${API_BASE_URL}/api/config/${userEmail}`);
       
@@ -66,21 +66,28 @@ const InterviewLayout: React.FC = () => {
     setModalVisible(true);
   };
 
+  const handleMoveBack = () => {
+    navigate("/prompts")
+  };
+
   const handleOk = () => {
     if (!selectedConfigId) {
       message.warning('Please select a configuration');
       return;
     }
     
-    
-    console.log('Selected configuration ID:', selectedConfigId);
-    
+    // Find the selected configuration
     const selectedConfig = configs.find((config) => config.id === selectedConfigId);
     if (!selectedConfig) {
       message.error('Configuration not found');
       return;
     }
-
+    
+    const config_name = selectedConfig.name || "default_config";
+    localStorage.setItem("current_config", config_name);
+    
+    console.log("Modal: current_config set to:", config_name);
+    
     const newLog = {
       id: logs.length + 1,
       title: selectedConfig.name,
@@ -98,8 +105,6 @@ const InterviewLayout: React.FC = () => {
       navigate('/interview/text');
     }
 
-
-    
     // Close the modal
     setModalVisible(false);
     setSelectedConfigId(null);
@@ -182,6 +187,15 @@ const InterviewLayout: React.FC = () => {
             onClick={(info) => {
               const selectedLog = logs.find((log) => log.id.toString() === info.key);
               setActiveConversationId(info.key);
+
+              const config_name = selectedLog?.title || "default_config";
+
+
+              localStorage.setItem("current_config", config_name);
+    
+    
+              console.log("Menu: current_config set to:", config_name);
+
               if (selectedLog?.form === 'voice') {
                 navigate('/interview/voice');
               } else {
@@ -189,6 +203,13 @@ const InterviewLayout: React.FC = () => {
               }
             }}
           />
+
+
+            <Flex vertical gap="big" style={{ width: '80%', margin: '0 auto', alignItems: 'center',}}>
+                <Button type="primary" block onClick={handleMoveBack}>
+                    Move Back
+                </Button>
+          </Flex>
         </ConfigProvider>
 
         <ConfigProvider
@@ -223,6 +244,9 @@ const InterviewLayout: React.FC = () => {
                   }}
                   onClick={() => setSelectedConfigId(config.id)}
                 >
+
+                  
+
                   {config.name || `Configuration ${config.id}`}
                 </Button>
               ))}
