@@ -207,7 +207,7 @@ const InterviewLayout: React.FC = () => {
 
             <Flex vertical gap="big" style={{ width: '80%', margin: '0 auto', alignItems: 'center',}}>
                 <Button type="primary" block onClick={handleMoveBack}>
-                    Move Back
+                    Back
                 </Button>
           </Flex>
         </ConfigProvider>
