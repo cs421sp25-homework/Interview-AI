@@ -28,7 +28,7 @@ from services.config_service import ConfigService
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
 app.register_error_handler(400, handle_bad_request)
 
 # Initialize services
@@ -353,7 +353,6 @@ def oauth_login(provider):
         
         # Set the redirect to our backend callback endpoint
         callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
-        
         print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
         print(f"Code verifier: {code_verifier}")
         print(f"Code challenge: {code_challenge}")
@@ -407,7 +406,7 @@ def auth_callback():
                 is_new_user = False
 
             print(f"email: {email}")
-            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}&is_new_user={is_new_user}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/#/auth/callback?email={email}&is_new_user={is_new_user}")
 
 
 
@@ -538,4 +537,6 @@ def get_oauth_email():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    import os
+    port = int(os.environ.get("PORT", 5001)) 
+    app.run(debug=True, host='0.0.0.0', port=port)

@@ -1,7 +1,10 @@
 // File: src/pages/InterviewPage.tsx
 import React, { useState } from 'react';
-import { Mic, MicOff, Send } from 'lucide-react';
+import { Layout, Mic, MicOff, Send } from 'lucide-react';
 import styles from './InterviewPage.module.css';
+import { ConfigProvider } from 'antd';
+import API_BASE_URL from '../config/api';
+
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
@@ -21,7 +24,7 @@ const InterviewPage: React.FC = () => {
     const userInput = input;
     setInput('');
     try {
-      const res = await fetch('http://localhost:5001/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userInput, threadId: 'default_thread' }),

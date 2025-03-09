@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Bot, User, Save, ArrowLeft, PlusCircle, Trash, FileText } from 'lucide-react';
 import styles from './SettingsPage.module.css';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 
 interface EducationItem {
@@ -95,7 +96,7 @@ const SettingsPage: React.FC = () => {
         console.log("Fetching profile for email:", userEmail);
         const email = localStorage.getItem('user_email') || 'test@example.com';
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
         if (response.data?.data) {
           const userData = response.data.data;
           console.log(response.data)
@@ -168,7 +169,7 @@ const SettingsPage: React.FC = () => {
 
 
     try {
-      const response = await axios.post('http://localhost:5001/api/upload-image', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const imageUrl = response.data.url;
@@ -207,7 +208,7 @@ const SettingsPage: React.FC = () => {
     formData.append("email", userEmail || "test@example.com");
  
     try {
-      const response = await axios.post('http://localhost:5001/api/parse-resume', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/parse-resume`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -222,7 +223,7 @@ const SettingsPage: React.FC = () => {
         }));
 
         const updateResponse = await axios.put(
-          `http://localhost:5001/api/profile/${userEmail}`,
+          `${API_BASE_URL}/api/profile/${userEmail}`,
           {
             education_history: resumeData.education_history,
             resume_experience: resumeData.experience
@@ -331,7 +332,7 @@ const SettingsPage: React.FC = () => {
         resume_experience: profile.experience
       };
       
-      await axios.put(`http://localhost:5001/api/profile/${profile.email}`, updateData);
+      await axios.put(`${API_BASE_URL}/api/profile/${profile.email}`, updateData);
       alert('Profile updated successfully!');
       
       navigate('/dashboard');
