@@ -1,24 +1,58 @@
 // File: src/pages/InterviewPage.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Mic, MicOff, Send } from 'lucide-react';
 import styles from './InterviewPage.module.css';
 import { ConfigProvider } from 'antd';
 import API_BASE_URL from '../config/api';
 
 
+
+
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
     Array<{ text: string; sender: 'user' | 'ai' }>
-  >([
-    {
-      text: "Hello! I'm Sarah, your interviewer today. Shall we begin with you introducing yourself?",
-      sender: 'ai',
-    },
-  ]);
+  >([]);
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
 
+  const [threadId, setThreadId] = useState<string | null>(null);
+  
+  const userEmail = localStorage.getItem('user_email') || '';
+  const config_name = localStorage.getItem('current_config') || 'default_config';
+
+  
+  useEffect(() => {
+    if (!threadId) {
+      startInterview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  const startInterview = async () => {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail, name: config_name}), 
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to start interview');
+        }
+
+        const data = await res.json();
+        setThreadId(data.thread_id);  
+        setMessages([{ text: data.response, sender: 'ai' }]);  
+    } catch (error) {
+        console.error('Error starting interview:', error);
+    }
+};
+
   const handleSend = async () => {
+
+    if (!threadId) {
+        await startInterview();
+    }
     if (!input.trim()) return;
     setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
     const userInput = input;
@@ -27,7 +61,7 @@ const InterviewPage: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput, threadId: 'default_thread' }),
+        body: JSON.stringify({ message: userInput, thread_id: threadId }),
       });
       if (!res.ok) {
         throw new Error('Network response was not ok');
