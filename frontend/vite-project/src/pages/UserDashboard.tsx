@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './UserDashboard.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -41,8 +42,8 @@ const UserDashboard = () => {
         console.log("Fetching profile for email:", userEmail);
         const email = localStorage.getItem('user_email') || 'test@example.com';
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
-
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
+        
         if (response.data.data) {
           const profile = response.data.data;
           setUserData({

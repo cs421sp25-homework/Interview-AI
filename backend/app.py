@@ -23,18 +23,20 @@ from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 from supabase import create_client
+from services.config_service import ConfigService
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
 app.register_error_handler(400, handle_bad_request)
 
 # Initialize services
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 profile_service = ProfileService(supabase_url, supabase_key)
+config_service = ConfigService(supabase_url, supabase_key)
 resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 config_service = ConfigService(supabase_url, supabase_key)
@@ -151,6 +153,33 @@ def oauth_signup():
 
 
 
+
+@app.route('/api/config/<email>', methods=['GET'])
+def get_config(email):
+    """
+    Retrieves a user's configurations by email.
+    """
+    try:
+        print(f"email: {email}")
+        configs = config_service.get_config(email)  # Now returns a list
+        print(f"configs: {configs}")
+
+        if not configs:
+            return jsonify({"error": "No configurations found"}), 404
+
+        print("Configurations retrieved:", configs)
+        return jsonify({
+            "message": "Configurations retrieved successfully",
+            "data": configs
+        }), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 401
+    except Exception as e:
+        print(f"Error in get_config route: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": "Failed to get configurations", "message": str(e)}), 500
 
 
 @app.route('/api/profile/<email>', methods=['GET'])
@@ -325,7 +354,6 @@ def oauth_login(provider):
         
         # Set the redirect to our backend callback endpoint
         callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
-        
         print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
         print(f"Code verifier: {code_verifier}")
         print(f"Code challenge: {code_challenge}")
@@ -379,7 +407,7 @@ def auth_callback():
                 is_new_user = False
 
             print(f"email: {email}")
-            return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?email={email}&is_new_user={is_new_user}")
+            return redirect(f"{os.getenv('FRONTEND_URL')}/#/auth/callback?email={email}&is_new_user={is_new_user}")
 
 
 
@@ -575,4 +603,6 @@ def delete_interview_config():
         return jsonify({'message': str(e)}), 400
     
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    import os
+    port = int(os.environ.get("PORT", 5001)) 
+    app.run(debug=True, host='0.0.0.0', port=port)

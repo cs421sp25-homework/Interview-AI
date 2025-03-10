@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './SignUpForm.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 interface FormData {
   username: string;
@@ -197,7 +198,7 @@ const MultiStepForm = () => {
         }
       });
 
-      const response = await axios.post('http://localhost:5001/api/signup', formDataToSend, {
+      const response = await axios.post(`${API_BASE_URL}/api/signup`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

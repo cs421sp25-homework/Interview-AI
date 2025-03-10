@@ -1,5 +1,3 @@
-# config_service.py
-
 from supabase import create_client
 
 from backend.models.config_model import Interview
@@ -7,6 +5,20 @@ from backend.models.config_model import Interview
 class ConfigService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
+
+
+    def get_config(self, email: str):
+        """
+        Retrieves all configuration entries associated with the given email.
+        """
+        result = self.supabase.table('interview_config').select('*').eq('email', email).execute()
+        print(f"get_config result: {result.data}")
+
+        if not result.data:
+            return None
+        return result.data
+
+
 
     def get_single_config(self, name: str, email: str):
         """

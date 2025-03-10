@@ -13,6 +13,7 @@ import OAuthSignUpForm from './pages/OAuthSignUpForm';
 import 'antd/dist/reset.css';
 import InterviewLayout from './pages/InterviewLayout';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
+import OnGoingVoice from './pages/OnGoingVoice';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route index element={<InterviewPage />} />
           <Route path="text" element={<InterviewPage />} />
           <Route path="voice" element={<VoiceInterviewPage />} />
+          <Route path="voice/ongoing" element={<OnGoingVoice />} />
       </Route>
     </Routes>
   );
