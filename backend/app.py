@@ -1,5 +1,5 @@
 import uuid
-from backend.models.config_model import Interview
+from models.config_model import Interview
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
 from flask import Flask, request, jsonify, redirect
@@ -535,24 +535,12 @@ def get_oauth_email():
         if app.debug:
             return jsonify({"email": "test@example.com"}), 200
         return jsonify({"error": "Failed to get OAuth email"}), 500
+    
 
-@app.route('/api/save_interview_config', methods=['POST'])
-def save_interview_config():
+@app.route('/api/get_interview_configs/<email>', methods=['GET'])
+def get_interview_config(email):
     try:
-        data = request.json
-        interview = Interview(**data)  # Validate input using the Interview model
-        result = config_service.create_or_update_config(interview.dict())
-        return jsonify({'message': 'Interview configuration saved successfully!', 'data': result}), 200
-    except Exception as e:
-        return jsonify({'message': str(e)}), 400
-
-
-@app.route('/api/get_interview_config', methods=['GET'])
-def get_interview_config():
-    name = request.args.get('name')
-    email = request.args.get('email')
-    try:
-        result = config_service.get_single_config(name, email)
+        result = config_service.get_configs(email)
         if result:
             return jsonify(result), 200
         else:
@@ -561,24 +549,26 @@ def get_interview_config():
         return jsonify({'message': str(e)}), 400
 
 
-@app.route('/api/get_all_interview_configs', methods=['GET'])
-def get_all_interview_configs():
+@app.route('/api/create_interview_config', methods=['POST'])
+def create_interview_config():
     try:
-        result = config_service.get_all_configs()
-        return jsonify(result), 200
+        data = request.json
+        config_id = config_service.create_config(data) 
+        if config_id:
+            return jsonify({'message': 'Interview configuration saved successfully!', 'id': config_id}), 201
+        else:
+            return jsonify({'message': 'Failed to save interview configuration.'}), 500
     except Exception as e:
         return jsonify({'message': str(e)}), 400
 
-
-@app.route('/api/update_interview_config', methods=['PUT'])
-def update_interview_config():
+    
+@app.route('/api/update_interview_config/<id>', methods=['PUT'])
+def update_interview_config(id):
     try:
         data = request.json
-        name = data['name']
-        email = data['email']
-        updated_data = data['updated_data']
+        print(data)
 
-        result = config_service.update_config(name, email, updated_data)
+        result = config_service.update_config(id, data)
         if result:
             return jsonify({'message': 'Interview configuration updated successfully!', 'data': result}), 200
         else:
@@ -587,14 +577,10 @@ def update_interview_config():
         return jsonify({'message': str(e)}), 400
 
 
-@app.route('/api/delete_interview_config', methods=['DELETE'])
-def delete_interview_config():
+@app.route('/api/delete_interview_config/<id>', methods=['DELETE'])
+def delete_interview_config(id):
     try:
-        data = request.json
-        name = data['name']
-        email = data['email']
-
-        success = config_service.delete_config(name, email)
+        success = config_service.delete_config(id)
         if success:
             return jsonify({'message': 'Interview configuration deleted successfully!'}), 200
         else:
