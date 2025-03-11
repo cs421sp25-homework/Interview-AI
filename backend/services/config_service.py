@@ -6,7 +6,24 @@ class ConfigService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
 
-
+    def get_single_config(self, name: str, email: str):
+        """
+        Fetch a config row by matching both name and email.
+        Returns:
+            dict: The config row if it exists, otherwise None.
+        """
+        result = (
+            self.supabase
+            .table("interview_config")
+            .select("*")
+            .eq("name", name)
+            .eq("email", email)
+            .execute()
+        )
+        if not result.data:
+            return None
+        return result.data[0]
+    
     def get_configs(self, email: str):
         """
         Retrieves all configuration entries associated with the given email.
