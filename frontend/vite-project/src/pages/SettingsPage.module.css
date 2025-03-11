@@ -33,11 +33,18 @@
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
 }
 
 .backButton:hover {
   background: #e5e7eb;
+  color: #111827;
 }
 
 /* ================================

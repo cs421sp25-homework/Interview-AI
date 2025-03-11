@@ -1,4 +1,5 @@
 import uuid
+from models.config_model import Interview
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
 from flask import Flask, request, jsonify, redirect
@@ -29,6 +30,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
+
 app.register_error_handler(400, handle_bad_request)
 
 # Initialize services
@@ -160,7 +162,7 @@ def get_config(email):
     """
     try:
         print(f"email: {email}")
-        configs = config_service.get_config(email)  # Now returns a list
+        configs = config_service.get_configs(email)  # Now returns a list
         print(f"configs: {configs}")
 
         if not configs:
@@ -421,11 +423,6 @@ def auth_callback():
 
 @app.route("/api/new_chat", methods=["POST"])
 def new_chat():
-    """
-    1) Fetch config row from the DB by name & email
-    2) Create and initialize an InterviewAgent
-    3) Return the AI's greeting plus a thread_id
-    """
     data = request.get_json()
     email = data.get("email")
     name = data.get("name")
@@ -534,8 +531,59 @@ def get_oauth_email():
         if app.debug:
             return jsonify({"email": "test@example.com"}), 200
         return jsonify({"error": "Failed to get OAuth email"}), 500
+    
+
+@app.route('/api/get_interview_configs/<email>', methods=['GET'])
+def get_interview_config(email):
+    try:
+        result = config_service.get_configs(email)
+        if result:
+            return jsonify(result), 200
+        else:
+            return jsonify({'message': 'Configuration not found.'}), 404
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
 
+@app.route('/api/create_interview_config', methods=['POST'])
+def create_interview_config():
+    try:
+        data = request.json
+        config_id = config_service.create_config(data) 
+        if config_id:
+            return jsonify({'message': 'Interview configuration saved successfully!', 'id': config_id}), 201
+        else:
+            return jsonify({'message': 'Failed to save interview configuration.'}), 500
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+    
+@app.route('/api/update_interview_config/<id>', methods=['PUT'])
+def update_interview_config(id):
+    try:
+        data = request.json
+        print(data)
+
+        result = config_service.update_config(id, data)
+        if result:
+            return jsonify({'message': 'Interview configuration updated successfully!', 'data': result}), 200
+        else:
+            return jsonify({'message': 'Configuration not found.'}), 404
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+
+@app.route('/api/delete_interview_config/<id>', methods=['DELETE'])
+def delete_interview_config(id):
+    try:
+        success = config_service.delete_config(id)
+        if success:
+            return jsonify({'message': 'Interview configuration deleted successfully!'}), 200
+        else:
+            return jsonify({'message': 'Configuration not found.'}), 404
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+    
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
