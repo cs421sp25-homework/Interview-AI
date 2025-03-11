@@ -1,0 +1,214 @@
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.config-modal .ant-modal-content {
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  color: #ec4899;
+}
+
+.formCard {
+  background: white;
+  width: 100%;
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: #ec4899;
+  margin-left: 4px;
+}
+
+.optional {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+/* Custom Select Styling */
+.ant-select-selector {
+  border-color: #d1d5db !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  height: auto !important;
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-select-focused .ant-select-selector,
+.ant-select-selector:hover {
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1) !important;
+}
+
+.ant-select-dropdown,
+.select-dropdown {
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 0.5rem 0 !important;
+}
+
+.select-dropdown .ant-select-item {
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s !important;
+}
+
+.select-dropdown .ant-select-item-option-selected {
+  background-color: #fdf2f8 !important;
+  color: #ec4899 !important;
+  font-weight: 500 !important;
+}
+
+.select-dropdown .ant-select-item-option-active {
+  background-color: #fdf2f8 !important;
+}
+
+.buttonPrimary {
+  width: 100%;
+  background-color: #ec4899;
+  color: white;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+  margin-bottom: 1rem; 
+}
+
+.buttonPrimary:hover {
+  background-color: #db2777;
+}
+
+.buttonPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modal-instruction {
+  margin-bottom: 15px;
+  color: #666;
+  text-align: center;
+}
+
+/* Config button styles */
+.configButton {
+  position: relative;
+  flex: 1;
+  flex-direction: column;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  gap: 0.5rem;
+  padding: 1.5rem 2.5rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1rem; 
+}
+
+.configButton:hover {
+  background-color: #fdf2f8;
+  border-color: #ec4899;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.15);
+}
+
+.configButtonSelected {
+  background-color: #fdf2f8;
+  border-color: #ec4899;
+  color: #ec4899;
+}
+
+.configList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); 
+  gap: 1rem; 
+  margin-top: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .configList {
+    grid-template-columns: 1fr; 
+  }
+  
+  .config-modal .ant-modal-content {
+    padding: 1.5rem;
+    margin: 0 1rem;
+  }
+} 

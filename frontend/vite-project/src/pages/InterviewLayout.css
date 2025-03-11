@@ -1,0 +1,147 @@
+/* Sider styles */
+.interview-sider {
+  background: #ec4899 !important;
+}
+
+.history-title {
+  margin: 16px;
+  text-align: center;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Button styles */
+.add-button {
+  width: 80%;
+  margin: 10px auto;
+  display: block;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+.add-button:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  border-color: transparent !important;
+}
+
+.back-button, .create-config-button, .manage-config-button {
+  background-color: #ec4899 !important;
+  border-color: #ec4899 !important;
+  color: white !important;
+}
+
+.confirm-button {
+  background-color: #ec4899 !important;
+  border-color: #ec4899 !important;
+  color: white !important;
+}
+
+/* Header styles */
+.app-title {
+  margin: 0;
+  color: #ec4899;
+  font-size: 24px;
+}
+
+.header-container {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Modal styles */
+.config-modal {
+  top: 20px;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-instruction {
+  margin-bottom: 15px;
+  color: #666;
+  text-align: center;
+}
+
+.selected-config {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #fdf2f8;
+  border-radius: 8px;
+  border: 1px solid #fbcfe8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ec4899;
+}
+
+/* Config button styles */
+.config-button {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 14px;
+  margin: 4px;
+}
+
+.config-button:hover {
+  border-color: #ec4899 !important;
+  color: #ec4899 !important;
+}
+
+.config-button-selected {
+  border-color: #ec4899 !important;
+  background-color: #fdf2f8 !important;
+  color: #ec4899 !important;
+}
+
+/* Menu styles */
+.interview-menu {
+  background: #ec4899 !important;
+}
+
+.interview-menu .ant-menu-item {
+  color: white !important;
+}
+
+.interview-menu .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.interview-menu .ant-menu-item-selected {
+  background-color: #c12767 !important;
+  color: white !important;
+}
+
+/* Content styles */
+.main-content {
+  margin: 24px 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 112px);
+}
+
+/* Form styles */
+.config-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.save-config-button {
+  width: 100%;
+  height: 45px;
+  margin-top: 1rem;
+  background-color: #ec4899 !important;
+  border-color: #ec4899 !important;
+} 
