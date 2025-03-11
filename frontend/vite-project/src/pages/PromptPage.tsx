@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Plus, X, MoreVertical, Edit, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './PromptPage.module.css';
@@ -27,6 +27,7 @@ const PromptPage = () => {
   const [selectedConfig, setSelectedConfig] = useState<InterviewConfig | null>(null);
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const email = localStorage.getItem('user_email') || '';
+  const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`)
@@ -39,12 +40,21 @@ const PromptPage = () => {
       });
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuOpen !== null && pageRef.current && !pageRef.current.contains(event.target as Node)) {
+        setMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
   const handleStartInterview = () => {
-    if (!selectedConfig) {
-      alert("Please select a configuration to start an interview.");
-      return;
-    }
-    navigate('/interview', { state: selectedConfig });
+    navigate('/interview');
   };  
 
   const handleSaveConfig = async () => {
@@ -58,8 +68,8 @@ const PromptPage = () => {
       email
     };
   
-    if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.job_description) {
-      alert("Please fill in all required fields.");
+    if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.question_type || !interviewConfig.interview_type) {
+      alert("Please fill in all required fields marked with *");
       return;
     }
   
@@ -67,9 +77,11 @@ const PromptPage = () => {
       if (selectedConfig) { // Editing an existing config
         await axios.put(`${API_BASE_URL}/api/update_interview_config/${selectedConfig.id}`, interviewConfig);
         console.log("Interview configuration updated successfully.");
+        alert("Interview configuration updated successfully!");
       } else { // Saving a new config
         await axios.post(`${API_BASE_URL}/api/create_interview_config`, interviewConfig);
         console.log("New interview configuration saved successfully.");
+        alert("New interview configuration saved successfully!");
       }
   
       // Refresh interview configs after saving
@@ -119,20 +131,26 @@ const PromptPage = () => {
   
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.pageContainer} ref={pageRef}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
           <div className={styles.logo} onClick={() => navigate('/')}>  
             <Bot className={styles.logoIcon} />
             <span className={styles.logoText}>InterviewAI</span>
           </div>
+          <button 
+            className={styles.backButton} 
+            onClick={() => navigate('/dashboard')}
+          >
+            Back to Dashboard
+          </button>
         </div>
       </nav>
 
       <main className={styles.main}>
         <div className={styles.header}>
-          <h1>Previous Interviews</h1>
-          <p>View or start a new interview</p>
+          <h1>Interview Configurations</h1>
+          <p>Create or select an interview configuration</p>
         </div>
 
         <button 
@@ -154,7 +172,7 @@ const PromptPage = () => {
             >
               <div className={styles.cardContent}>
                 <div>
-                  <h3>{interview.interview_name}</h3>
+                  <h3 className={styles.interviewName}>{interview.interview_name}</h3>
                   <div className={styles.cardDetails}>
                     <p><strong>Company:</strong> {interview.company_name}</p>
                     <p><strong>Question Type:</strong> {interview.question_type}</p>
@@ -173,10 +191,18 @@ const PromptPage = () => {
 
                   {menuOpen === index && (
                     <div className={styles.menuDropdown}>
-                      <button onClick={() => handleEdit(index)}>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(index);
+                        setMenuOpen(null);
+                      }}>
                         <Edit size={16} /> Edit
                       </button>
-                      <button onClick={() => handleDelete(index, interview.id)}>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(index, interview.id);
+                        setMenuOpen(null);
+                      }}>
                         <Trash size={16} /> Delete
                       </button>
                     </div>
@@ -188,7 +214,7 @@ const PromptPage = () => {
         </div>
 
         <button type="button" className={styles.buttonPrimary} onClick={handleStartInterview}>
-          Start Interview
+          Back to Interview Page
         </button>
       </main>
 
@@ -201,48 +227,60 @@ const PromptPage = () => {
             <h2>Customize Your Interview</h2>
             <form className={styles.formCard}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Interview Name</label>
+                <label className={styles.formLabel}>
+                  Interview Name <span className={styles.required}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.formInput}
                   value={interview_name}
                   onChange={(e) => setInterviewName(e.target.value)}
                   placeholder="Enter interview session name"
+                  required
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Company Name</label>
+                <label className={styles.formLabel}>
+                  Company Name <span className={styles.required}>*</span>
+                </label>
                 <input
                   type="text"
                   className={styles.formInput}
                   value={company_name}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Enter the company name"
+                  required
                 />
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Job Description</label>
+                <label className={styles.formLabel}>
+                  Job Description <span className={styles.optional}>(optional)</span>
+                </label>
                 <textarea
                   className={styles.formInput}
                   value={job_description}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Enter the job description"
+                  placeholder="Enter the job description (optional)"
                 />
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Question Type</label>
-                <select className={styles.formInput} value={question_type} onChange={(e) => setQuestionType(e.target.value)}>
+                <label className={styles.formLabel}>
+                  Question Type <span className={styles.required}>*</span>
+                </label>
+                <select className={styles.formInput} value={question_type} onChange={(e) => setQuestionType(e.target.value)} required>
                   <option value="behavioral">Behavioral</option>
                   <option value="technical">Technical</option>
                 </select>
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Interview Type</label>
-                <select className={styles.formInput} value={interview_type} onChange={(e) => setInterviewType(e.target.value)}>
+                <label className={styles.formLabel}>
+                  Interview Type <span className={styles.required}>*</span>
+                </label>
+                <select className={styles.formInput} value={interview_type} onChange={(e) => setInterviewType(e.target.value)} required>
                   <option value="text">Text</option>
                   <option value="voice">Voice</option>
                 </select>

@@ -403,7 +403,6 @@ const SettingsPage: React.FC = () => {
             <span>InterviewAI</span>
           </div>
           <button className={styles.backButton} onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={12} />
             Back to Dashboard
           </button>
         </div>

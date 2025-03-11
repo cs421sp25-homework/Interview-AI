@@ -30,6 +30,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
+
 app.register_error_handler(400, handle_bad_request)
 
 # Initialize services
@@ -161,7 +162,7 @@ def get_config(email):
     """
     try:
         print(f"email: {email}")
-        configs = config_service.get_config(email)  # Now returns a list
+        configs = config_service.get_configs(email)  # Now returns a list
         print(f"configs: {configs}")
 
         if not configs:
@@ -422,11 +423,6 @@ def auth_callback():
 
 @app.route("/api/new_chat", methods=["POST"])
 def new_chat():
-    """
-    1) Fetch config row from the DB by name & email
-    2) Create and initialize an InterviewAgent
-    3) Return the AI's greeting plus a thread_id
-    """
     data = request.get_json()
     email = data.get("email")
     name = data.get("name")
