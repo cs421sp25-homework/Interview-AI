@@ -99,72 +99,85 @@ const InterviewPage: React.FC = () => {
   }, [threadId, messages, saveChatHistory]);
   
   useEffect(() => {
-    setIsLoading(true);
-    
-    const storedUserPhoto = localStorage.getItem('user_photo_url');
-    if (storedUserPhoto) {
-      setUserPhotoUrl(storedUserPhoto);
-    }
-    
-    if (!config_name || !config_id) {
-      message.error('Please select a configuration to start an interview');
-      navigate('/prompts');
-      return;
-    }
-    
-    const createSession = async () => {
-      try {
-        console.log("Creating new interview session...");
-        const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: userEmail, 
-            name: config_name,
-            new_session: true,
-          }), 
-        });
-  
-        if (!res.ok) {
-          throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
-        }
-  
-        const data = await res.json();
-        console.log("Received session data:", data);
-        
-        if (!data.thread_id) {
-          throw new Error("No thread_id received from server");
-        }
-        
-        setThreadId(data.thread_id);
-        
-        const welcomeMessage = data.response || 
-          `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
-        
-        setMessages([{ 
-          text: welcomeMessage, 
-          sender: 'ai' as const 
-        }]);
-        
-        setIsChatReady(true);
-        setIsLoading(false);
-        
-        // Set initial load flag to false after a short delay
-        setTimeout(() => {
-          initialLoadRef.current = false;
-          console.log("Initial load phase completed");
-        }, 1000);
-        
-        return data.thread_id;
-      } catch (error) {
-        console.error('Error creating new chat session:', error);
-        message.error('Failed to start interview. Please try again.');
-        setIsLoading(false);
-        return null;
+    try {
+      // Check if user is logged in
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
       }
-    };
+
+      setIsLoading(true);
+      
+      const storedUserPhoto = localStorage.getItem('user_photo_url');
+      if (storedUserPhoto) {
+        setUserPhotoUrl(storedUserPhoto);
+      }
+      
+      if (!config_name || !config_id) {
+        message.error('Please select a configuration to start an interview');
+        navigate('/prompts');
+        return;
+      }
+      
+      const createSession = async () => {
+        try {
+          console.log("Creating new interview session...");
+          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: userEmail, 
+              name: config_name,
+              new_session: true,
+            }), 
+          });
     
-    createSession();
+          if (!res.ok) {
+            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
+          }
+    
+          const data = await res.json();
+          console.log("Received session data:", data);
+          
+          if (!data.thread_id) {
+            throw new Error("No thread_id received from server");
+          }
+          
+          setThreadId(data.thread_id);
+          
+          const welcomeMessage = data.response || 
+            `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
+          
+          setMessages([{ 
+            text: welcomeMessage, 
+            sender: 'ai' as const 
+          }]);
+          
+          setIsChatReady(true);
+          setIsLoading(false);
+          
+          // Set initial load flag to false after a short delay
+          setTimeout(() => {
+            initialLoadRef.current = false;
+            console.log("Initial load phase completed");
+          }, 1000);
+          
+          return data.thread_id;
+        } catch (error) {
+          console.error('Error creating new chat session:', error);
+          message.error('Failed to start interview. Please try again.');
+          setIsLoading(false);
+          return null;
+        }
+      };
+      
+      createSession();
+    } catch (error) {
+      console.error('Error in InterviewPage:', error);
+      navigate('/login');
+    }
   }, [navigate, userEmail, config_name, config_id]);
   
   const handleSend = async () => {

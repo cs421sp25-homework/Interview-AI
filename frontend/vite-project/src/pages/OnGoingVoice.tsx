@@ -47,59 +47,72 @@ const OnGoingVoice: React.FC = () => {
   }, [userEmail, config_name, config_id]);
 
   useEffect(() => {
-    setIsLoading(true);
-    
-    const storedUserPhoto = localStorage.getItem('user_photo_url');
-    if (storedUserPhoto) {
-      setUserPhotoUrl(storedUserPhoto);
-    }
-    
-    if (!config_name || !config_id) {
-      message.error('No interview configuration found. Please select a configuration first.');
-      navigate('/prompts');
-      return;
-    }
-    
-    const initializeSession = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: userEmail, 
-            name: config_name,
-          }), 
-        });
-  
-        if (!res.ok) {
-          throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
-        }
-  
-        const data = await res.json();
-        setThreadId(data.thread_id);
-        
-        const welcomeMessage = data.response || 
-          `Welcome to your voice interview session for "${config_name}". Click the microphone button below to start speaking.`;
-          
-        const initialMessages = [{ 
-          text: welcomeMessage, 
-          sender: 'ai' as const 
-        }];
-        setMessages(initialMessages);
-        
-        setIsChatReady(true);
-        setIsLoading(false);
-        
-        return data.thread_id;
-      } catch (error) {
-        console.error('Error initializing voice session:', error);
-        message.error('Failed to initialize voice interview. Please try again.');
-        setIsLoading(false);
-        return null;
+    try {
+      // Check if user is logged in
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
       }
-    };
+      
+      setIsLoading(true);
+      
+      const storedUserPhoto = localStorage.getItem('user_photo_url');
+      if (storedUserPhoto) {
+        setUserPhotoUrl(storedUserPhoto);
+      }
+      
+      if (!config_name || !config_id) {
+        message.error('No interview configuration found. Please select a configuration first.');
+        navigate('/prompts');
+        return;
+      }
+      
+      const initializeSession = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: userEmail, 
+              name: config_name,
+            }), 
+          });
     
-    initializeSession();
+          if (!res.ok) {
+            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
+          }
+    
+          const data = await res.json();
+          setThreadId(data.thread_id);
+          
+          const welcomeMessage = data.response || 
+            `Welcome to your voice interview session for "${config_name}". Click the microphone button below to start speaking.`;
+            
+          const initialMessages = [{ 
+            text: welcomeMessage, 
+            sender: 'ai' as const 
+          }];
+          setMessages(initialMessages);
+          
+          setIsChatReady(true);
+          setIsLoading(false);
+          
+          return data.thread_id;
+        } catch (error) {
+          console.error('Error initializing voice session:', error);
+          message.error('Failed to initialize voice interview. Please try again.');
+          setIsLoading(false);
+          return null;
+        }
+      };
+      
+      initializeSession();
+    } catch (error) {
+      console.error('Error in OnGoingVoice:', error);
+      navigate('/login');
+    }
   }, [navigate, config_name, config_id, userEmail]);
 
   const toggleRecording = () => {

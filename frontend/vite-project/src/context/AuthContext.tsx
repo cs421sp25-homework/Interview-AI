@@ -30,7 +30,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    // Clear all localStorage items
     localStorage.removeItem('user_email');
+    localStorage.removeItem('user_photo_url');
+    localStorage.removeItem('current_config');
+    localStorage.removeItem('current_config_id');
+    
+    // For complete cleanup, clear any other potential localStorage items
+    // that might be added in the future
+    localStorage.clear();
+    
     setIsAuthenticated(false);
     setUserEmail(null);
   };

@@ -36,7 +36,21 @@ const InterviewHistoryPage: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    fetchInterviewLogs();
+    try {
+      // Check if user is logged in
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
+      }
+      
+      // Continue with existing code
+      fetchInterviewLogs();
+    } catch (error) {
+      console.error('Error in InterviewHistoryPage:', error);
+      navigate('/login');
+    }
   }, []);
   
   useEffect(() => {
@@ -46,6 +60,7 @@ const InterviewHistoryPage: React.FC = () => {
   const fetchInterviewLogs = async () => {
     setLoading(true);
     try {
+
       const userEmail = localStorage.getItem('user_email') || '';
       
       if (!userEmail) {
@@ -79,6 +94,7 @@ const InterviewHistoryPage: React.FC = () => {
           question_count: log.message_count || Math.floor(Math.random() * 20) + 5,
           interview_type: log.interview_type || (Math.random() > 0.5 ? 'Technical' : 'Behavioral'),
           status: log.status || 'completed'
+
         }));
         
         setLogs(transformedLogs);

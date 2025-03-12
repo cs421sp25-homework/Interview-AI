@@ -30,16 +30,29 @@ const PromptPage = () => {
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const email = localStorage.getItem('user_email') || '';
   const pageRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`)
-      .then((response) => {
-        console.log("API Response:", response.data);
-        setSavedInterviewConfigs(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching interview configs:", error);
-      });
+    try {
+      // Check if user is logged in
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
+      }
+
+      axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`)
+        .then((response) => {
+          console.log("API Response:", response.data);
+          setSavedInterviewConfigs(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching interview configs:", error);
+        });
+    } catch (error) {
+      console.error('Error in PromptPage:', error);
+      navigate('/login');
+    }
   }, []);
 
   useEffect(() => {
