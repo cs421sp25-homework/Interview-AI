@@ -7,13 +7,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
-    Array<{ text: string; sender: 'user' | 'ai'; fullText?: string; isTyping?: boolean }>
+    Array<{ text: string; sender: 'user' | 'ai' }>
   >([]);
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAiResponding, setIsAiResponding] = useState(false);
   const [sessionInitialized, setSessionInitialized] = useState(false);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -31,62 +30,42 @@ const InterviewPage: React.FC = () => {
   }, [messages]);
   
   useEffect(() => {
+    console.log("Active conversation ID changed to:", activeConversationId);
     setMessages([]);
     setSessionInitialized(false);
-    setIsAiResponding(false);
+    setThreadId(null);
+    setIsLoading(true);
     initializeChat();
   }, [activeConversationId]);
   
-  const typeMessage = (fullText: string) => {
-    return new Promise<void>((resolve) => {
-      setMessages((prev) => {
-        const filteredMessages = prev.filter(msg => !msg.isTyping);
-        return [...filteredMessages, { text: '', sender: 'ai', fullText, isTyping: true }];
-      });
-      
-      let currentIndex = 0;
-      const typingSpeed = 30; 
-      
-      const typeNextChar = () => {
-        if (currentIndex < fullText.length) {
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            
-            if (lastMessage && lastMessage.isTyping) {
-              lastMessage.text = fullText.substring(0, currentIndex + 1);
-            }
-            
-            return newMessages;
-          });
-          
-          currentIndex++;
-          setTimeout(typeNextChar, typingSpeed);
-        } else {
-          // 打字完成，更新消息状态
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            
-            if (lastMessage && lastMessage.isTyping) {
-              lastMessage.isTyping = false;
-            }
-            
-            return newMessages;
-          });
-          
-          setIsAiResponding(false);
-          resolve();
-        }
-      };
-      
-      setTimeout(typeNextChar, typingSpeed);
-    });
-  };
-  
-  // 加载历史消息，不使用打字效果
+  // 加载历史消息
   const loadHistoryMessages = (historyMessages: Array<{ text: string; sender: 'user' | 'ai' }>) => {
     setMessages(historyMessages);
+  };
+  
+  // 从localStorage获取历史消息
+  const getHistoryMessages = (threadId: string) => {
+    try {
+      const historyKey = `chat_history_${threadId}`;
+      const savedHistory = localStorage.getItem(historyKey);
+      
+      if (savedHistory) {
+        return JSON.parse(savedHistory);
+      }
+    } catch (error) {
+      console.error('Error getting history messages:', error);
+    }
+    return null;
+  };
+  
+  // 保存历史消息到localStorage
+  const saveHistoryMessages = (threadId: string, messages: Array<{ text: string; sender: 'user' | 'ai' }>) => {
+    try {
+      const historyKey = `chat_history_${threadId}`;
+      localStorage.setItem(historyKey, JSON.stringify(messages));
+    } catch (error) {
+      console.error('Error saving history messages:', error);
+    }
   };
   
   const initializeChat = async () => {
@@ -94,49 +73,54 @@ const InterviewPage: React.FC = () => {
     
     setIsLoading(true);
     
+    // 首先检查是否是返回到现有会话
     const logsString = localStorage.getItem('interview_logs');
-    if (logsString) {
+    if (logsString && activeConversationId) {
       try {
         const logs = JSON.parse(logsString);
         const activeLog = logs.find((log: any) => log.id.toString() === activeConversationId);
         
         if (activeLog && activeLog.thread_id) {
+          console.log("Found existing session with thread_id:", activeLog.thread_id);
           setThreadId(activeLog.thread_id);
           
-          // 检查是否有历史消息
-          const historyKey = `chat_history_${activeLog.thread_id}`;
-          const savedHistory = localStorage.getItem(historyKey);
+          // 尝试从localStorage加载历史消息
+          const historyMessages = getHistoryMessages(activeLog.thread_id);
           
-          if (savedHistory) {
-            // 如果有历史消息，直接加载，不使用打字效果
-            loadHistoryMessages(JSON.parse(savedHistory));
+          if (historyMessages && historyMessages.length > 0) {
+            console.log("Loading history messages from localStorage for thread_id:", activeLog.thread_id);
+            loadHistoryMessages(historyMessages);
             setIsLoading(false);
             setSessionInitialized(true);
             return;
+          } else {
+            console.log("No history messages found, setting welcome message");
+            // 如果没有历史消息，显示欢迎消息
+            const welcomeMessage = `Welcome to your interview session for "${activeLog.title}". Please feel free to start the conversation.`;
+            
+            setIsLoading(false);
+            setSessionInitialized(true);
+            
+            // 直接设置欢迎消息
+            setMessages([{ text: welcomeMessage, sender: 'ai' }]);
+            
+            // 保存这条欢迎消息到历史记录
+            saveHistoryMessages(activeLog.thread_id, [{ text: welcomeMessage, sender: 'ai' }]);
+            
+            return;
           }
-          
-          // 如果没有历史消息，显示欢迎消息
-          const welcomeMessage = `Welcome to your interview session for "${activeLog.title}". Please feel free to start the conversation.`;
-          
-          setIsLoading(false);
-          setSessionInitialized(true);
-          
-          // 使用打字效果显示欢迎消息
-          await typeMessage(welcomeMessage);
-          
-          // 保存这条欢迎消息到历史记录
-          const initialHistory = [{ text: welcomeMessage, sender: 'ai' as const }];
-          localStorage.setItem(historyKey, JSON.stringify(initialHistory));
-          
-          return;
+        } else {
+          console.error("Active log found but no thread_id:", activeLog);
         }
       } catch (error) {
         console.error('Error parsing logs:', error);
       }
     }
     
+    // 如果不是返回到现有会话，则创建新会话
     if (config_name) {
       try {
+        console.log("Creating new chat session with config:", config_name);
         const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -151,26 +135,31 @@ const InterviewPage: React.FC = () => {
         }
 
         const data = await res.json();
+        console.log("New chat created with thread_id:", data.thread_id);
         setThreadId(data.thread_id);
+        
+        // 更新logs中的thread_id
+        if (activeConversationId) {
+          updateLogThreadId(activeConversationId, data.thread_id);
+        }
         
         setIsLoading(false);
         setSessionInitialized(true);
         
         let messageText = '';
         
-        // 使用打字效果显示API返回的消息或默认欢迎消息
+        // 显示API返回的消息或默认欢迎消息
         if (data.response) {
           messageText = data.response;
         } else {
           messageText = `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
         }
         
-        await typeMessage(messageText);
+        // 直接设置消息
+        setMessages([{ text: messageText, sender: 'ai' }]);
         
         // 保存这条欢迎消息到历史记录
-        const historyKey = `chat_history_${data.thread_id}`;
-        const initialHistory = [{ text: messageText, sender: 'ai' as const }];
-        localStorage.setItem(historyKey, JSON.stringify(initialHistory));
+        saveHistoryMessages(data.thread_id, [{ text: messageText, sender: 'ai' }]);
         
       } catch (error) {
         console.error('Error starting interview:', error);
@@ -184,22 +173,39 @@ const InterviewPage: React.FC = () => {
     }
   };
   
+  // 更新logs中的thread_id
+  const updateLogThreadId = (logId: string, threadId: string) => {
+    try {
+      const logsString = localStorage.getItem('interview_logs');
+      if (logsString) {
+        const logs = JSON.parse(logsString);
+        const updatedLogs = logs.map((log: any) => {
+          if (log.id.toString() === logId) {
+            return { ...log, thread_id: threadId };
+          }
+          return log;
+        });
+        localStorage.setItem('interview_logs', JSON.stringify(updatedLogs));
+        console.log("Updated thread_id in logs for log ID:", logId);
+      }
+    } catch (error) {
+      console.error('Error updating log thread_id:', error);
+    }
+  };
+  
   const handleSend = async () => {
     if (!threadId) {
       message.warning('No active interview session. Please start a new interview.');
       return;
     }
     
-    if (!input.trim() || isAiResponding) return;
+    if (!input.trim()) return;
     
     // 添加用户消息
     const userMessage = { text: input, sender: 'user' as const };
     setMessages((prev) => [...prev, userMessage]);
     const userInput = input;
     setInput('');
-    
-    // 设置AI正在响应状态
-    setIsAiResponding(true);
     
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -214,18 +220,20 @@ const InterviewPage: React.FC = () => {
       
       const data = await res.json();
       
-      // 使用打字效果显示AI回复
-      await typeMessage(data.response);
+      // 直接添加AI回复
+      const aiMessage = { text: data.response, sender: 'ai' as const };
       
-      // 更新历史记录
-      const historyKey = `chat_history_${threadId}`;
-      const currentMessages = [...messages, userMessage, { text: data.response, sender: 'ai' as const }];
-      localStorage.setItem(historyKey, JSON.stringify(currentMessages));
+      // 使用函数式更新确保获取最新状态
+      setMessages(prevMessages => {
+        const updatedMessages = [...prevMessages, aiMessage];
+        // 保存更新后的消息列表
+        saveHistoryMessages(threadId, updatedMessages);
+        return updatedMessages;
+      });
       
     } catch (error) {
       console.error('Error processing chat:', error);
       message.error('Failed to send message. Please try again.');
-      setIsAiResponding(false);
     }
   };
 
@@ -248,10 +256,9 @@ const InterviewPage: React.FC = () => {
                 key={index}
                 className={`${styles.message} ${
                   message.sender === 'ai' ? styles.aiMessage : styles.userMessage
-                } ${message.isTyping ? styles.typingMessage : ''}`}
+                }`}
               >
                 {message.text}
-                {message.isTyping && <span className={styles.typingCursor}></span>}
               </div>
             ))}
           </div>
@@ -261,21 +268,19 @@ const InterviewPage: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={isAiResponding ? "AI is responding..." : "Type your response..."}
+              placeholder="Type your response..."
               className={styles.input}
-              disabled={isAiResponding}
             />
             <button 
               className={styles.micButton} 
               onClick={() => setIsRecording(!isRecording)}
-              disabled={isAiResponding}
             >
               {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
             </button>
             <button 
               className={styles.sendButton} 
               onClick={handleSend}
-              disabled={isAiResponding || !input.trim()}
+              disabled={!input.trim()}
             >
               <Send size={20} />
             </button>

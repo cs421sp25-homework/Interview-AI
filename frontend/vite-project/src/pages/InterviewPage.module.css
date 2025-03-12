@@ -291,25 +291,19 @@
 }
 
 .typingMessage {
-  position: relative;
+  display: none;
 }
 
 .typingCursor {
-  display: inline-block;
-  width: 2px;
-  height: 1.2em;
-  background-color: currentColor;
-  margin-left: 2px;
-  vertical-align: middle;
-  animation: blink 0.7s infinite;
+  display: none;
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
+  0%, 100% { opacity: 0; }
   50% { opacity: 0; }
 }
 
-/* 禁用状态的按钮样式 */
+/* 保留禁用状态的按钮样式 */
 .micButton:disabled, .sendButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;

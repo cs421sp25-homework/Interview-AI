@@ -14,6 +14,7 @@ import 'antd/dist/reset.css';
 import InterviewLayout from './pages/InterviewLayout';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import OnGoingVoice from './pages/OnGoingVoice';
+import InterviewHistoryPage from './pages/InterviewHistoryPage';
 
 function App() {
   return (
@@ -34,8 +35,11 @@ function App() {
           {/* Default route for text interview */}
           <Route index element={<InterviewPage />} />
           <Route path="text" element={<InterviewPage />} />
+          <Route path="text/:id" element={<InterviewPage />} />
           <Route path="voice" element={<VoiceInterviewPage />} />
+          <Route path="voice/:id" element={<VoiceInterviewPage />} />
           <Route path="voice/ongoing" element={<OnGoingVoice />} />
+          <Route path="history" element={<InterviewHistoryPage />} />
       </Route>
     </Routes>
   );

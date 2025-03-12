@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Flex, Layout, Menu, Button, ConfigProvider, theme, Input, Modal, Form, message, Tag, Space, Select} from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, SoundOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, SoundOutlined, PlusOutlined, SettingOutlined, HistoryOutlined} from '@ant-design/icons';
 import { Bot, Plus, X, Play} from 'lucide-react';
 import type { ConfigProviderProps } from 'antd';
 import axios from 'axios';
@@ -254,9 +254,9 @@ const InterviewLayout: React.FC = () => {
               console.log("Menu: current_config set to:", config_name);
 
               if (selectedLog?.form === 'voice') {
-                navigate('/interview/voice');
+                navigate(`/interview/voice/${info.key}`);
               } else {
-                navigate('/interview/text');
+                navigate(`/interview/text/${info.key}`);
               }
             }}
           />
@@ -284,6 +284,15 @@ const InterviewLayout: React.FC = () => {
               <Bot size={32} color="#ec4899" />
               <h1 className="app-title">InterviewAI</h1>
             </div>
+            <Button
+              type="default"
+              icon={<HistoryOutlined />}
+              onClick={() => navigate('/interview/history')}
+              className="history-button"
+              style={{ marginRight: '10px' }}
+            >
+              Interview History
+            </Button>
             <Button
               type="default"
               icon={<SettingOutlined />}

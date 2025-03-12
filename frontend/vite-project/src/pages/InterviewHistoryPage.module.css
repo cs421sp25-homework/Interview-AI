@@ -1,0 +1,141 @@
+.historyContainer {
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.historyHeader {
+  margin-bottom: 24px;
+}
+
+.historyHeader h2 {
+  margin-bottom: 8px;
+  color: #1f2937;
+}
+
+.filterSection {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+.searchInput {
+  width: 250px;
+}
+
+.datePicker, .typeFilter, .statusFilter {
+  min-width: 180px;
+}
+
+.historyTable {
+  flex: 1;
+}
+
+.historyTable :global(.ant-table-thead > tr > th) {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.interviewTitle {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.interviewCompany {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 详情模态框样式 */
+.detailContent {
+  padding: 16px 0;
+}
+
+.detailSection {
+  margin-bottom: 24px;
+}
+
+.detailSection:last-child {
+  margin-bottom: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.performanceStats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.statItem {
+  text-align: center;
+  flex: 1;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ec4899;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.insightsList {
+  margin-top: 16px;
+  padding-left: 20px;
+}
+
+.insightsList li {
+  margin-bottom: 8px;
+  color: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .filterSection > div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .searchInput, .datePicker, .typeFilter, .statusFilter {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .performanceStats {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .statItem {
+    flex-basis: 45%;
+  }
+} 
