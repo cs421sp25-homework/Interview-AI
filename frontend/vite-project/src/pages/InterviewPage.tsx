@@ -15,6 +15,11 @@ const InterviewPage: React.FC = () => {
   const [isChatReady, setIsChatReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Record whether the interview has ended and if there is actual conversation
+  const hasEndedInterviewRef = useRef(false);
+  const hasRealConversationRef = useRef(false);
+  const initialLoadRef = useRef(true);
+  
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const userEmail = localStorage.getItem('user_email') || '';
   const config_name = localStorage.getItem('current_config') || '';
@@ -27,8 +32,21 @@ const InterviewPage: React.FC = () => {
     }
   }, [messages]);
   
+  // Update hasRealConversationRef when there are user messages indicating a real conversation
+  useEffect(() => {
+    if (messages.length > 1 || (messages.length === 1 && messages[0].sender === 'user')) {
+      hasRealConversationRef.current = true;
+    }
+  }, [messages]);
+  
   const saveChatHistory = useCallback(async (currentThreadId: string, chatMessages: Array<{ text: string; sender: 'user' | 'ai' }>) => {
     try {
+      // If there's only one AI message, it's just the welcome message, skip saving
+      if (chatMessages.length === 1 && chatMessages[0].sender === 'ai') {
+        console.log("Only welcome message exists, skipping save");
+        return true;
+      }
+      
       console.log("Saving chat history to API for thread_id:", currentThreadId);
       
       const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
@@ -57,11 +75,25 @@ const InterviewPage: React.FC = () => {
   
   useEffect(() => {
     return () => {
-      if (threadId && messages.length > 0) {
+      // Only save chat history when all conditions are met:
+      // 1. Thread ID exists
+      // 2. Messages exist
+      // 3. Interview has not been explicitly ended
+      // 4. There is real conversation (not just welcome message)
+      // 5. Not in initial loading phase
+      if (
+        threadId && 
+        messages.length > 0 && 
+        !hasEndedInterviewRef.current && 
+        hasRealConversationRef.current &&
+        !initialLoadRef.current
+      ) {
         console.log("Component unmounting, saving chat history");
         saveChatHistory(threadId, messages)
           .then(() => console.log("Chat history saved on unmount"))
           .catch(err => console.error("Failed to save chat history on unmount:", err));
+      } else {
+        console.log("Skipping save on unmount because conditions not met");
       }
     };
   }, [threadId, messages, saveChatHistory]);
@@ -82,6 +114,7 @@ const InterviewPage: React.FC = () => {
     
     const createSession = async () => {
       try {
+        console.log("Creating new interview session...");
         const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -97,16 +130,30 @@ const InterviewPage: React.FC = () => {
         }
   
         const data = await res.json();
+        console.log("Received session data:", data);
+        
+        if (!data.thread_id) {
+          throw new Error("No thread_id received from server");
+        }
         
         setThreadId(data.thread_id);
         
         const welcomeMessage = data.response || 
           `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
         
-        setMessages([{ text: welcomeMessage, sender: 'ai' as const }]);
+        setMessages([{ 
+          text: welcomeMessage, 
+          sender: 'ai' as const 
+        }]);
         
         setIsChatReady(true);
         setIsLoading(false);
+        
+        // Set initial load flag to false after a short delay
+        setTimeout(() => {
+          initialLoadRef.current = false;
+          console.log("Initial load phase completed");
+        }, 1000);
         
         return data.thread_id;
       } catch (error) {
@@ -171,6 +218,9 @@ const InterviewPage: React.FC = () => {
     }
 
     try {
+      // Mark interview as ended
+      hasEndedInterviewRef.current = true;
+      
       message.loading('Saving your interview responses...', 1);
       
       if (messages.length > 0) {

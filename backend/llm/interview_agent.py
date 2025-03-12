@@ -1,4 +1,3 @@
-
 import json
 from characters.interviewer import Interviewer
 from .llm_graph import LLMGraph
@@ -67,6 +66,10 @@ class LLMInterviewAgent:
 
         # Insert the system message to seed the context
         self.llm_graph.invoke(SystemMessage(content=system_message_content), thread_id=self.thread_id)
+        
+
+        welcome_message = f"Welcome to your interview for a position at {interviewer.company_name}. I'm excited to learn more about your skills and experience. Could you please start by telling me a bit about yourself and your background?"
+        self.conversation.append({"role": "assistant", "content": welcome_message})
 
     def greet(self) -> str:
         """
@@ -127,7 +130,7 @@ class LLMInterviewAgent:
         Returns a final statement from the AI or a generic end-of-interview message.
         """
         # You could also ask the LLM to produce a final closing statement
-        # For simplicity, we’ll do a static message
+        # For simplicity, we'll do a static message
         closing_remarks = "Thank you for your time. The interview has concluded."
         self.conversation.append({"role": "assistant", "content": closing_remarks})
         return closing_remarks

@@ -428,50 +428,47 @@ def new_chat():
     data = request.get_json()
     email = data.get("email")
     name = data.get("name")
-
+    
     if not email or not name:
         return jsonify({"error": "Missing 'email' or 'name' in request."}), 400
-    print(f"name: {name}")
-    # 1) Get config from DB
+    
     config_row = config_service.get_single_config(name=name, email=email)
     if not config_row:
         return jsonify({"error": "No config found for given name and email."}), 404
 
-    config_id = config_row.get("id")
+    print(f"get_single_config result: {config_row}")
     
-    # Suppose your configs table has columns:
-    #   name, email, config_value, ...
-    # We'll assume config_value is a dict that might contain job_description, etc.
-    config_value = config_row.get("config_value", {})
-
-    #TODO fetch resume and put it into interviewer
-
-    # 2) Build an Interviewer object from config
+    config_id = config_row.get("id")
+    company_name = config_row.get("company_name", "our company")
+    interview_name = config_row.get("interview_name", name)
+    question_type = config_row.get("question_type", "")
+    job_description = config_row.get("job_description", "")
+    
     interviewer = Interviewer(
-        # name=config_value.get("interviewer_name", ""), 
-        # personality=config_value.get("interviewer_personality", ""),
-        age=config_value.get("interviewer_age", ""),
-        language=config_value.get("interviewer_language", "English"),
-        job_description=config_value.get("job_description", ""),
-        company_name=config_value.get("company_name", ""),
-        # interviewee_resume=config_value.get("interviewee_resume", "")
+        age=config_row.get("interviewer_age", ""),
+        language=config_row.get("interviewer_language", "English"),
+        job_description=job_description,
+        company_name=company_name,
     )
 
     thread_id = str(uuid.uuid4())
-    # 3) Create and initialize the LLMInterviewAgent
+    
     agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5, thread_id=thread_id)  
     agent.initialize(interviewer)
 
-    # 4) Agent greet
-    greeting = agent.greet()
+    welcome_message = ""
+    if question_type == "behavioral":
+        welcome_message = f"Welcome to your behavioral interview for {interview_name} at {company_name}. I'll be asking questions about how you've handled various situations in your past experiences. Let's start by having you introduce yourself briefly."
+    elif question_type == "technical":
+        welcome_message = f"Welcome to your technical interview for {interview_name} at {company_name}. I'll be assessing your technical knowledge and problem-solving skills. Let's begin with a brief introduction about your technical background."
+    else:
+        welcome_message = f"Welcome to your interview for {interview_name} at {company_name}. I'm excited to learn more about your skills and experience. Could you please start by telling me a bit about yourself and your background?"
 
-    # Store this agent in our active_interviews
     active_interviews[thread_id] = agent
 
-    # 5) Return greeting + thread_id
     return jsonify({
         "thread_id": thread_id,
-        "response": greeting
+        "response": welcome_message
     })
 
 @app.route("/api/chat", methods=["POST"])
@@ -521,15 +518,32 @@ def save_chat_history():
     if not thread_id or not user_email or not messages:
         return jsonify({"error": "Missing required parameters"}), 400
     
+    # Check if there's only a welcome message, if so skip saving
+    if len(messages) == 1 and messages[0].get('sender') == 'ai':
+        print(f"Skipping save for thread {thread_id} - only contains welcome message")
+        return jsonify({"success": True, "skipped": True, "reason": "only_welcome_message"})
+    
+    # Check existing record's message count
     try:
         existing_log = None
         result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
+        
         if result.data and len(result.data) > 0:
             existing_log = result.data[0]
             config_name = existing_log.get('config_name', config_name)
-            # 如果数据库中已有config_id且请求中没有提供，则使用数据库中的值
             if not config_id and 'config_id' in existing_log:
                 config_id = existing_log.get('config_id')
+                
+            # Check if existing record has more messages
+            existing_messages = existing_log.get('log')
+            if existing_messages:
+                if isinstance(existing_messages, str):
+                    import json
+                    existing_messages = json.loads(existing_messages)
+                    
+                if len(existing_messages) > len(messages):
+                    print(f"Skipping save for thread {thread_id} - existing log has more messages")
+                    return jsonify({"success": True, "skipped": True, "reason": "existing_log_longer"})
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
