@@ -210,12 +210,12 @@ const UserDashboard = () => {
                   <div className={styles.actionIcon}>
                     <FileText size={24} color="#ec4899" />
                   </div>
-                  <h3>Set Interview Configuration</h3>
+                  <h3>History</h3>
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
-                    Manage Your Interview Configurations
+                    View your past interview sessions
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
-                    Configure
+                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview/history')}>
+                    View
                   </button>
                 </div>
               </div>
