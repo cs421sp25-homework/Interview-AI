@@ -429,7 +429,7 @@ def new_chat():
 
     if not email or not name:
         return jsonify({"error": "Missing 'email' or 'name' in request."}), 400
-
+    print(f"name: {name}")
     # 1) Get config from DB
     config_row = config_service.get_single_config(name=name, email=email)
     if not config_row:

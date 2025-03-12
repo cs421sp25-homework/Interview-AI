@@ -108,8 +108,7 @@
 
 .sendButton:hover {
   background: #db2777;
-} 
-
+}
 
 .ant-menu {
   background-color: #ec4899 !important;
@@ -123,4 +122,236 @@
 .ant-menu-item-selected {
   background-color: #c12767 !important; /* Darker pink */
   color: white !important;
+}
+
+.startInterviewContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin: 2rem;
+}
+
+.startInterviewContainer h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.startInterviewContainer p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #4b5563;
+  max-width: 500px;
+}
+
+.startButton {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #ec4899;
+  border-color: #ec4899;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.startButton:hover {
+  background-color: #db2777;
+  border-color: #db2777;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.configModalContent {
+  padding: 1rem 0;
+}
+
+.configModalContent p {
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+  font-size: 1rem;
+}
+
+.configList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 1.5rem;
+  padding-right: 0.5rem;
+}
+
+.configItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.configItem:hover {
+  border-color: #ec4899;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.selectedConfig {
+  border-color: #ec4899;
+  background-color: #fdf2f8;
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
+}
+
+.configItem h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.configDetails {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.configDetails p {
+  margin: 0.25rem 0;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.emptyStateContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin: 2rem;
+}
+
+.emptyStateContainer h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.emptyStateContainer p {
+  font-size: 1.1rem;
+  color: #4b5563;
+  max-width: 500px;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin: 2rem;
+}
+
+.loadingContainer p {
+  font-size: 1.1rem;
+  color: #4b5563;
+  margin-top: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(236, 72, 153, 0.2);
+  border-radius: 50%;
+  border-top-color: #ec4899;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.typingMessage {
+  position: relative;
+}
+
+.typingCursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: currentColor;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 0.7s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 禁用状态的按钮样式 */
+.micButton:disabled, .sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.micButton:disabled:hover, .sendButton:disabled:hover {
+  background: #f3f4f6;
+}
+
+.sendButton:disabled {
+  background: #f3b4d2;
+}
+
+.sendButton:disabled:hover {
+  background: #f3b4d2;
+}
+
+.input:disabled {
+  background-color: #f9f9f9;
+  cursor: not-allowed;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #ec4899;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

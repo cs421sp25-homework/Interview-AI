@@ -50,6 +50,21 @@ const InterviewLayout: React.FC = () => {
     { id: 2, title: 'Interview 2 - Jane Smith', date: '2025-02-25', form: 'voice' },
   ]);
 
+  useEffect(() => {
+    const savedLogs = localStorage.getItem('interview_logs');
+    if (savedLogs) {
+      try {
+        setLogs(JSON.parse(savedLogs));
+      } catch (error) {
+        console.error('Error parsing logs from localStorage:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('interview_logs', JSON.stringify(logs));
+  }, [logs]);
+
   const fetchConfigurations = async () => {
     try {
       console.log("fetching configurations")
@@ -83,7 +98,7 @@ const InterviewLayout: React.FC = () => {
     navigate("/dashboard")
   };
 
-  const handleOk = () => {
+  const handleOk = async () => {
     if (!selectedConfigId) {
       message.warning('Please select a configuration');
       return;
@@ -101,26 +116,50 @@ const InterviewLayout: React.FC = () => {
     
     console.log("Modal: current_config set to:", config_name);
     
-    const newLog = {
-      id: logs.length + 1,
-      title: selectedConfig.interview_name,
-      date: new Date().toISOString(),
-      form: selectedConfig.interview_type,
-    };
+    // 显示加载状态
+    message.loading('Starting interview...', 0.5);
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: localStorage.getItem('user_email') || '', 
+          name: config_name
+        }), 
+      });
 
-    setLogs([...logs, newLog]);
+      if (!res.ok) {
+        throw new Error('Failed to start interview');
+      }
 
-    setActiveConversationId(newLog.id.toString());
+      const data = await res.json();
+      
+      const newLog = {
+        id: logs.length + 1,
+        title: selectedConfig.interview_name,
+        date: new Date().toISOString(),
+        form: selectedConfig.interview_type,
+        thread_id: data.thread_id 
+      };
 
-    if (selectedConfig.interview_type === 'voice') {
-      navigate('/interview/voice/ongoing');
-    } else {
-      navigate('/interview/text');
+      setLogs([...logs, newLog]);
+      setActiveConversationId(newLog.id.toString());
+
+      if (selectedConfig.interview_type === 'voice') {
+        navigate('/interview/voice/ongoing');
+      } else {
+        navigate('/interview/text');
+      }
+
+      setModalVisible(false);
+      setSelectedConfigId(null);
+      
+      message.success('Interview started successfully!');
+    } catch (error) {
+      console.error('Error starting interview:', error);
+      message.error('Failed to start interview. Please try again.');
     }
-
-    // Close the modal
-    setModalVisible(false);
-    setSelectedConfigId(null);
   };
 
   const handleCancel = () => {
@@ -145,7 +184,6 @@ const InterviewLayout: React.FC = () => {
         email: userEmail
       };
       
-      // 显示加载状态
       message.loading('Creating configuration...', 0.5);
       
       const response = await axios.post(`${API_BASE_URL}/api/create_interview_config`, configData);
