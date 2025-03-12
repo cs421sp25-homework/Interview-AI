@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Plus, X, MoreVertical, Edit, Trash } from 'lucide-react';
+import { Bot, Plus, X, MoreVertical, Edit, Trash, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './PromptPage.module.css';
 import axios from 'axios';
 import API_BASE_URL from '../config/api'
+import { message } from 'antd';
 
 const PromptPage = () => {
   interface InterviewConfig {
@@ -25,6 +26,7 @@ const PromptPage = () => {
   const [savedInterviewConfigs, setSavedInterviewConfigs] = useState<InterviewConfig[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<InterviewConfig | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const email = localStorage.getItem('user_email') || '';
   const pageRef = useRef<HTMLDivElement>(null);
@@ -54,8 +56,38 @@ const PromptPage = () => {
   }, [menuOpen]);
 
   const handleStartInterview = () => {
-    navigate('/interview');
+    if (selectedConfig) {
+      startInterviewWithConfig(selectedConfig);
+    } else {
+      message.error('Please select a configuration first');
+    }
   };  
+  
+  const startInterviewWithConfig = async (config: InterviewConfig) => {
+    try {
+      localStorage.setItem('current_config', config.interview_name);
+      localStorage.setItem('current_config_id', config.id.toString());
+      
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
+        if (response.data && response.data.data && response.data.data.photo_url) {
+          localStorage.setItem('user_photo_url', response.data.data.photo_url);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile for photo URL:', error);
+      }
+      
+      localStorage.removeItem('current_thread_id');
+      
+      if (config.interview_type === 'voice') {
+        navigate(`/interview/voice`);
+      } else {
+        navigate(`/interview/text`);
+      }
+    } catch (error) {
+      console.error('Error starting interview:', error);
+    }
+  };
 
   const handleSaveConfig = async () => {
     const interviewConfig = {
@@ -69,27 +101,40 @@ const PromptPage = () => {
     };
   
     if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.question_type || !interviewConfig.interview_type) {
-      alert("Please fill in all required fields marked with *");
+      message.error("Please fill in all required fields marked with *");
       return;
     }
   
     try {
-      if (selectedConfig) { // Editing an existing config
-        await axios.put(`${API_BASE_URL}/api/update_interview_config/${selectedConfig.id}`, interviewConfig);
+      if (isEditing && id) { 
+        await axios.put(`${API_BASE_URL}/api/update_interview_config/${id}`, interviewConfig);
         console.log("Interview configuration updated successfully.");
-        alert("Interview configuration updated successfully!");
-      } else { // Saving a new config
-        await axios.post(`${API_BASE_URL}/api/create_interview_config`, interviewConfig);
+        message.success("Interview configuration updated successfully!");
+        
+        const updatedConfigs = savedInterviewConfigs.map(config => 
+          config.id === id ? {...interviewConfig, id: config.id} as InterviewConfig : config
+        );
+        setSavedInterviewConfigs(updatedConfigs);
+        
+        setSelectedConfig({...interviewConfig, id} as InterviewConfig);
+      } else { 
+        const response = await axios.post(`${API_BASE_URL}/api/create_interview_config`, interviewConfig);
         console.log("New interview configuration saved successfully.");
-        alert("New interview configuration saved successfully!");
+        message.success("New interview configuration saved successfully!");
+        
+        if (response.data && response.data.id) {
+          const newConfig = {
+            ...interviewConfig,
+            id: response.data.id
+          } as InterviewConfig;
+          
+          setSavedInterviewConfigs([...savedInterviewConfigs, newConfig]);
+          setSelectedConfig(newConfig);
+        }
       }
   
-      // Refresh interview configs after saving
-      const response = await axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`);
-      setSavedInterviewConfigs(response.data);
-  
       setIsModalOpen(false);
-      setSelectedConfig(null);
+      setIsEditing(false);
       setInterviewId(null);
       setInterviewName('');
       setCompanyName('');
@@ -98,6 +143,7 @@ const PromptPage = () => {
       setInterviewType('text');
     } catch (error) {
       console.error("Error saving interview configuration:", error);
+      message.error("Failed to save configuration. Please try again.");
     }
   };
 
@@ -106,29 +152,45 @@ const PromptPage = () => {
     setInterviewId(selected.id);
     setInterviewName(selected.interview_name);
     setCompanyName(selected.company_name);
-    setJobDescription(selected.job_description);
+    setJobDescription(selected.job_description || '');
     setQuestionType(selected.question_type);
     setInterviewType(selected.interview_type);
+    setIsEditing(true);
     setIsModalOpen(true); 
   };
   
   const handleDelete = (index: number, id: number) => {
-    axios
-      .delete(`${API_BASE_URL}/api/delete_interview_config/${id}`)
-      .then((response) => {
-        if (response.status === 200) {
-          const updatedConfigs = savedInterviewConfigs.filter((_, i) => i !== index);
-          setSavedInterviewConfigs(updatedConfigs);
-          localStorage.setItem('interviews', JSON.stringify(updatedConfigs));
-          alert('Interview configuration deleted successfully!');
-        }
-      })
-      .catch((error) => {
-        console.error("Error deleting interview config:", error);
-        alert('Failed to delete the interview configuration. Please try again.');
-      });
+    if (confirm("Are you sure you want to delete this configuration?")) {
+      axios
+        .delete(`${API_BASE_URL}/api/delete_interview_config/${id}`)
+        .then((response) => {
+          if (response.status === 200) {
+            const updatedConfigs = savedInterviewConfigs.filter((_, i) => i !== index);
+            setSavedInterviewConfigs(updatedConfigs);
+            message.success('Interview configuration deleted successfully!');
+            
+            if (selectedConfig && selectedConfig.id === id) {
+              setSelectedConfig(null);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Error deleting interview config:", error);
+          message.error('Failed to delete the interview configuration. Please try again.');
+        });
+    }
   };
   
+  const openCreateModal = () => {
+    setIsEditing(false);
+    setInterviewId(null);
+    setInterviewName('');
+    setCompanyName('');
+    setJobDescription('');
+    setQuestionType('behavioral');
+    setInterviewType('text');
+    setIsModalOpen(true);
+  };
 
   return (
     <div className={styles.pageContainer} ref={pageRef}>
@@ -150,16 +212,13 @@ const PromptPage = () => {
       <main className={styles.main}>
         <div className={styles.header}>
           <h1>Interview Configurations</h1>
-          <p>Create or select an interview configuration</p>
+          <p>Select a configuration and click "Start Interview"</p>
         </div>
 
         <button 
-  className={styles.buttonPrimary} 
-  onClick={() => {
-    setSelectedConfig(null);
-    setIsModalOpen(true);
-  }}
->
+          className={styles.buttonPrimary} 
+          onClick={openCreateModal}
+        >
           <Plus size={20} /> Create Custom Interview Configuration
         </button>
 
@@ -213,18 +272,24 @@ const PromptPage = () => {
           ))}
         </div>
 
-        <button type="button" className={styles.buttonPrimary} onClick={handleStartInterview}>
-          Back to Interview Page
+        <button 
+          type="button" 
+          className={`${styles.buttonPrimary} ${!selectedConfig ? styles.buttonDisabled : ''}`} 
+          onClick={handleStartInterview}
+          disabled={!selectedConfig}
+        >
+          <Play size={20} /> Start Interview with Selected Configuration
         </button>
+        
       </main>
 
-        {isModalOpen && (
+      {isModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setIsModalOpen(false)}>
               <X size={20} />
             </button>
-            <h2>Customize Your Interview</h2>
+            <h2>{isEditing ? 'Edit Interview Configuration' : 'Create New Configuration'}</h2>
             <form className={styles.formCard}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
@@ -286,9 +351,18 @@ const PromptPage = () => {
                 </select>
               </div>
 
-              <button type="button" className={styles.buttonPrimary} onClick={handleSaveConfig}>
-                Save Configuration
-              </button>
+              <div className={styles.modalActions}>
+                <button 
+                  type="button" 
+                  className={styles.buttonSecondary}
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="button" className={styles.buttonPrimary} onClick={handleSaveConfig}>
+                  {isEditing ? 'Update' : 'Save'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

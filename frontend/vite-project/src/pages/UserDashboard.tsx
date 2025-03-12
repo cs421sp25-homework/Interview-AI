@@ -201,7 +201,7 @@ const UserDashboard = () => {
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
                     Start With Customized Configuration
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview')}>
+                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
                     Start Now
                   </button>
                 </div>
