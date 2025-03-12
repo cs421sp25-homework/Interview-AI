@@ -643,6 +643,29 @@ def delete_interview_config(id):
             return jsonify({'message': 'Configuration not found.'}), 404
     except Exception as e:
         return jsonify({'message': str(e)}), 400
+
+
+@app.route('/api/interview_logs/<email>', methods=['GET'])
+def get_interview_logs(email):
+    """
+    Retrieves all interview logs for a specific user by email.
+    """
+    try:
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+            
+        result = supabase.table('interview_logs').select('*').eq('email', email).order('created_at', desc=True).execute()
+        
+        if not result.data:
+            return jsonify({"data": []}), 200
+            
+        return jsonify({"data": result.data}), 200
+    except Exception as e:
+        print(f"Error fetching interview logs: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
+
     
 if __name__ == '__main__':
     import os

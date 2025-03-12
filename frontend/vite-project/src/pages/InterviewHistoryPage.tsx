@@ -61,25 +61,88 @@ const InterviewHistoryPage: React.FC = () => {
     setLoading(true);
     try {
 
-      const savedLogs = localStorage.getItem('interview_logs');
-      if (savedLogs) {
-        const parsedLogs = JSON.parse(savedLogs);
-        
-        const enhancedLogs = parsedLogs.map((log: any) => ({
-          ...log,
-          duration: Math.floor(Math.random() * 60) + 15, // 15-75分钟
-          question_count: Math.floor(Math.random() * 20) + 5, // 5-25个问题
-          company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
-          interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
-          status: Math.random() > 0.7 ? 'completed' : (Math.random() > 0.5 ? 'in-progress' : 'abandoned')
+      const userEmail = localStorage.getItem('user_email') || '';
+      
+      if (!userEmail) {
+        message.error('User not logged in');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch interview logs from API
+      const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch interview logs: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched interview logs:', data);
+      
+      if (data && Array.isArray(data.data)) {
+        // Transform the data to match our component's expected format
+        const transformedLogs = data.data.map((log: any) => ({
+          id: log.id,
+          thread_id: log.thread_id,
+          title: log.config_name || 'Unnamed Interview',
+          date: log.created_at || new Date().toISOString(),
+          company_name: log.config_name?.includes('-') 
+            ? log.config_name.split('-')[1].trim() 
+            : 'Unknown Company',
+          form: 'text', // Default to text since we don't have this info
+          duration: log.duration || Math.floor(Math.random() * 60) + 15,
+          question_count: log.message_count || Math.floor(Math.random() * 20) + 5,
+          interview_type: log.interview_type || (Math.random() > 0.5 ? 'Technical' : 'Behavioral'),
+          status: log.status || 'completed'
+
         }));
         
-        setLogs(enhancedLogs);
-        setFilteredLogs(enhancedLogs);
+        setLogs(transformedLogs);
+        setFilteredLogs(transformedLogs);
+      } else {
+        // Fallback to localStorage if API doesn't return expected data
+        const savedLogs = localStorage.getItem('interview_logs');
+        if (savedLogs) {
+          const parsedLogs = JSON.parse(savedLogs);
+          
+          const enhancedLogs = parsedLogs.map((log: any) => ({
+            ...log,
+            duration: Math.floor(Math.random() * 60) + 15, // 15-75 minutes
+            question_count: Math.floor(Math.random() * 20) + 5, // 5-25 questions
+            company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
+            interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
+            status: Math.random() > 0.7 ? 'completed' : (Math.random() > 0.5 ? 'in-progress' : 'abandoned')
+          }));
+          
+          setLogs(enhancedLogs);
+          setFilteredLogs(enhancedLogs);
+        }
       }
     } catch (error) {
       console.error('Error fetching interview logs:', error);
       message.error('Failed to load interview history');
+      
+      // Fallback to localStorage if API call fails
+      try {
+        const savedLogs = localStorage.getItem('interview_logs');
+        if (savedLogs) {
+          const parsedLogs = JSON.parse(savedLogs);
+          
+          const enhancedLogs = parsedLogs.map((log: any) => ({
+            ...log,
+            duration: Math.floor(Math.random() * 60) + 15,
+            question_count: Math.floor(Math.random() * 20) + 5,
+            company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
+            interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
+            status: Math.random() > 0.7 ? 'completed' : (Math.random() > 0.5 ? 'in-progress' : 'abandoned')
+          }));
+          
+          setLogs(enhancedLogs);
+          setFilteredLogs(enhancedLogs);
+        }
+      } catch (fallbackError) {
+        console.error('Error with localStorage fallback:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -88,7 +151,7 @@ const InterviewHistoryPage: React.FC = () => {
   const applyFilters = () => {
     let filtered = [...logs];
     
-    // 应用搜索文本过滤
+
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(log => 
@@ -97,7 +160,7 @@ const InterviewHistoryPage: React.FC = () => {
       );
     }
     
-    // 应用日期范围过滤
+
     if (dateRange && dateRange[0] && dateRange[1]) {
       const startDate = new Date(dateRange[0]).getTime();
       const endDate = new Date(dateRange[1]).getTime();
@@ -107,12 +170,12 @@ const InterviewHistoryPage: React.FC = () => {
       });
     }
     
-    // 应用类型过滤
+
     if (typeFilter) {
       filtered = filtered.filter(log => log.form === typeFilter);
     }
     
-    // 应用状态过滤
+
     if (statusFilter) {
       filtered = filtered.filter(log => log.status === statusFilter);
     }
@@ -121,7 +184,7 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewInterview = (log: InterviewLog) => {
-    // 设置当前配置并导航到相应的面试页面
+
     localStorage.setItem("current_config", log.title);
     if (log.form === 'voice') {
       navigate(`/interview/voice/${log.id}`);
