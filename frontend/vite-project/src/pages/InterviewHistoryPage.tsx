@@ -36,7 +36,21 @@ const InterviewHistoryPage: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    fetchInterviewLogs();
+    try {
+      // Check if user is logged in
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
+      }
+      
+      // Continue with existing code
+      fetchInterviewLogs();
+    } catch (error) {
+      console.error('Error in InterviewHistoryPage:', error);
+      navigate('/login');
+    }
   }, []);
   
   useEffect(() => {
@@ -46,13 +60,11 @@ const InterviewHistoryPage: React.FC = () => {
   const fetchInterviewLogs = async () => {
     setLoading(true);
     try {
-      // 从localStorage获取logs作为示例
-      // 在实际应用中，这里应该是从API获取数据
+
       const savedLogs = localStorage.getItem('interview_logs');
       if (savedLogs) {
         const parsedLogs = JSON.parse(savedLogs);
         
-        // 添加一些模拟数据以展示更完整的UI
         const enhancedLogs = parsedLogs.map((log: any) => ({
           ...log,
           duration: Math.floor(Math.random() * 60) + 15, // 15-75分钟
