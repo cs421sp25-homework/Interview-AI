@@ -13,6 +13,7 @@ import OAuthSignUpForm from './pages/OAuthSignUpForm';
 import 'antd/dist/reset.css';
 import OnGoingVoice from './pages/OnGoingVoice';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
+import '@ant-design/v5-patch-for-react-19';
 
 function App() {
   return (

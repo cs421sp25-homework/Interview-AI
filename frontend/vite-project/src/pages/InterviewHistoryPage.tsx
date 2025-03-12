@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography } from 'antd';
-import { SearchOutlined, DeleteOutlined, ExportOutlined, EyeOutlined, BarChartOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, ExportOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewHistoryPage.module.css';
@@ -15,11 +15,11 @@ interface InterviewLog {
   date: string;
   form: 'text' | 'voice';
   thread_id: string;
-  duration?: number; 
+  
   question_count?: number; 
   company_name?: string; 
   interview_type?: string; 
-  status?: 'completed' | 'in-progress' | 'abandoned';
+  
 }
 
 const InterviewHistoryPage: React.FC = () => {
@@ -29,7 +29,7 @@ const InterviewHistoryPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState<[any, any] | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
   const [selectedLog, setSelectedLog] = useState<InterviewLog | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   
@@ -55,7 +55,7 @@ const InterviewHistoryPage: React.FC = () => {
   
   useEffect(() => {
     applyFilters();
-  }, [logs, searchText, dateRange, typeFilter, statusFilter]);
+  }, [logs, searchText, dateRange, typeFilter]);
   
   const fetchInterviewLogs = async () => {
     setLoading(true);
@@ -80,7 +80,7 @@ const InterviewHistoryPage: React.FC = () => {
       console.log('Fetched interview logs:', data);
       
       if (data && Array.isArray(data.data)) {
-        // Transform the data to match our component's expected format
+        
         const transformedLogs = data.data.map((log: any) => ({
           id: log.id,
           thread_id: log.thread_id,
@@ -89,11 +89,13 @@ const InterviewHistoryPage: React.FC = () => {
           company_name: log.config_name?.includes('-') 
             ? log.config_name.split('-')[1].trim() 
             : 'Unknown Company',
-          form: 'text', // Default to text since we don't have this info
-          duration: log.duration || Math.floor(Math.random() * 60) + 15,
+          form: 'text', 
+          
+          
           question_count: log.message_count || Math.floor(Math.random() * 20) + 5,
           interview_type: log.interview_type || (Math.random() > 0.5 ? 'Technical' : 'Behavioral'),
-          status: log.status || 'completed'
+          
+          
 
         }));
         
@@ -107,11 +109,13 @@ const InterviewHistoryPage: React.FC = () => {
           
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
-            duration: Math.floor(Math.random() * 60) + 15, // 15-75 minutes
+            
+            
             question_count: Math.floor(Math.random() * 20) + 5, // 5-25 questions
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
             interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
-            status: Math.random() > 0.7 ? 'completed' : (Math.random() > 0.5 ? 'in-progress' : 'abandoned')
+            
+            
           }));
           
           setLogs(enhancedLogs);
@@ -130,11 +134,12 @@ const InterviewHistoryPage: React.FC = () => {
           
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
-            duration: Math.floor(Math.random() * 60) + 15,
+            
+            
             question_count: Math.floor(Math.random() * 20) + 5,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
             interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
-            status: Math.random() > 0.7 ? 'completed' : (Math.random() > 0.5 ? 'in-progress' : 'abandoned')
+            
           }));
           
           setLogs(enhancedLogs);
@@ -176,9 +181,7 @@ const InterviewHistoryPage: React.FC = () => {
     }
     
 
-    if (statusFilter) {
-      filtered = filtered.filter(log => log.status === statusFilter);
-    }
+    
     
     setFilteredLogs(filtered);
   };
@@ -193,22 +196,40 @@ const InterviewHistoryPage: React.FC = () => {
     }
   };
   
+  const { confirm } = Modal;
+
   const handleDeleteInterview = (log: InterviewLog) => {
-    Modal.confirm({
+    console.log("delete clicked");
+  
+    confirm({
       title: 'Are you sure you want to delete this interview?',
+      icon: <ExclamationCircleOutlined />,
       content: 'This action cannot be undone.',
       okText: 'Yes, Delete',
-      okType: 'danger',
       cancelText: 'Cancel',
-      onOk: () => {
-        // 在实际应用中，这里应该调用API删除记录
-        const updatedLogs = logs.filter(item => item.id !== log.id);
-        setLogs(updatedLogs);
-        localStorage.setItem('interview_logs', JSON.stringify(updatedLogs));
-        message.success('Interview deleted successfully');
-      }
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/chat_history/${log.id}`, {
+            method: 'DELETE',
+          });
+  
+          if (!response.ok) {
+            throw new Error('Failed to delete interview log');
+          }
+  
+          const result = await response.json();
+          message.success(result.message || 'Interview deleted successfully');
+          setLogs(prevLogs => prevLogs.filter(item => item.id !== log.id));
+        } catch (error) {
+          console.error('Error deleting interview:', error);
+          message.error('Failed to delete interview');
+        }
+      },
     });
   };
+  
+  
   
   const handleExportInterview = (log: InterviewLog) => {
     // 在实际应用中，这里应该调用API导出面试记录
@@ -260,31 +281,14 @@ const InterviewHistoryPage: React.FC = () => {
         </Space>
       )
     },
-    {
-      title: 'Duration',
-      dataIndex: 'duration',
-      key: 'duration',
-      render: (duration?: number) => duration ? `${duration} min` : 'N/A'
-    },
+    
     {
       title: 'Questions',
       dataIndex: 'question_count',
       key: 'question_count',
       render: (count?: number) => count || 'N/A'
     },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status?: string) => {
-        let color = 'default';
-        if (status === 'completed') color = 'success';
-        else if (status === 'in-progress') color = 'processing';
-        else if (status === 'abandoned') color = 'error';
-        
-        return status ? <Tag color={color}>{status}</Tag> : 'N/A';
-      }
-    },
+    
     {
       title: 'Actions',
       key: 'actions',
@@ -312,7 +316,11 @@ const InterviewHistoryPage: React.FC = () => {
             type="text" 
             danger 
             icon={<DeleteOutlined />} 
-            onClick={() => handleDeleteInterview(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteInterview(record);
+            }}
+            
             title="Delete Interview"
           />
         </Space>
@@ -321,9 +329,11 @@ const InterviewHistoryPage: React.FC = () => {
   ];
   
   return (
+    
     <div className={styles.historyContainer}>
       <div className={styles.historyHeader}>
         <Title level={2}>Interview History</Title>
+        
         <Text type="secondary">View and manage your past interview sessions</Text>
       </div>
       
@@ -353,16 +363,7 @@ const InterviewHistoryPage: React.FC = () => {
             <Option value="voice">Voice</Option>
           </Select>
           
-          <Select
-            placeholder="Status"
-            allowClear
-            onChange={value => setStatusFilter(value)}
-            className={styles.statusFilter}
-          >
-            <Option value="completed">Completed</Option>
-            <Option value="in-progress">In Progress</Option>
-            <Option value="abandoned">Abandoned</Option>
-          </Select>
+          
         </Space>
       </div>
       
@@ -422,20 +423,14 @@ const InterviewHistoryPage: React.FC = () => {
                 <Text>{selectedLog.form === 'voice' ? 'Voice' : 'Text'}</Text>
               </div>
               
-              <div className={styles.detailItem}>
-                <Text strong>Duration:</Text>
-                <Text>{selectedLog.duration ? `${selectedLog.duration} minutes` : 'N/A'}</Text>
-              </div>
+              
               
               <div className={styles.detailItem}>
                 <Text strong>Questions:</Text>
                 <Text>{selectedLog.question_count || 'N/A'}</Text>
               </div>
               
-              <div className={styles.detailItem}>
-                <Text strong>Status:</Text>
-                <Text>{selectedLog.status || 'N/A'}</Text>
-              </div>
+              
             </div>
             
             <div className={styles.detailSection}>
