@@ -14,6 +14,7 @@ from services.profile_service import ProfileService
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
 from services.config_service import ConfigService
+from services.chat_history_service import ChatHistoryService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from services.chat_service import ChatService
@@ -42,6 +43,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 config_service = ConfigService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
+chat_history_service = ChatHistoryService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
 supabase = create_client(supabase_url, supabase_key)
 
@@ -435,6 +437,8 @@ def new_chat():
     if not config_row:
         return jsonify({"error": "No config found for given name and email."}), 404
 
+    config_id = config_row.get("id")
+    
     # Suppose your configs table has columns:
     #   name, email, config_value, ...
     # We'll assume config_value is a dict that might contain job_description, etc.
@@ -482,6 +486,9 @@ def chat():
     data = request.get_json()
     thread_id = data.get("thread_id")
     user_input = data.get("message", "")
+    user_email = data.get("email", "")
+    config_name = data.get("config_name", "Interview Session")
+    config_id = data.get("config_id")
 
     if not thread_id:
         return jsonify({"error": "Missing 'thread_id' in request."}), 400
@@ -491,6 +498,7 @@ def chat():
     agent = active_interviews[thread_id]
     # Next question from the agent
     next_ai_response = agent.next_question(user_input)
+    
     # Check if interview is ended
     if agent.is_end(next_ai_response):
         # We can optionally remove the agent from active_interviews
@@ -500,6 +508,44 @@ def chat():
     else:
         return jsonify({"response": next_ai_response, "ended": False})
 
+
+@app.route("/api/chat_history", methods=["POST"])
+def save_chat_history():
+    data = request.get_json()
+    thread_id = data.get("thread_id")
+    user_email = data.get("email")
+    messages = data.get("messages")
+    config_name = data.get("config_name", "Interview Session")
+    config_id = data.get("config_id")
+    
+    if not thread_id or not user_email or not messages:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    try:
+        existing_log = None
+        result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
+        if result.data and len(result.data) > 0:
+            existing_log = result.data[0]
+            config_name = existing_log.get('config_name', config_name)
+            # 如果数据库中已有config_id且请求中没有提供，则使用数据库中的值
+            if not config_id and 'config_id' in existing_log:
+                config_id = existing_log.get('config_id')
+    except Exception as e:
+        print(f"Error checking existing log: {e}")
+    
+    success = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    
+    if not success:
+        return jsonify({"error": "Failed to save chat history"}), 500
+    
+    try:
+        result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
+        if result.data and len(result.data) > 0:
+            return jsonify({"success": True, "data": result.data[0]}), 200
+    except Exception as e:
+        print(f"Error getting updated log: {e}")
+    
+    return jsonify({"success": True})
 
 @app.route('/api/oauth/email', methods=['GET'])
 def get_oauth_email():

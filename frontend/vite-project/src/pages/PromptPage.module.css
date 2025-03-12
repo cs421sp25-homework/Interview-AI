@@ -270,7 +270,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   margin-top: 1rem;
-  margin-bottom: 1rem; 
+  margin-bottom: 1rem;
+  height: 2.75rem;
 }
 
 .buttonPrimary:hover {
@@ -469,4 +470,81 @@
   color: #6b7280;
   border-top: 1px solid #e5e7eb;
   margin-top: auto;
+}
+
+.startButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ec4899;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.startButton:hover {
+  background-color: #db2777;
+}
+
+.buttonSecondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 16px;
+  height: 2.75rem;
+  width: 100%;
+}
+
+.buttonSecondary:hover {
+  background-color: #e5e7eb;
+}
+
+.buttonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonDisabled:hover {
+  background-color: #ec4899;
+  transform: none;
+  box-shadow: none;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modalActions button {
+  flex: 1;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.modal h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  text-align: center;
 }

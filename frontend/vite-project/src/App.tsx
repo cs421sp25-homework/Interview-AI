@@ -11,8 +11,6 @@ import AuthCallback from './pages/AuthCallback';
 import OAuthSignUpForm from './pages/OAuthSignUpForm';
 // import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
-import InterviewLayout from './pages/InterviewLayout';
-import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import OnGoingVoice from './pages/OnGoingVoice';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 
@@ -30,17 +28,9 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-
-      <Route path="/interview" element={<InterviewLayout />}>
-          {/* Default route for text interview */}
-          <Route index element={<InterviewPage />} />
-          <Route path="text" element={<InterviewPage />} />
-          <Route path="text/:id" element={<InterviewPage />} />
-          <Route path="voice" element={<VoiceInterviewPage />} />
-          <Route path="voice/:id" element={<VoiceInterviewPage />} />
-          <Route path="voice/ongoing" element={<OnGoingVoice />} />
-          <Route path="history" element={<InterviewHistoryPage />} />
-      </Route>
+      <Route path="/interview/text" element={<InterviewPage />} />
+      <Route path="/interview/voice" element={<OnGoingVoice />} />
+      <Route path="/interview/history" element={<InterviewHistoryPage />} />
     </Routes>
   );
 }
