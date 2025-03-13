@@ -18,8 +18,8 @@ interface InterviewLog {
   
   question_count?: number; 
   company_name?: string; 
-  interview_type?: string; 
-  
+  interview_type?: string;
+  log?: any; // Add log property for conversation data
 }
 
 const InterviewHistoryPage: React.FC = () => {
@@ -56,6 +56,13 @@ const InterviewHistoryPage: React.FC = () => {
   useEffect(() => {
     applyFilters();
   }, [logs, searchText, dateRange, typeFilter]);
+
+
+  const countQuestionsInConversation = (conversation: { text: string; sender: string }[]): number => {
+    return conversation
+      .filter(msg => msg.sender === "ai") 
+      .reduce((total, msg) => total + (msg.text.match(/\?/g) || []).length, 0);
+  };
   
   const fetchInterviewLogs = async () => {
     setLoading(true);
@@ -69,7 +76,7 @@ const InterviewHistoryPage: React.FC = () => {
         return;
       }
       
-      // Fetch interview logs from API
+
       const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
       
       if (!response.ok) {
@@ -92,7 +99,8 @@ const InterviewHistoryPage: React.FC = () => {
           form: 'text', 
           
           
-          question_count: log.message_count || Math.floor(Math.random() * 20) + 5,
+          question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
+
           interview_type: log.interview_type || (Math.random() > 0.5 ? 'Technical' : 'Behavioral'),
           
           
@@ -111,7 +119,7 @@ const InterviewHistoryPage: React.FC = () => {
             ...log,
             
             
-            question_count: Math.floor(Math.random() * 20) + 5, // 5-25 questions
+            question_count: log.conversation ? countQuestionsInConversation(log.conversation) : 0,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
             interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
             
@@ -186,14 +194,8 @@ const InterviewHistoryPage: React.FC = () => {
     setFilteredLogs(filtered);
   };
   
-  const handleViewInterview = (log: InterviewLog) => {
-
-    localStorage.setItem("current_config", log.title);
-    if (log.form === 'voice') {
-      navigate(`/interview/voice/${log.id}`);
-    } else {
-      navigate(`/interview/text/${log.id}`);
-    }
+  const handleViewInterviewLog = (log: InterviewLog) => {
+    navigate(`/interview/view/${log.id}`, { state: { conversation: log.log } });
   };
   
   const { confirm } = Modal;
@@ -297,8 +299,8 @@ const InterviewHistoryPage: React.FC = () => {
           <Button 
             type="text" 
             icon={<EyeOutlined />} 
-            onClick={() => handleViewInterview(record)}
-            title="Continue Interview"
+            onClick={() => handleViewInterviewLog(record)}
+            title="View Interview"
           />
           <Button 
             type="text" 
@@ -390,10 +392,10 @@ const InterviewHistoryPage: React.FC = () => {
             type="primary" 
             onClick={() => {
               setDetailModalVisible(false);
-              if (selectedLog) handleViewInterview(selectedLog);
+              if (selectedLog) handleViewInterviewLog(selectedLog);
             }}
           >
-            Continue Interview
+            View Interview
           </Button>
         ]}
         width={700}
