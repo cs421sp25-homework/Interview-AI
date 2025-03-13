@@ -48,6 +48,10 @@ const UserDashboard = () => {
         if (response.data.data) {
           const profile = response.data.data;
           
+          if (profile.photo_url) {
+            localStorage.setItem('user_photo_url', profile.photo_url);
+          }
+          
           let joinedDate = '';
           try {
             if (profile.created_at) {
@@ -201,7 +205,7 @@ const UserDashboard = () => {
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
                     Start With Customized Configuration
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview')}>
+                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
                     Start Now
                   </button>
                 </div>
@@ -210,12 +214,12 @@ const UserDashboard = () => {
                   <div className={styles.actionIcon}>
                     <FileText size={24} color="#ec4899" />
                   </div>
-                  <h3>Set Interview Configuration</h3>
+                  <h3>History</h3>
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
-                    Manage Your Interview Configurations
+                    View your past interview sessions
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
-                    Configure
+                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview/history')}>
+                    View
                   </button>
                 </div>
               </div>

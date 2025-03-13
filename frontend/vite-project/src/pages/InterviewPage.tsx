@@ -1,109 +1,386 @@
-// File: src/pages/InterviewPage.tsx
-import React, { useEffect, useState } from 'react';
-import { Layout, Mic, MicOff, Send } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, X, Bot, Home, Loader } from 'lucide-react';
 import styles from './InterviewPage.module.css';
-import { ConfigProvider } from 'antd';
+import { message } from 'antd';
 import API_BASE_URL from '../config/api';
-
-
-
+import { useNavigate } from 'react-router-dom';
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
     Array<{ text: string; sender: 'user' | 'ai' }>
   >([]);
   const [input, setInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
+  const [isChatReady, setIsChatReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Record whether the interview has ended and if there is actual conversation
+  const hasEndedInterviewRef = useRef(false);
+  const hasRealConversationRef = useRef(false);
+  const initialLoadRef = useRef(true);
+  
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const userEmail = localStorage.getItem('user_email') || '';
-  const config_name = localStorage.getItem('current_config') || 'default_config';
-
+  const config_name = localStorage.getItem('current_config') || '';
+  const config_id = localStorage.getItem('current_config_id') || '';
+  const navigate = useNavigate();
   
   useEffect(() => {
-    if (!threadId) {
-      startInterview();
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [messages]);
   
-  const startInterview = async () => {
+  // Update hasRealConversationRef when there are user messages indicating a real conversation
+  useEffect(() => {
+    if (messages.length > 1 || (messages.length === 1 && messages[0].sender === 'user')) {
+      hasRealConversationRef.current = true;
+    }
+  }, [messages]);
+  
+  const saveChatHistory = useCallback(async (currentThreadId: string, chatMessages: Array<{ text: string; sender: 'user' | 'ai' }>) => {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+      // If there's only one AI message, it's just the welcome message, skip saving
+      if (chatMessages.length === 1 && chatMessages[0].sender === 'ai') {
+        console.log("Only welcome message exists, skipping save");
+        return true;
+      }
+      
+      console.log("Saving chat history to API for thread_id:", currentThreadId);
+      
+      const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thread_id: currentThreadId,
+          email: userEmail,
+          messages: chatMessages,
+          config_name: config_name,
+          config_id: config_id
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save chat history: ${response.status} ${response.statusText}`);
+      }
+      
+      console.log("Chat history saved successfully");
+      return true;
+    } catch (error) {
+      console.error("Error saving chat history:", error);
+      return false;
+    }
+  }, [userEmail, config_name, config_id]);
+  
+  useEffect(() => {
+    return () => {
+      // Only save chat history when all conditions are met:
+      // 1. Thread ID exists
+      // 2. Messages exist
+      // 3. Interview has not been explicitly ended
+      // 4. There is real conversation (not just welcome message)
+      // 5. Not in initial loading phase
+      if (
+        threadId && 
+        messages.length > 0 && 
+        !hasEndedInterviewRef.current && 
+        hasRealConversationRef.current &&
+        !initialLoadRef.current
+      ) {
+        console.log("Component unmounting, saving chat history");
+        saveChatHistory(threadId, messages)
+          .then(() => console.log("Chat history saved on unmount"))
+          .catch(err => console.error("Failed to save chat history on unmount:", err));
+      } else {
+        console.log("Skipping save on unmount because conditions not met");
+      }
+    };
+  }, [threadId, messages, saveChatHistory]);
+  
+  useEffect(() => {
+    try {
+      // Check if user is logged in
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
+      }
+
+      setIsLoading(true);
+      
+      const storedUserPhoto = localStorage.getItem('user_photo_url');
+      if (storedUserPhoto) {
+        setUserPhotoUrl(storedUserPhoto);
+      }
+      
+      if (!config_name || !config_id) {
+        message.error('Please select a configuration to start an interview');
+        navigate('/prompts');
+        return;
+      }
+      
+      const createSession = async () => {
+        try {
+          console.log("Creating new interview session...");
+          
+          // Fetch user profile data
+          let userProfile = null;
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData.data) {
+                userProfile = profileData.data;
+              }
+            }
+          } catch (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            // Continue even if profile fetch fails
+          }
+          console.log("User profile:", userProfile);
+          
+          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userEmail, name: config_name}), 
-        });
-
-        if (!res.ok) {
-            throw new Error('Failed to start interview');
+            body: JSON.stringify({ 
+              email: userEmail, 
+              name: config_name,
+              new_session: true,
+              // Include user profile information for the LLM
+              userProfile: userProfile || {
+                first_name: localStorage.getItem('user_first_name') || '',
+                last_name: localStorage.getItem('user_last_name') || '',
+                job_title: localStorage.getItem('user_job_title') || '',
+                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
+                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+              }
+            }), 
+          });
+    
+          if (!res.ok) {
+            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
+          }
+    
+          const data = await res.json();
+          console.log("Received session data:", data);
+          
+          if (!data.thread_id) {
+            throw new Error("No thread_id received from server");
+          }
+          
+          setThreadId(data.thread_id);
+          
+          const welcomeMessage = data.response || 
+            `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
+          
+          setMessages([{ 
+            text: welcomeMessage, 
+            sender: 'ai' as const 
+          }]);
+          
+          setIsChatReady(true);
+          setIsLoading(false);
+          
+          // Set initial load flag to false after a short delay
+          setTimeout(() => {
+            initialLoadRef.current = false;
+            console.log("Initial load phase completed");
+          }, 1000);
+          
+          return data.thread_id;
+        } catch (error) {
+          console.error('Error creating new chat session:', error);
+          message.error('Failed to start interview. Please try again.');
+          setIsLoading(false);
+          return null;
         }
-
-        const data = await res.json();
-        setThreadId(data.thread_id);  
-        setMessages([{ text: data.response, sender: 'ai' }]);  
+      };
+      
+      createSession();
     } catch (error) {
-        console.error('Error starting interview:', error);
+      console.error('Error in InterviewPage:', error);
+      navigate('/login');
     }
-};
-
+  }, [navigate, userEmail, config_name, config_id]);
+  
   const handleSend = async () => {
-
     if (!threadId) {
-        await startInterview();
+      message.warning('No active interview session. Please start a new interview.');
+      return;
     }
+    
     if (!input.trim()) return;
-    setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
+    
+    const userMessage = { text: input, sender: 'user' as const };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    
     const userInput = input;
     setInput('');
+    
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput, thread_id: threadId }),
+        body: JSON.stringify({ 
+          message: userInput, 
+          thread_id: threadId,
+          email: userEmail,
+          config_name: config_name,
+          config_id: config_id
+        }),
       });
+      
       if (!res.ok) {
         throw new Error('Network response was not ok');
       }
+      
       const data = await res.json();
-      setMessages((prev) => [...prev, { text: data.response, sender: 'ai' }]);
+      
+      console.log(`Received AI response: "${data.response.substring(0, 30)}..."`);
+      
+      const aiMessage = { 
+        text: data.response || "I'm thinking about my response...", 
+        sender: 'ai' as const 
+      };
+      
+      setMessages(prevMessages => [...prevMessages, aiMessage]);
+      
     } catch (error) {
       console.error('Error processing chat:', error);
+      message.error('Failed to send message. Please try again.');
     }
   };
 
+  const handleEndInterview = async () => {
+    if (!threadId) {
+      message.warning('No active interview session.');
+      navigate('/dashboard');
+      return;
+    }
+
+    try {
+      // Mark interview as ended
+      hasEndedInterviewRef.current = true;
+      
+      message.loading('Saving your interview responses...', 1);
+      
+      if (messages.length > 0) {
+        const saveResult = await saveChatHistory(threadId, messages);
+        console.log("Final save chat history result:", saveResult);
+        
+        if (saveResult) {
+          message.success('Interview ended successfully. Your responses have been saved.');
+        } else {
+          message.warning('Interview ended, but there might be issues saving your responses.');
+        }
+      }
+      
+      localStorage.removeItem('current_config');
+      localStorage.removeItem('current_config_id');
+      
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error ending interview:', error);
+      message.error('Failed to end interview properly. Your responses may not have been saved.');
+    }
+  };
+
+  const handleBackToDashboard = () => {
+    handleEndInterview();
+  };
+
+  if (isLoading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <Loader size={48} className={styles.loadingSpinner} />
+          <h2>Initializing interview session</h2>
+          <p>Setting up your interview for: {config_name}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div style={{ flex: 1, overflowY: 'auto' }} className={styles.chatContainer}>
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`${styles.message} ${
-              message.sender === 'ai' ? styles.aiMessage : styles.userMessage
-            }`}
+    <div className={styles.interviewContainer}>
+      <div className={styles.interviewHeader}>
+        <button 
+          className={styles.backButton}
+          onClick={handleBackToDashboard}
+        >
+          <Home size={18} />
+          Back to Dashboard
+        </button>
+        <h1>Interview: {config_name}</h1>
+        <button 
+          className={styles.endButton} 
+          onClick={handleEndInterview}
+        >
+          <X size={20} /> End Interview
+        </button>
+      </div>
+
+      <div className={styles.chatInterface}>
+        <div 
+          ref={chatContainerRef}
+          className={styles.chatContainer}
+        >
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`${styles.messageWrapper} ${
+                message.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
+              }`}
+            >
+              <div className={styles.avatarContainer}>
+                {message.sender === 'ai' ? (
+                  <div className={styles.botAvatar}>
+                    <Bot size={24} />
+                  </div>
+                ) : (
+                  <div className={styles.userAvatar}>
+                    {userPhotoUrl ? (
+                      <img src={userPhotoUrl} alt="User" />
+                    ) : (
+                      <div className={styles.defaultUserAvatar}>{userEmail.charAt(0).toUpperCase()}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div
+                className={`${styles.message} ${
+                  message.sender === 'ai' ? styles.aiMessage : styles.userMessage
+                }`}
+              >
+                {message.text || <span>&nbsp;</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className={styles.inputContainer}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type your response..."
+            className={styles.input}
+            disabled={!isChatReady}
+          />
+          <button 
+            className={styles.sendButton} 
+            onClick={handleSend}
+            disabled={!input.trim() || !isChatReady}
           >
-            {message.text}
-          </div>
-        ))}
+            <Send size={20} />
+          </button>
+        </div>
       </div>
-      <div className={styles.inputContainer}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Type your response..."
-          className={styles.input}
-        />
-        <button className={styles.micButton} onClick={() => setIsRecording(!isRecording)}>
-          {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-        </button>
-        <button className={styles.sendButton} onClick={handleSend}>
-          <Send size={20} />
-        </button>
-      </div>
-    </>
+    </div>
   );
 };
 

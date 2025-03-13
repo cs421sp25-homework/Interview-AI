@@ -14,6 +14,7 @@ from services.profile_service import ProfileService
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
 from services.config_service import ConfigService
+from services.chat_history_service import ChatHistoryService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
 from services.chat_service import ChatService
@@ -42,6 +43,7 @@ resume_service = ResumeService()
 storage_service = StorageService(supabase_url, supabase_key)
 config_service = ConfigService(supabase_url, supabase_key)
 authorization_service = AuthorizationService(supabase_url, supabase_key)
+chat_history_service = ChatHistoryService(supabase_url, supabase_key)
 llm_graph = LLMGraph()
 supabase = create_client(supabase_url, supabase_key)
 
@@ -97,9 +99,10 @@ def signup():
         # Create profile
         result = profile_service.create_profile(profile_data)
 
+        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
-            "data": result
+            "profile": result.get("data", {})
         }), 200
     except Exception as e:
         print(f"Signup error: {str(e)}")
@@ -143,10 +146,11 @@ def oauth_signup():
 
         # Create profile
         result = profile_service.create_oauth_profile(profile_data)
-
+        
+        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
-            "data": result
+            "profile": result.get("data", {})
         }), 200
     except Exception as e:
         print(f"Signup error: {str(e)}")
@@ -426,48 +430,173 @@ def new_chat():
     data = request.get_json()
     email = data.get("email")
     name = data.get("name")
-
+    
     if not email or not name:
         return jsonify({"error": "Missing 'email' or 'name' in request."}), 400
-
-    # 1) Get config from DB
+    
     config_row = config_service.get_single_config(name=name, email=email)
     if not config_row:
         return jsonify({"error": "No config found for given name and email."}), 404
 
-    # Suppose your configs table has columns:
-    #   name, email, config_value, ...
-    # We'll assume config_value is a dict that might contain job_description, etc.
-    config_value = config_row.get("config_value", {})
-
-    #TODO fetch resume and put it into interviewer
-
-    # 2) Build an Interviewer object from config
+    print(f"get_single_config result: {config_row}")
+    
+    config_id = config_row.get("id")
+    company_name = config_row.get("company_name", "our company")
+    interview_name = config_row.get("interview_name", name)
+    question_type = config_row.get("question_type", "")
+    job_description = config_row.get("job_description", "")
+    
+    # Extract user profile information from request
+    user_profile = data.get("userProfile", {})
+    
+    # Format resume information from user profile
+    resume_text = ""
+    if user_profile:
+        # Format personal information
+        full_name = f"{user_profile.get('first_name', '')} {user_profile.get('last_name', '')}".strip()
+        if full_name:
+            resume_text += f"Name: {full_name}\n"
+        
+        # Format job title
+        job_title = user_profile.get('job_title', '')
+        if job_title:
+            resume_text += f"Current Title: {job_title}\n"
+        
+        # Format skills
+        skills = user_profile.get('key_skills', [])
+        if skills:
+            if isinstance(skills, str):
+                skills = [s.strip() for s in skills.split(',')]
+            resume_text += f"Skills: {', '.join(skills)}\n"
+        
+        # Format education history
+        education = user_profile.get('education_history', [])
+        if education:
+            resume_text += "\nEducation:\n"
+            for edu in education:
+                if isinstance(edu, dict):
+                    institution = edu.get('institution', '')
+                    degree = edu.get('degree', '')
+                    dates = edu.get('dates', '')
+                    if institution or degree:
+                        resume_text += f"- {institution}, {degree} {dates}\n"
+        
+        # Format work experience
+        experience = user_profile.get('resume_experience', [])
+        if experience:
+            resume_text += "\nWork Experience:\n"
+            for exp in experience:
+                if isinstance(exp, dict):
+                    company = exp.get('company', '')
+                    position = exp.get('position', '')
+                    dates = exp.get('dates', '')
+                    description = exp.get('description', '')
+                    if company or position:
+                        resume_text += f"- {position} at {company} {dates}\n"
+                        if description:
+                            resume_text += f"  {description}\n"
+    
     interviewer = Interviewer(
-        # name=config_value.get("interviewer_name", ""), 
-        # personality=config_value.get("interviewer_personality", ""),
-        age=config_value.get("interviewer_age", ""),
-        language=config_value.get("interviewer_language", "English"),
-        job_description=config_value.get("job_description", ""),
-        company_name=config_value.get("company_name", ""),
-        # interviewee_resume=config_value.get("interviewee_resume", "")
+        age=config_row.get("interviewer_age", ""),
+        language=config_row.get("interviewer_language", "English"),
+        job_description=job_description,
+        company_name=company_name,
+        interviewee_resume=resume_text,  # Pass formatted resume to interviewer
     )
 
     thread_id = str(uuid.uuid4())
-    # 3) Create and initialize the LLMInterviewAgent
+    
     agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5, thread_id=thread_id)  
     agent.initialize(interviewer)
 
-    # 4) Agent greet
-    greeting = agent.greet()
+    welcome_message = ""
+    if question_type == "behavioral":
+        welcome_message = f"Welcome to your behavioral interview for {interview_name} at {company_name}. I'll be asking questions about how you've handled various situations in your past experiences. Let's start by having you introduce yourself briefly."
+        # Inform LLM this is a behavioral interview
+        agent.llm_graph.invoke(HumanMessage(content=f"This is a BEHAVIORAL interview. Focus on asking behavioral questions following the STAR format."), thread_id=thread_id)
+    elif question_type == "technical":
+        welcome_message = f"Welcome to your technical interview for {interview_name} at {company_name}. I'll be focusing on your technical expertise based on your background and experience. Let's begin with a brief introduction about yourself."
+        
+        # Create experience-focused prompt
+        tech_skills_prompt = """TECHNICAL INTERVIEW GUIDELINES:
 
-    # Store this agent in our active_interviews
+CORE APPROACH - TWO-PHASE QUESTIONING:
+1. ANALYSIS PHASE - First analyze the candidate's response:
+   - Identify key technical concepts, technologies, and methodologies mentioned
+   - Note experience level and depth of understanding shown in their explanation
+   - Find areas that need deeper exploration or clarification
+   
+2. FOLLOW-UP PHASE - Then formulate targeted follow-up questions:
+   - Ask for specific implementation details ("How exactly did you implement that authentication system?")
+   - Request explanations of technical decisions ("Why did you choose PostgreSQL over MongoDB for this use case?")
+   - Challenge them to compare approaches ("What tradeoffs did you consider between these architectures?")
+   - Probe for deeper technical knowledge ("What would happen if this system needed to scale 10x?")
+
+INTERVIEW STRATEGY:
+- Build questions directly from the candidate's resume experiences
+- Focus on technologies they've actually used, not theoretical knowledge
+- Ask them to solve problems similar to what they've solved before, but with new challenges
+- Follow threads of conversation rather than jumping between unrelated topics
+- Gradually increase technical depth to assess their expertise level
+
+CONVERSATIONAL TECHNIQUES:
+- Acknowledge their answers: "That's a good point about scalability..."
+- Bridge to follow-ups: "Based on your implementation of X, how would you approach..."
+- Create scenarios from their experience: "Imagine your Redis cache suddenly fails in production..."
+- Ask for comparisons: "You've worked with both React and Angular - how would you compare their state management?"
+
+The candidate's resume contains these experiences:"""
+        
+        # Add formatted work experience for reference
+        if user_profile and user_profile.get('resume_experience'):
+            experiences = user_profile.get('resume_experience', [])
+            if experiences:
+                for i, exp in enumerate(experiences):
+                    if isinstance(exp, dict):
+                        company = exp.get('company', '')
+                        position = exp.get('position', '')
+                        dates = exp.get('dates', '')
+                        description = exp.get('description', '')
+                        
+                        tech_skills_prompt += f"\n\nExperience {i+1}:"
+                        if company:
+                            tech_skills_prompt += f"\nCompany: {company}"
+                        if position:
+                            tech_skills_prompt += f"\nPosition: {position}"
+                        if dates:
+                            tech_skills_prompt += f"\nDates: {dates}"
+                        if description:
+                            tech_skills_prompt += f"\nDetails: {description}"
+        
+        tech_skills_prompt += """
+
+EXAMPLE QUESTION FLOW:
+
+Based on resume: "Built a microservice architecture using Node.js and Docker"
+
+Initial question:
+"I see you implemented microservices with Node.js at ABC Company. Could you walk me through the architecture and how services communicated with each other?"
+
+After their response:
+[ANALYSIS: Candidate mentioned using REST APIs but didn't explain service discovery]
+
+Follow-up questions:
+"You mentioned REST APIs for service communication. How did you handle service discovery in this architecture?"
+"If one of your microservices failed, what recovery mechanisms did you implement?"
+"Given that you used Docker, what was your approach to orchestration and scaling?"
+
+Remember: Each question should show you've carefully listened to their previous answer. Structure the interview as a deep technical conversation, not an interrogation."""
+        
+        # Inform LLM this is a technical interview with specific focus areas
+        agent.llm_graph.invoke(HumanMessage(content=tech_skills_prompt), thread_id=thread_id)
+    else:
+        welcome_message = f"Welcome to your interview for {interview_name} at {company_name}. I'm excited to learn more about your skills and experience. Could you please start by telling me a bit about yourself and your background?"
+
     active_interviews[thread_id] = agent
 
-    # 5) Return greeting + thread_id
     return jsonify({
         "thread_id": thread_id,
-        "response": greeting
+        "response": welcome_message
     })
 
 @app.route("/api/chat", methods=["POST"])
@@ -482,6 +611,9 @@ def chat():
     data = request.get_json()
     thread_id = data.get("thread_id")
     user_input = data.get("message", "")
+    user_email = data.get("email", "")
+    config_name = data.get("config_name", "Interview Session")
+    config_id = data.get("config_id")
 
     if not thread_id:
         return jsonify({"error": "Missing 'thread_id' in request."}), 400
@@ -491,6 +623,7 @@ def chat():
     agent = active_interviews[thread_id]
     # Next question from the agent
     next_ai_response = agent.next_question(user_input)
+    
     # Check if interview is ended
     if agent.is_end(next_ai_response):
         # We can optionally remove the agent from active_interviews
@@ -500,6 +633,61 @@ def chat():
     else:
         return jsonify({"response": next_ai_response, "ended": False})
 
+
+@app.route("/api/chat_history", methods=["POST"])
+def save_chat_history():
+    data = request.get_json()
+    thread_id = data.get("thread_id")
+    user_email = data.get("email")
+    messages = data.get("messages")
+    config_name = data.get("config_name", "Interview Session")
+    config_id = data.get("config_id")
+    
+    if not thread_id or not user_email or not messages:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    # Check if there's only a welcome message, if so skip saving
+    if len(messages) == 1 and messages[0].get('sender') == 'ai':
+        print(f"Skipping save for thread {thread_id} - only contains welcome message")
+        return jsonify({"success": True, "skipped": True, "reason": "only_welcome_message"})
+    
+    # Check existing record's message count
+    try:
+        existing_log = None
+        result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
+        
+        if result.data and len(result.data) > 0:
+            existing_log = result.data[0]
+            config_name = existing_log.get('config_name', config_name)
+            if not config_id and 'config_id' in existing_log:
+                config_id = existing_log.get('config_id')
+                
+            # Check if existing record has more messages
+            existing_messages = existing_log.get('log')
+            if existing_messages:
+                if isinstance(existing_messages, str):
+                    import json
+                    existing_messages = json.loads(existing_messages)
+                    
+                if len(existing_messages) > len(messages):
+                    print(f"Skipping save for thread {thread_id} - existing log has more messages")
+                    return jsonify({"success": True, "skipped": True, "reason": "existing_log_longer"})
+    except Exception as e:
+        print(f"Error checking existing log: {e}")
+    
+    success = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    
+    if not success:
+        return jsonify({"error": "Failed to save chat history"}), 500
+    
+    try:
+        result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
+        if result.data and len(result.data) > 0:
+            return jsonify({"success": True, "data": result.data[0]}), 200
+    except Exception as e:
+        print(f"Error getting updated log: {e}")
+    
+    return jsonify({"success": True})
 
 @app.route('/api/oauth/email', methods=['GET'])
 def get_oauth_email():
@@ -583,6 +771,72 @@ def delete_interview_config(id):
             return jsonify({'message': 'Configuration not found.'}), 404
     except Exception as e:
         return jsonify({'message': str(e)}), 400
+
+
+@app.route('/api/interview_logs/<email>', methods=['GET'])
+def get_interview_logs(email):
+    """
+    Retrieves all interview logs for a specific user by email.
+    """
+    try:
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+            
+        result = supabase.table('interview_logs').select('*').eq('email', email).order('created_at', desc=True).execute()
+        
+        if not result.data:
+            return jsonify({"data": []}), 200
+        
+        enhanced_logs = []
+        for log in result.data:
+            config_id = log.get('config_id')
+            if config_id:
+                config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
+                if config_result.data and len(config_result.data) > 0:
+                    config = config_result.data[0]
+                    log['question_type'] = config.get('question_type', 'Unknown')
+                    log['job_description'] = config.get('job_description', '')
+                    log['config_company_name'] = config.get('company_name', 'Unknown')
+                    log['interview_type'] = config.get('interview_type', 'Unknown')
+                    log['interview_name'] = config.get('interview_name', 'Unknown')
+            enhanced_logs.append(log)
+            
+        return jsonify({"data": enhanced_logs}), 200
+    except Exception as e:
+        print(f"Error fetching interview logs: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
+
+
+@app.route('/api/chat_history/<id>', methods=['DELETE'])
+def delete_chat_history_by_id(id):
+    """
+    Deletes an interview log and its associated chat history by interview log ID.
+    """
+    try:
+        if not id:
+            return jsonify({"error": "Interview log ID is required"}), 400
+
+        # Retrieve the interview log to get the thread_id
+        result = supabase.table('interview_logs').select('thread_id').eq('id', id).execute()
+        if not result.data or len(result.data) == 0:
+            return jsonify({"error": "Interview log not found"}), 404
+
+        thread_id = result.data[0].get('thread_id')
+
+        # Delete the interview log record
+        supabase.table('interview_logs').delete().eq('id', id).execute()
+
+        # Also delete associated chat history if available
+        if thread_id:
+            chat_history_service.delete_chat_history(thread_id)
+
+        return jsonify({"success": True, "message": "Interview log and chat history deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"Error deleting interview log: {str(e)}")
+        return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
     
 if __name__ == '__main__':
     import os
