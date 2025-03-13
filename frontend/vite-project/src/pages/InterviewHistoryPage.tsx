@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography } from 'antd';
 import { SearchOutlined, DeleteOutlined, ExportOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewHistoryPage.module.css';
@@ -9,10 +10,38 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
+// 辅助函数用于确保日期时区处理正确
+const formatToEasternTime = (dateStr: string) => {
+  try {
+    // 解析ISO日期字符串，不自动应用时区偏移
+    const date = new Date(dateStr);
+    
+    if (isNaN(date.getTime())) {
+      console.error(`Invalid date: ${dateStr}`);
+      return { date: "Invalid date" };
+    }
+    
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
+    
+    return {
+      date: dateFormatter.format(date)
+    };
+  } catch (error) {
+    console.error(`Error formatting date: ${dateStr}`, error);
+    return { date: "Invalid date" };
+  }
+};
+
 interface InterviewLog {
   id: number;
   title: string;
   date: string;
+  updated_at?: string;
   form: 'text' | 'voice';
   thread_id: string;
   
@@ -20,6 +49,11 @@ interface InterviewLog {
   company_name?: string; 
   interview_type?: string;
   log?: any; // Add log property for conversation data
+  
+  question_type?: string;
+  job_description?: string;
+  config_company_name?: string;
+  interview_name?: string;
 }
 
 const InterviewHistoryPage: React.FC = () => {
@@ -88,22 +122,38 @@ const InterviewHistoryPage: React.FC = () => {
       
       if (data && Array.isArray(data.data)) {
         
-        const transformedLogs = data.data.map((log: any) => ({
-          id: log.id,
-          thread_id: log.thread_id,
-          title: log.config_name || 'Unnamed Interview',
-          date: log.created_at || new Date().toISOString(),
-          company_name: log.company_name ||'Unknown Company',
-          form: 'text', 
+        const transformedLogs = data.data.map((log: any) => {
+          console.log(`Log ID: ${log.id}, updated_at: ${log.updated_at}, created_at: ${log.created_at}`);
           
+          if (log.updated_at) {
+            const testDate = new Date(log.updated_at);
+            console.log(`UTC Time: ${testDate.toISOString()}`);
+            console.log(`Local Time: ${testDate.toString()}`);
+            console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
+              timeZone: 'America/New_York',
+              year: 'numeric',
+              month: 'numeric',
+              day: 'numeric',
+            }).format(testDate)}`);
+          }
           
-          question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
-
-          interview_type: log.interview_type || 'Unknown',
-          
-          
-
-        }));
+          return {
+            id: log.id,
+            thread_id: log.thread_id,
+            title: log.config_name || log.interview_name || 'Unnamed Interview',
+            date: log.created_at || new Date().toISOString(),
+            updated_at: log.updated_at || log.created_at || new Date().toISOString(),
+            company_name: log.config_company_name || log.company_name || 'Unknown Company',
+            form: log.form || 'text',
+            
+            question_type: log.question_type || 'Unknown',
+            job_description: log.job_description || '',
+            interview_name: log.interview_name || '',
+            interview_type: log.interview_type || 'Unknown',
+            
+            question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
+          };
+        });
         
         setLogs(transformedLogs);
         setFilteredLogs(transformedLogs);
@@ -119,8 +169,9 @@ const InterviewHistoryPage: React.FC = () => {
             
             question_count: log.conversation ? countQuestionsInConversation(log.conversation) : 0,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
-            interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
-            
+            question_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
+            interview_type: Math.random() > 0.8 ? 'Voice' : 'Text',
+            updated_at: log.updated_at || log.date || new Date().toISOString(),
             
           }));
           
@@ -144,7 +195,9 @@ const InterviewHistoryPage: React.FC = () => {
             
             question_count: Math.floor(Math.random() * 20) + 5,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
-            interview_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
+            question_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
+            interview_type: Math.random() > 0.8 ? 'Voice' : 'Text',
+            updated_at: log.updated_at || log.date || new Date().toISOString(),
             
           }));
           
@@ -162,32 +215,54 @@ const InterviewHistoryPage: React.FC = () => {
   const applyFilters = () => {
     let filtered = [...logs];
     
-
+    // Apply search filter
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(log => 
-        log.title.toLowerCase().includes(searchLower) || 
-        (log.company_name && log.company_name.toLowerCase().includes(searchLower))
+        (log.title && log.title.toLowerCase().includes(searchLower)) ||
+        (log.company_name && log.company_name.toLowerCase().includes(searchLower)) ||
+        (log.interview_name && log.interview_name.toLowerCase().includes(searchLower))
       );
     }
     
-
+    // Apply date range filter
     if (dateRange && dateRange[0] && dateRange[1]) {
-      const startDate = new Date(dateRange[0]).getTime();
-      const endDate = new Date(dateRange[1]).getTime();
+      const startDate = dateRange[0].startOf('day').valueOf();
+      const endDate = dateRange[1].endOf('day').valueOf();
+      
       filtered = filtered.filter(log => {
-        const logDate = new Date(log.date).getTime();
-        return logDate >= startDate && logDate <= endDate;
+        try {
+          const logDateObj = new Date(log.updated_at || log.date);
+          const now = new Date();
+          
+          const isInvalidFutureDate = logDateObj > now && (logDateObj.getTime() - now.getTime()) > 24 * 60 * 60 * 1000;
+          
+          const finalDate = isInvalidFutureDate ? now.getTime() : logDateObj.getTime();
+          
+          if (isNaN(finalDate)) {
+            return false; 
+          }
+          
+          return finalDate >= startDate && finalDate <= endDate;
+        } catch (error) {
+          console.error("Error filtering by date:", error);
+          return false;
+        }
       });
     }
     
-
+    // Apply type filter
     if (typeFilter) {
-      filtered = filtered.filter(log => log.form === typeFilter);
+      if (typeFilter === 'text' || typeFilter === 'voice') {
+        filtered = filtered.filter(log => 
+          log.interview_type && log.interview_type.toLowerCase() === typeFilter
+        );
+      } else if (typeFilter === 'technical' || typeFilter === 'behavioral') {
+        filtered = filtered.filter(log => 
+          log.question_type && log.question_type.toLowerCase() === typeFilter
+        );
+      }
     }
-    
-
-    
     
     setFilteredLogs(filtered);
   };
@@ -250,139 +325,210 @@ const InterviewHistoryPage: React.FC = () => {
   
   const columns = [
     {
-      title: 'Interview Title',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'Interview Config',
+      key: 'interview',
+      width: '28%',
       render: (text: string, record: InterviewLog) => (
         <div>
-          <div className={styles.interviewTitle}>{text}</div>
-          <div className={styles.interviewCompany}>{record.company_name}</div>
+          <div className={styles.interviewTitle}>{record.title}</div>
+          {record.interview_name && record.interview_name !== record.title && (
+            <div className={styles.interviewName}>{record.interview_name}</div>
+          )}
         </div>
       )
     },
     {
-      title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
-      render: (date: string) => new Date(date).toLocaleDateString()
+      title: 'Company',
+      dataIndex: 'company_name',
+      key: 'company_name',
+      width: '15%',
+      render: (company: string) => (
+        <div className={styles.companyName}>
+          {company || 'N/A'}
+        </div>
+      )
+    },
+    {
+      title: (
+        <div className={styles.columnTitleWithTip}>
+          Date
+        </div>
+      ),
+      dataIndex: 'updated_at',
+      key: 'updated_at',
+      width: '15%',
+      sorter: (a: InterviewLog, b: InterviewLog) => {
+        try {
+          const dateA = new Date(a.updated_at || a.date).getTime();
+          const dateB = new Date(b.updated_at || b.date).getTime();
+          
+          // 如果日期无效或是可疑的未来日期，使用当前时间
+          const now = Date.now();
+          
+          // 使用一周为阈值，判断可疑的未来日期
+          const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+          const validDateA = isNaN(dateA) || (dateA > now && dateA - now > oneWeekMs) ? now : dateA;
+          const validDateB = isNaN(dateB) || (dateB > now && dateB - now > oneWeekMs) ? now : dateB;
+          
+          return validDateB - validDateA; // 默认最新的排在前面
+        } catch (error) {
+          console.error("Error sorting dates:", error);
+          return 0;
+        }
+      },
+      sortDirections: ['ascend', 'descend', null] as any,
+      defaultSortOrder: 'descend' as const,
+      render: (date: string) => {
+        try {
+          console.log("Rendering date:", date);
+          
+          const formattedTime = formatToEasternTime(date);
+          
+          return (
+            <div className={styles.dateInfo}>
+              <div>{formattedTime.date}</div>
+            </div>
+          );
+        } catch (error) {
+          console.error("Error formatting date:", date, error);
+          return <div className={styles.dateInfo}>Invalid date</div>;
+        }
+      }
     },
     {
       title: 'Type',
-      dataIndex: 'form',
-      key: 'form',
-      render: (type: string, record: InterviewLog) => (
-        <Space>
-          <Tag color={type === 'voice' ? 'blue' : 'green'}>
-            {type === 'voice' ? 'Voice' : 'Text'}
-          </Tag>
-          {record.interview_type && (
-            <Tag color={record.interview_type === 'Technical' ? 'purple' : 'orange'}>
-              {record.interview_type}
+      key: 'type',
+      width: '17%',
+      render: (text: string, record: InterviewLog) => (
+        <div className={styles.tagContainer}>
+          <Space size={8}>
+            <Tag color={record.interview_type?.toLowerCase() === 'voice' ? 'blue' : 'green'}>
+              {record.interview_type?.toLowerCase() === 'voice' ? 'Voice' : 'Text'}
             </Tag>
-          )}
-        </Space>
+            {record.question_type && record.question_type !== 'Unknown' && (
+              <Tag color={record.question_type.toLowerCase() === 'technical' ? 'purple' : 'orange'}>
+                {record.question_type.charAt(0).toUpperCase() + record.question_type.slice(1).toLowerCase()}
+              </Tag>
+            )}
+          </Space>
+        </div>
       )
     },
-    
-    {
-      title: 'Questions',
-      dataIndex: 'question_count',
-      key: 'question_count',
-      render: (count?: number) => count || 'N/A'
-    },
-    
     {
       title: 'Actions',
       key: 'actions',
+      width: '25%',
       render: (_: any, record: InterviewLog) => (
-        <Space size="small">
+        <Space size="middle" className={styles.actionButtonsContainer}>
           <Button 
-            type="text" 
-            icon={<EyeOutlined />} 
+            type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.viewButton}`}
             onClick={() => handleViewInterviewLog(record)}
-            title="View Interview"
-          />
+          >
+            <EyeOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>View</span>
+          </Button>
           <Button 
-            type="text" 
-            icon={<BarChartOutlined />} 
+            type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.detailsButton}`}
             onClick={() => handleViewDetails(record)}
-            title="View Details"
-          />
+          >
+            <BarChartOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Details</span>
+          </Button>
           <Button 
-            type="text" 
-            icon={<ExportOutlined />} 
+            type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.exportButton}`}
             onClick={() => handleExportInterview(record)}
-            title="Export Transcript"
-          />
+          >
+            <ExportOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Export</span>
+          </Button>
           <Button 
-            type="text" 
+            type="link" 
             danger 
-            icon={<DeleteOutlined />} 
+            className={`${styles.actionButtonWithLabel} ${styles.deleteButton}`}
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteInterview(record);
             }}
-            
-            title="Delete Interview"
-          />
+          >
+            <DeleteOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Delete</span>
+          </Button>
         </Space>
       )
     }
   ];
   
   return (
-    
-    <div className={styles.historyContainer}>
-      <div className={styles.historyHeader}>
-        <div className={styles.headerLeft}>
-          <Title level={2}>Interview History</Title>
-          <Text type="secondary">View and manage your past interview sessions</Text>
-        </div>
-        <Button type="primary" onClick={handleBack} className={styles.dashboardButton}>
-          Dashboard
-        </Button>
-    </div>
-
-      
-      <div className={styles.filterSection}>
-        <Space wrap>
-          <Input
-            placeholder="Search interviews"
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            className={styles.searchInput}
-            allowClear
-          />
-          
-          <RangePicker 
-            onChange={value => setDateRange(value)}
-            className={styles.datePicker}
-          />
-          
-          <Select
-            placeholder="Interview Type"
-            allowClear
-            onChange={value => setTypeFilter(value)}
-            className={styles.typeFilter}
-          >
-            <Option value="text">Text</Option>
-            <Option value="voice">Voice</Option>
-          </Select>
-          
-          
-        </Space>
+    <div className={styles.interviewContainer}>
+      <div className={styles.interviewHeader}>
+        <button 
+          className={styles.backButton}
+          onClick={handleBack}
+        >
+          <Home size={18} />
+          Back to Dashboard
+        </button>
+        <h1>Interview History</h1>
+        <div className={styles.spacer}></div>
       </div>
-      
-      <Table
-        columns={columns}
-        dataSource={filteredLogs}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-        className={styles.historyTable}
-        locale={{ emptyText: 'No interview history found' }}
-      />
+
+      <div className={styles.historyContent}>
+        <div className={styles.filterSection}>
+          <div className={styles.filterLeft}>
+            <Input
+              placeholder="Search interviews"
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              className={styles.searchInput}
+              allowClear
+            />
+          </div>
+          
+          <div className={styles.filterRight}>
+            <Space size={16}>
+              <RangePicker 
+                onChange={value => setDateRange(value)}
+                className={styles.datePicker}
+              />
+              
+              <Select
+                placeholder="Interview Type"
+                allowClear
+                onChange={value => setTypeFilter(value)}
+                className={styles.typeFilter}
+              >
+                <Option value="technical">Technical</Option>
+                <Option value="behavioral">Behavioral</Option>
+                <Option value="voice">Voice</Option>
+                <Option value="text">Text</Option>
+              </Select>
+            </Space>
+          </div>
+        </div>
+        
+        <Table
+          columns={columns}
+          dataSource={filteredLogs}
+          rowKey="id"
+          loading={loading}
+          pagination={{ 
+            pageSize: 10, 
+            showSizeChanger: false, 
+            showTotal: (total) => `Total ${total} interviews`,
+            position: ['bottomCenter']
+          }}
+          className={styles.historyTable}
+          locale={{ emptyText: 'No interview history found' }}
+          onChange={(pagination, filters, sorter, extra) => {
+            console.log('Table params changed:', sorter);
+            // 可以在这里添加额外的排序逻辑
+          }}
+        />
+      </div>
       
       <Modal
         title="Interview Details"
@@ -403,14 +549,42 @@ const InterviewHistoryPage: React.FC = () => {
             View Interview
           </Button>
         ]}
-        width={700}
+        width={1200}
+        className={styles.detailModal}
       >
         {selectedLog && (
           <div className={styles.detailContent}>
             <div className={styles.detailSection}>
               <Title level={4}>{selectedLog.title}</Title>
               <Text type="secondary">
-                {new Date(selectedLog.date).toLocaleString()}
+                {(() => {
+                  try {
+                    console.log("Modal date:", selectedLog.updated_at || selectedLog.date);
+                    
+                    // 使用工具函数处理时区
+                    const dateStr = selectedLog.updated_at || selectedLog.date;
+                    const formattedTime = formatToEasternTime(dateStr);
+                    
+                    // 对于模态框，我们希望月份为完整名称
+                    // 重新格式化日期部分为带有完整月份名称的形式
+                    const dateObj = new Date(dateStr);
+                    if (!isNaN(dateObj.getTime())) {
+                      const fullFormatter = new Intl.DateTimeFormat('en-US', {
+                        timeZone: 'America/New_York',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      });
+                      
+                      return fullFormatter.format(dateObj);
+                    }
+                    
+                    return formattedTime.date;
+                  } catch (error) {
+                    console.error("Error formatting detail date:", error);
+                    return 'Invalid date';
+                  }
+                })()}
               </Text>
             </div>
             
@@ -421,24 +595,45 @@ const InterviewHistoryPage: React.FC = () => {
               </div>
               
               <div className={styles.detailItem}>
-                <Text strong>Interview Type:</Text>
-                <Text>{selectedLog.interview_type || 'N/A'}</Text>
+                <Text strong>Question Type:</Text>
+                <Text>
+                  {selectedLog.question_type ? 
+                    (selectedLog.question_type.charAt(0).toUpperCase() + 
+                    selectedLog.question_type.slice(1).toLowerCase()) : 'N/A'}
+                </Text>
               </div>
               
               <div className={styles.detailItem}>
                 <Text strong>Format:</Text>
-                <Text>{selectedLog.form === 'voice' ? 'Voice' : 'Text'}</Text>
+                <Text>
+                  {selectedLog.interview_type?.toLowerCase() === 'voice' ? 'Voice' : 'Text'}
+                </Text>
               </div>
-              
-              
               
               <div className={styles.detailItem}>
-                <Text strong>Questions:</Text>
-                <Text>{selectedLog.question_count || 'N/A'}</Text>
+                <Text strong>Interview Name:</Text>
+                <Text>{selectedLog.interview_name || 'N/A'}</Text>
               </div>
               
+              {selectedLog.job_description && (
+                <div className={styles.detailItem}>
+                  <Text strong>Job Description Available:</Text>
+                  <Text>Yes</Text>
+                </div>
+              )}
               
+              <div className={styles.detailItem}>
+                <Text strong>Thread ID:</Text>
+                <Text>{selectedLog.thread_id || 'N/A'}</Text>
+              </div>
             </div>
+            
+            {selectedLog.job_description && (
+              <div className={styles.detailSection}>
+                <Title level={5}>Job Description</Title>
+                <Text>{selectedLog.job_description}</Text>
+              </div>
+            )}
             
             <div className={styles.detailSection}>
               <Title level={5}>Performance Summary</Title>

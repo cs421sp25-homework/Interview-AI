@@ -48,6 +48,10 @@ const UserDashboard = () => {
         if (response.data.data) {
           const profile = response.data.data;
           
+          if (profile.photo_url) {
+            localStorage.setItem('user_photo_url', profile.photo_url);
+          }
+          
           let joinedDate = '';
           try {
             if (profile.created_at) {
