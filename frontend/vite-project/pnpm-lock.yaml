@@ -11,6 +11,9 @@ importers:
       '@ant-design/icons':
         specifier: ^5.6.1
         version: 5.6.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@ant-design/v5-patch-for-react-19':
+        specifier: ^1.0.3
+        version: 1.0.3(antd@5.24.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@uploadthing/react':
         specifier: ^7.3.0
         version: 7.3.0(react@19.0.0)(uploadthing@7.5.2)
@@ -118,6 +121,14 @@ packages:
     resolution: {integrity: sha512-EzlvzE6xQUBrZuuhSAFTdsr4P2bBBHGZwKFemEfq8gIGyIQCxalYfZW/T2ORbtQx5rU69o+WycP3exY/7T1hGA==}
     peerDependencies:
       react: '>=16.9.0'
+
+  '@ant-design/v5-patch-for-react-19@1.0.3':
+    resolution: {integrity: sha512-iWfZuSUl5kuhqLUw7jJXUQFMMkM7XpW7apmKzQBQHU0cpifYW4A79xIBt9YVO5IBajKpPG5UKP87Ft7Yrw1p/w==}
+    engines: {node: '>=12.x'}
+    peerDependencies:
+      antd: '>=5.22.6'
+      react: '>=19.0.0'
+      react-dom: '>=19.0.0'
 
   '@babel/code-frame@7.26.2':
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
@@ -1401,8 +1412,8 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  rc-cascader@3.33.0:
-    resolution: {integrity: sha512-JvZrMbKBXIbEDmpIORxqvedY/bck6hGbs3hxdWT8eS9wSQ1P7//lGxbyKjOSyQiVBbgzNWriSe6HoMcZO/+0rQ==}
+  rc-cascader@3.33.1:
+    resolution: {integrity: sha512-Kyl4EJ7ZfCBuidmZVieegcbFw0RcU5bHHSbtEdmuLYd0fYHCAiYKZ6zon7fWAVyC6rWWOOib0XKdTSf7ElC9rg==}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
@@ -1942,6 +1953,12 @@ snapshots:
       react: 19.0.0
       resize-observer-polyfill: 1.5.1
       throttle-debounce: 5.0.2
+
+  '@ant-design/v5-patch-for-react-19@1.0.3(antd@5.24.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      antd: 5.24.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
 
   '@babel/code-frame@7.26.2':
     dependencies:
@@ -2613,7 +2630,7 @@ snapshots:
       classnames: 2.5.1
       copy-to-clipboard: 3.3.3
       dayjs: 1.11.13
-      rc-cascader: 3.33.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      rc-cascader: 3.33.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       rc-checkbox: 3.5.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       rc-collapse: 3.9.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       rc-dialog: 9.6.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -3198,7 +3215,7 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  rc-cascader@3.33.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+  rc-cascader@3.33.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
       '@babel/runtime': 7.26.9
       classnames: 2.5.1

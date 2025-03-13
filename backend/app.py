@@ -792,6 +792,35 @@ def get_interview_logs(email):
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
 
+
+@app.route('/api/chat_history/<id>', methods=['DELETE'])
+def delete_chat_history_by_id(id):
+    """
+    Deletes an interview log and its associated chat history by interview log ID.
+    """
+    try:
+        if not id:
+            return jsonify({"error": "Interview log ID is required"}), 400
+
+        # Retrieve the interview log to get the thread_id
+        result = supabase.table('interview_logs').select('thread_id').eq('id', id).execute()
+        if not result.data or len(result.data) == 0:
+            return jsonify({"error": "Interview log not found"}), 404
+
+        thread_id = result.data[0].get('thread_id')
+
+        # Delete the interview log record
+        supabase.table('interview_logs').delete().eq('id', id).execute()
+
+        # Also delete associated chat history if available
+        if thread_id:
+            chat_history_service.delete_chat_history(thread_id)
+
+        return jsonify({"success": True, "message": "Interview log and chat history deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"Error deleting interview log: {str(e)}")
+        return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
     
 if __name__ == '__main__':
     import os
