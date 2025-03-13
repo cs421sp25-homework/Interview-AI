@@ -103,12 +103,11 @@ class ProfileService:
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
             # Create Profile object
-
             profile = self.map_profile_data(profile_data)
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
             
-            return
+            return result
         except Exception as e:
             print(f"Error creating profile: {str(e)}")
             raise
@@ -120,7 +119,10 @@ class ProfileService:
         # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
         resume = profile_data.get('resume')
         
+        from datetime import datetime
+        
         return Profile(
+            created_at=profile_data.get('created_at') or datetime.now().isoformat(),
             username=profile_data['username'],
             password=profile_data['password'],
             firstName=profile_data['firstName'],
