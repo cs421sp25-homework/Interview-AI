@@ -124,6 +124,23 @@ const InterviewPage: React.FC = () => {
       const createSession = async () => {
         try {
           console.log("Creating new interview session...");
+          
+          // Fetch user profile data
+          let userProfile = null;
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData.data) {
+                userProfile = profileData.data;
+              }
+            }
+          } catch (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            // Continue even if profile fetch fails
+          }
+          console.log("User profile:", userProfile);
+          
           const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -131,6 +148,15 @@ const InterviewPage: React.FC = () => {
               email: userEmail, 
               name: config_name,
               new_session: true,
+              // Include user profile information for the LLM
+              userProfile: userProfile || {
+                first_name: localStorage.getItem('user_first_name') || '',
+                last_name: localStorage.getItem('user_last_name') || '',
+                job_title: localStorage.getItem('user_job_title') || '',
+                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
+                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+              }
             }), 
           });
     
@@ -214,7 +240,13 @@ const InterviewPage: React.FC = () => {
       
       const data = await res.json();
       
-      const aiMessage = { text: data.response, sender: 'ai' as const };
+      console.log(`Received AI response: "${data.response.substring(0, 30)}..."`);
+      
+      const aiMessage = { 
+        text: data.response || "I'm thinking about my response...", 
+        sender: 'ai' as const 
+      };
+      
       setMessages(prevMessages => [...prevMessages, aiMessage]);
       
     } catch (error) {
@@ -324,7 +356,7 @@ const InterviewPage: React.FC = () => {
                   message.sender === 'ai' ? styles.aiMessage : styles.userMessage
                 }`}
               >
-                {message.text}
+                {message.text || <span>&nbsp;</span>}
               </div>
             </div>
           ))}

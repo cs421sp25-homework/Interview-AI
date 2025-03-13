@@ -444,11 +444,62 @@ def new_chat():
     question_type = config_row.get("question_type", "")
     job_description = config_row.get("job_description", "")
     
+    # Extract user profile information from request
+    user_profile = data.get("userProfile", {})
+    
+    # Format resume information from user profile
+    resume_text = ""
+    if user_profile:
+        # Format personal information
+        full_name = f"{user_profile.get('first_name', '')} {user_profile.get('last_name', '')}".strip()
+        if full_name:
+            resume_text += f"Name: {full_name}\n"
+        
+        # Format job title
+        job_title = user_profile.get('job_title', '')
+        if job_title:
+            resume_text += f"Current Title: {job_title}\n"
+        
+        # Format skills
+        skills = user_profile.get('key_skills', [])
+        if skills:
+            if isinstance(skills, str):
+                skills = [s.strip() for s in skills.split(',')]
+            resume_text += f"Skills: {', '.join(skills)}\n"
+        
+        # Format education history
+        education = user_profile.get('education_history', [])
+        if education:
+            resume_text += "\nEducation:\n"
+            for edu in education:
+                if isinstance(edu, dict):
+                    institution = edu.get('institution', '')
+                    degree = edu.get('degree', '')
+                    dates = edu.get('dates', '')
+                    if institution or degree:
+                        resume_text += f"- {institution}, {degree} {dates}\n"
+        
+        # Format work experience
+        experience = user_profile.get('resume_experience', [])
+        if experience:
+            resume_text += "\nWork Experience:\n"
+            for exp in experience:
+                if isinstance(exp, dict):
+                    company = exp.get('company', '')
+                    position = exp.get('position', '')
+                    dates = exp.get('dates', '')
+                    description = exp.get('description', '')
+                    if company or position:
+                        resume_text += f"- {position} at {company} {dates}\n"
+                        if description:
+                            resume_text += f"  {description}\n"
+    
     interviewer = Interviewer(
         age=config_row.get("interviewer_age", ""),
         language=config_row.get("interviewer_language", "English"),
         job_description=job_description,
         company_name=company_name,
+        interviewee_resume=resume_text,  # Pass formatted resume to interviewer
     )
 
     thread_id = str(uuid.uuid4())
@@ -459,8 +510,83 @@ def new_chat():
     welcome_message = ""
     if question_type == "behavioral":
         welcome_message = f"Welcome to your behavioral interview for {interview_name} at {company_name}. I'll be asking questions about how you've handled various situations in your past experiences. Let's start by having you introduce yourself briefly."
+        # Inform LLM this is a behavioral interview
+        agent.llm_graph.invoke(HumanMessage(content=f"This is a BEHAVIORAL interview. Focus on asking behavioral questions following the STAR format."), thread_id=thread_id)
     elif question_type == "technical":
-        welcome_message = f"Welcome to your technical interview for {interview_name} at {company_name}. I'll be assessing your technical knowledge and problem-solving skills. Let's begin with a brief introduction about your technical background."
+        welcome_message = f"Welcome to your technical interview for {interview_name} at {company_name}. I'll be focusing on your technical expertise based on your background and experience. Let's begin with a brief introduction about yourself."
+        
+        # Create experience-focused prompt
+        tech_skills_prompt = """TECHNICAL INTERVIEW GUIDELINES:
+
+CORE APPROACH - TWO-PHASE QUESTIONING:
+1. ANALYSIS PHASE - First analyze the candidate's response:
+   - Identify key technical concepts, technologies, and methodologies mentioned
+   - Note experience level and depth of understanding shown in their explanation
+   - Find areas that need deeper exploration or clarification
+   
+2. FOLLOW-UP PHASE - Then formulate targeted follow-up questions:
+   - Ask for specific implementation details ("How exactly did you implement that authentication system?")
+   - Request explanations of technical decisions ("Why did you choose PostgreSQL over MongoDB for this use case?")
+   - Challenge them to compare approaches ("What tradeoffs did you consider between these architectures?")
+   - Probe for deeper technical knowledge ("What would happen if this system needed to scale 10x?")
+
+INTERVIEW STRATEGY:
+- Build questions directly from the candidate's resume experiences
+- Focus on technologies they've actually used, not theoretical knowledge
+- Ask them to solve problems similar to what they've solved before, but with new challenges
+- Follow threads of conversation rather than jumping between unrelated topics
+- Gradually increase technical depth to assess their expertise level
+
+CONVERSATIONAL TECHNIQUES:
+- Acknowledge their answers: "That's a good point about scalability..."
+- Bridge to follow-ups: "Based on your implementation of X, how would you approach..."
+- Create scenarios from their experience: "Imagine your Redis cache suddenly fails in production..."
+- Ask for comparisons: "You've worked with both React and Angular - how would you compare their state management?"
+
+The candidate's resume contains these experiences:"""
+        
+        # Add formatted work experience for reference
+        if user_profile and user_profile.get('resume_experience'):
+            experiences = user_profile.get('resume_experience', [])
+            if experiences:
+                for i, exp in enumerate(experiences):
+                    if isinstance(exp, dict):
+                        company = exp.get('company', '')
+                        position = exp.get('position', '')
+                        dates = exp.get('dates', '')
+                        description = exp.get('description', '')
+                        
+                        tech_skills_prompt += f"\n\nExperience {i+1}:"
+                        if company:
+                            tech_skills_prompt += f"\nCompany: {company}"
+                        if position:
+                            tech_skills_prompt += f"\nPosition: {position}"
+                        if dates:
+                            tech_skills_prompt += f"\nDates: {dates}"
+                        if description:
+                            tech_skills_prompt += f"\nDetails: {description}"
+        
+        tech_skills_prompt += """
+
+EXAMPLE QUESTION FLOW:
+
+Based on resume: "Built a microservice architecture using Node.js and Docker"
+
+Initial question:
+"I see you implemented microservices with Node.js at ABC Company. Could you walk me through the architecture and how services communicated with each other?"
+
+After their response:
+[ANALYSIS: Candidate mentioned using REST APIs but didn't explain service discovery]
+
+Follow-up questions:
+"You mentioned REST APIs for service communication. How did you handle service discovery in this architecture?"
+"If one of your microservices failed, what recovery mechanisms did you implement?"
+"Given that you used Docker, what was your approach to orchestration and scaling?"
+
+Remember: Each question should show you've carefully listened to their previous answer. Structure the interview as a deep technical conversation, not an interrogation."""
+        
+        # Inform LLM this is a technical interview with specific focus areas
+        agent.llm_graph.invoke(HumanMessage(content=tech_skills_prompt), thread_id=thread_id)
     else:
         welcome_message = f"Welcome to your interview for {interview_name} at {company_name}. I'm excited to learn more about your skills and experience. Could you please start by telling me a bit about yourself and your background?"
 

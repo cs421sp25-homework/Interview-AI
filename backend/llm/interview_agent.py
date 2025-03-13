@@ -15,7 +15,7 @@ class LLMInterviewAgent:
          or an LLM signal (e.g., a special token).
     """
 
-    def __init__(self, llm_graph: LLMGraph, question_threshold: int = 5, thread_id = "default_thread"):
+    def __init__(self, llm_graph: LLMGraph, question_threshold: int = 10, thread_id = "default_thread"):
         """
         Args:
             llm_graph (LLMGraph): The LLM wrapper (with memory saver) to manage conversation.
@@ -50,7 +50,7 @@ class LLMInterviewAgent:
         if interviewer.company_name:
             system_info.append(f"Company Name: {interviewer.company_name}")
         if interviewer.interviewee_resume:
-            system_info.append(f"Interviewee Resume: {interviewer.interviewee_resume}")
+            system_info.append(f"Interviewee Resume:\n{interviewer.interviewee_resume}")
 
         # Combine everything into a system prompt
         system_message_content = (
@@ -59,9 +59,21 @@ class LLMInterviewAgent:
             + "\n\nYour task:\n"
             "1) Start by greeting the candidate and asking them for a self-introduction.\n"
             "2) For each subsequent user response, craft one relevant follow-up question.\n"
-            "3) Consider the candidate's resume, the company's needs, and typical interview flow.\n"
-            "4) If you believe the interview has reached a good stopping point, respond ONLY with 'END_INTERVIEW'.\n"
-            f"5) Automatically end the interview if there have been {self.question_threshold} questions.\n"
+            "3) IMPORTANT: For technical interviews, follow this 2-step approach for each question:\n"
+            "   a) ANALYZE: First, examine their response to identify key technical concepts, depth of understanding, and areas to explore.\n" 
+            "   b) FOLLOW-UP: Then ask a targeted question directly related to something they just mentioned, diving deeper into implementations, decisions, or technical challenges.\n\n"
+            "4) When crafting technical questions, reference specific experiences from their resume:\n"
+            "   - Be precise about technologies they've mentioned: 'You used Redis at Company X. How did you implement caching strategies and what invalidation policies did you use?'\n"
+            "   - Create realistic scenarios based on their experience: 'Given the microservice architecture you built, how would you handle a partial system failure?'\n"
+            "   - Ask for comparisons between technologies they've used: 'You've worked with both SQL and NoSQL databases. When would you choose one over the other?'\n\n"
+            "5) Make each question engaging and conversational:\n"
+            "   - Acknowledge their previous answer: 'That's an interesting approach to scaling...'\n"
+            "   - Connect questions naturally: 'Building on your point about Docker, I'm curious about...'\n"
+            "   - Ask about their reasoning: 'What factors led you to choose that architecture?'\n\n"
+            "6) For technical questions, explore both practical implementation AND theoretical understanding.\n\n"
+            "7) For behavioral interviews, use the STAR format (Situation, Task, Action, Result) to structure questions.\n"
+            "8) If you believe the interview has reached a good stopping point, respond ONLY with 'END_INTERVIEW'.\n"
+            f"9) Automatically end the interview if there have been {self.question_threshold} questions.\n"
         )
 
         # Insert the system message to seed the context
@@ -90,7 +102,17 @@ class LLMInterviewAgent:
         Pass the candidate's latest response to the LLM and get the next interview question.
         If the LLM decides the interview should end, it will return 'END_INTERVIEW'.
         """
-        # Send the candidate's response to the LLM
+        # First, analyze the candidate's response
+        analysis_prompt = (
+            f"Analyze the following candidate response to identify key technical concepts, "
+            f"experience level, and areas to explore deeper in follow-up questions:\n\n"
+            f"{user_response}\n\n"
+            f"Based on this analysis, formulate a targeted follow-up question that directly relates "
+            f"to something they just mentioned. Your question should dive deeper into specific "
+            f"implementations, technical decisions, or challenges they faced."
+        )
+        
+        # Send the analysis prompt to the LLM
         response = self.llm_graph.invoke(HumanMessage(content=user_response), thread_id=self.thread_id)
         ai_message = response["messages"][-1]
         next_q = ai_message.content
