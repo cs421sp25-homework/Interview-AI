@@ -784,8 +784,22 @@ def get_interview_logs(email):
         
         if not result.data:
             return jsonify({"data": []}), 200
+        
+        enhanced_logs = []
+        for log in result.data:
+            config_id = log.get('config_id')
+            if config_id:
+                config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
+                if config_result.data and len(config_result.data) > 0:
+                    config = config_result.data[0]
+                    log['question_type'] = config.get('question_type', 'Unknown')
+                    log['job_description'] = config.get('job_description', '')
+                    log['config_company_name'] = config.get('company_name', 'Unknown')
+                    log['interview_type'] = config.get('interview_type', 'Unknown')
+                    log['interview_name'] = config.get('interview_name', 'Unknown')
+            enhanced_logs.append(log)
             
-        return jsonify({"data": result.data}), 200
+        return jsonify({"data": enhanced_logs}), 200
     except Exception as e:
         print(f"Error fetching interview logs: {str(e)}")
         import traceback

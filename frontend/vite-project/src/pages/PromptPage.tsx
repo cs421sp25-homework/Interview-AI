@@ -306,7 +306,7 @@ const PromptPage = () => {
             <form className={styles.formCard}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
-                  Interview Name <span className={styles.required}>*</span>
+                  Session Name <span className={styles.required}>*</span>
                 </label>
                 <input
                   type="text"
