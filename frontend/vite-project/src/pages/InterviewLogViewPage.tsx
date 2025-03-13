@@ -60,14 +60,16 @@ const InterviewLogViewPage: React.FC = () => {
     <div className={styles.interviewContainer}>
       <div className={styles.interviewHeader}>
         <button 
-          className={styles.backButton}
-          onClick={handleBack}
+            className={styles.backButton}
+            onClick={handleBack}
         >
-          <Home size={18} />
-          Back to History
+        <Home size={18} />
+            Back to History
         </button>
-        <h1>Log</h1>
-      </div>
+        <h1 className={styles.centeredTitle}>Log</h1>
+        <div className={styles.placeholder} /> {/* Empty div to balance flexbox spacing */}
+        </div>
+
 
       <div className={styles.chatInterface}>
         <div 
