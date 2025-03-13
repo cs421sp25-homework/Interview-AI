@@ -93,15 +93,13 @@ const InterviewHistoryPage: React.FC = () => {
           thread_id: log.thread_id,
           title: log.config_name || 'Unnamed Interview',
           date: log.created_at || new Date().toISOString(),
-          company_name: log.config_name?.includes('-') 
-            ? log.config_name.split('-')[1].trim() 
-            : 'Unknown Company',
+          company_name: log.company_name ||'Unknown Company',
           form: 'text', 
           
           
           question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
 
-          interview_type: log.interview_type || (Math.random() > 0.5 ? 'Technical' : 'Behavioral'),
+          interview_type: log.interview_type || 'Unknown',
           
           
 
@@ -231,7 +229,9 @@ const InterviewHistoryPage: React.FC = () => {
     });
   };
   
-  
+  const handleBack = () => {
+    navigate('/dashboard');
+  };
   
   const handleExportInterview = (log: InterviewLog) => {
     // 在实际应用中，这里应该调用API导出面试记录
@@ -334,10 +334,15 @@ const InterviewHistoryPage: React.FC = () => {
     
     <div className={styles.historyContainer}>
       <div className={styles.historyHeader}>
-        <Title level={2}>Interview History</Title>
-        
-        <Text type="secondary">View and manage your past interview sessions</Text>
-      </div>
+        <div className={styles.headerLeft}>
+          <Title level={2}>Interview History</Title>
+          <Text type="secondary">View and manage your past interview sessions</Text>
+        </div>
+        <Button type="primary" onClick={handleBack} className={styles.dashboardButton}>
+          Dashboard
+        </Button>
+    </div>
+
       
       <div className={styles.filterSection}>
         <Space wrap>

@@ -9,13 +9,33 @@
 }
 
 .historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
 }
 
 .historyHeader h2 {
   margin-bottom: 8px;
   color: #1f2937;
 }
+
+.dashboardButton {
+  background-color: #de3391;
+  color: white;
+  font-weight: bold;
+  border: none;
+}
+
+.dashboardButton:hover {
+  background-color: #40a9ff;
+}
+
 
 .filterSection {
   margin-bottom: 24px;
