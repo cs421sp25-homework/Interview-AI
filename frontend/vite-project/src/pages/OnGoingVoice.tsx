@@ -71,12 +71,36 @@ const OnGoingVoice: React.FC = () => {
       
       const initializeSession = async () => {
         try {
+          // Fetch user profile data
+          let userProfile = null;
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData.data) {
+                userProfile = profileData.data;
+              }
+            }
+          } catch (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            // Continue even if profile fetch fails
+          }
+          
           const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               email: userEmail, 
               name: config_name,
+              // Include user profile information for the LLM
+              userProfile: userProfile || {
+                first_name: localStorage.getItem('user_first_name') || '',
+                last_name: localStorage.getItem('user_last_name') || '',
+                job_title: localStorage.getItem('user_job_title') || '',
+                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
+                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+              }
             }), 
           });
     
