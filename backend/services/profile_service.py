@@ -80,13 +80,18 @@ class ProfileService:
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
             # Create Profile object
-
             profile = self.map_profile_data(profile_data)
+            
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
-            signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password":profile.password})
             
-            return
+            # 注册用户到Supabase认证系统
+            signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password": profile.password})
+            
+            # 返回数据而不是API响应对象
+            if result and result.data:
+                return {"success": True, "data": result.data[0] if result.data else {}}
+            return {"success": True, "message": "Profile created"}
         except Exception as e:
             print(f"Error creating profile: {str(e)}")
             raise
@@ -107,7 +112,10 @@ class ProfileService:
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
             
-            return result
+            # 返回数据而不是API响应对象
+            if result and result.data:
+                return {"success": True, "data": result.data[0] if result.data else {}}
+            return {"success": True, "message": "Profile created"}
         except Exception as e:
             print(f"Error creating profile: {str(e)}")
             raise
