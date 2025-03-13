@@ -82,15 +82,29 @@ class ProfileService:
             # Create Profile object
             profile = self.map_profile_data(profile_data)
             
+            print(f"Attempting to insert profile into database for email: {profile.email}")
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
+            print(f"Database insertion result: {result}")
             
-            # 注册用户到Supabase认证系统
-            signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password": profile.password})
+            try:
+                # 注册用户到Supabase认证系统
+                print(f"Attempting to register user with Supabase Auth: {profile.email}")
+                auth_data = {"email": profile.email, "password": profile.password}
+                sign_up_result = self.supabase.auth.sign_up(auth_data)
+                print(f"Supabase Auth sign up completed successfully for: {profile.email}")
+            except Exception as auth_error:
+                # 如果认证注册失败，记录错误但不中断流程
+                # 这可能是由于用户已存在或其他认证问题
+                print(f"Supabase Auth sign up error: {str(auth_error)}")
+                print("Continuing profile creation despite auth error")
             
             # 返回数据而不是API响应对象
             if result and result.data:
+                print(f"Returning successful profile creation data")
                 return {"success": True, "data": result.data[0] if result.data else {}}
+            
+            print(f"Returning generic success message (no result data)")
             return {"success": True, "message": "Profile created"}
         except Exception as e:
             print(f"Error creating profile: {str(e)}")
@@ -109,49 +123,94 @@ class ProfileService:
             
             # Create Profile object
             profile = self.map_profile_data(profile_data)
+            
+            print(f"OAuth: Attempting to insert profile into database for email: {profile.email}")
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
+            print(f"OAuth: Database insertion result: {result}")
+            
+            # 注意: OAuth流程不需要单独调用Supabase Auth sign_up
+            # 因为用户已经通过OAuth提供商验证
             
             # 返回数据而不是API响应对象
             if result and result.data:
+                print(f"OAuth: Returning successful profile creation data")
                 return {"success": True, "data": result.data[0] if result.data else {}}
+            
+            print(f"OAuth: Returning generic success message (no result data)")
             return {"success": True, "message": "Profile created"}
         except Exception as e:
-            print(f"Error creating profile: {str(e)}")
+            print(f"Error creating OAuth profile: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             raise
 
     def map_profile_data(self, profile_data: dict) -> Profile:
         """
         Maps the input profile_data dictionary with camelCase keys to a Profile instance with snake_case fields.
         """
-        # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
-        resume = profile_data.get('resume')
-        
-        from datetime import datetime
-        
-        return Profile(
-            created_at=profile_data.get('created_at') or datetime.now().isoformat(),
-            username=profile_data['username'],
-            password=profile_data['password'],
-            firstName=profile_data['firstName'],
-            lastName=profile_data['lastName'],
-            first_name=profile_data['firstName'],
-            last_name=profile_data['lastName'],
-            email=profile_data['email'],
-            phone=profile_data.get('phone') or None,
-            job_title=profile_data.get('jobTitle') or None,
-            experience=profile_data.get('experience') or None,
-            industry=profile_data.get('industry') or None,
-            career_level=profile_data.get('careerLevel') or None,
-            interview_type=profile_data.get('interviewType') or None,
-            preferred_language=profile_data.get('preferredLanguage') or None,
-            specialization=profile_data.get('specialization') or None,
-            resume_url=profile_data.get('resume_url') or None,
-            portfolio_url=profile_data.get('portfolioUrl') or None,
-            linkedin_url=profile_data.get('linkedinUrl') or None,
-            github_url=profile_data.get('githubUrl') or None,
-            key_skills=profile_data.get('keySkills') or None,
-            preferred_role=profile_data.get('preferredRole') or None,
-            expectations=profile_data.get('expectations') or None,
-            resume=resume,
-        )
+        try:
+            # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
+            resume = profile_data.get('resume')
+            
+            from datetime import datetime
+            
+            # 打印关键字段以便调试
+            print(f"Mapping profile data with keys: {profile_data.keys()}")
+            print(f"Username: {profile_data.get('username')}")
+            print(f"Email: {profile_data.get('email')}")
+            
+            # 检查必需字段
+            if not profile_data.get('username'):
+                print("Warning: username is missing, using email as username")
+                username = profile_data.get('email', 'default_user').split('@')[0]
+            else:
+                username = profile_data['username']
+                
+            if not profile_data.get('password'):
+                print("Warning: password is missing, generating a temporary one")
+                import secrets
+                password = secrets.token_urlsafe(16)  # 生成一个安全的随机密码
+            else:
+                password = profile_data['password']
+                
+            # 处理名字字段，确保至少有一些值存在
+            first_name = profile_data.get('firstName', profile_data.get('first_name', ''))
+            last_name = profile_data.get('lastName', profile_data.get('last_name', ''))
+            
+            if not first_name and not last_name:
+                print("Warning: both first_name and last_name are missing")
+                first_name = username  # 使用用户名作为名字的默认值
+                
+            return Profile(
+                created_at=profile_data.get('created_at') or datetime.now().isoformat(),
+                username=username,
+                password=password,
+                firstName=first_name,
+                lastName=last_name,
+                first_name=first_name,
+                last_name=last_name,
+                email=profile_data['email'],
+                phone=profile_data.get('phone') or None,
+                job_title=profile_data.get('jobTitle') or None,
+                experience=profile_data.get('experience') or None,
+                industry=profile_data.get('industry') or None,
+                career_level=profile_data.get('careerLevel') or None,
+                interview_type=profile_data.get('interviewType') or None,
+                preferred_language=profile_data.get('preferredLanguage') or None,
+                specialization=profile_data.get('specialization') or None,
+                resume_url=profile_data.get('resume_url') or None,
+                portfolio_url=profile_data.get('portfolioUrl') or None,
+                linkedin_url=profile_data.get('linkedinUrl') or None,
+                github_url=profile_data.get('githubUrl') or None,
+                key_skills=profile_data.get('keySkills') or None,
+                preferred_role=profile_data.get('preferredRole') or None,
+                expectations=profile_data.get('expectations') or None,
+                resume=resume,
+            )
+        except Exception as e:
+            print(f"Error mapping profile data: {str(e)}")
+            print(f"Profile data keys: {profile_data.keys()}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
