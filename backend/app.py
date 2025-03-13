@@ -99,9 +99,10 @@ def signup():
         # Create profile
         result = profile_service.create_profile(profile_data)
 
+        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
-            "data": result
+            "profile": result.get("data", {})
         }), 200
     except Exception as e:
         print(f"Signup error: {str(e)}")
@@ -145,10 +146,11 @@ def oauth_signup():
 
         # Create profile
         result = profile_service.create_oauth_profile(profile_data)
-
+        
+        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
-            "data": result
+            "profile": result.get("data", {})
         }), 200
     except Exception as e:
         print(f"Signup error: {str(e)}")

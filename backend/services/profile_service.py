@@ -24,8 +24,6 @@ class ProfileService:
         # Get the complete current profile
         current_data = check_result.data[0]
 
-        print(f"current_data: {current_data}")
-
         # Create update dict with all original fields
         update_dict = {
             "id": current_data.get("id"),  # Important: Include the primary key
@@ -65,7 +63,6 @@ class ProfileService:
         if not updated_result.data:
             return None  # Failed to retrieve updated data
         
-        print(f"updated_result: {updated_result.data[0]}")
 
         return updated_result.data[0]  # Return updated profile data
     
@@ -80,15 +77,22 @@ class ProfileService:
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
             # Create Profile object
-
             profile = self.map_profile_data(profile_data)
+            
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
-            signUpResult = self.supabase.auth.sign_up({"email": profile.email, "password":profile.password})
             
-            return
+            try:
+                auth_data = {"email": profile.email, "password": profile.password}
+                sign_up_result = self.supabase.auth.sign_up(auth_data)
+            except Exception as auth_error:
+                print(f"Supabase Auth sign up error: {str(auth_error)}")
+            
+            if result and result.data:
+                return {"success": True, "data": result.data[0] if result.data else {}}
+            
+            return {"success": True, "message": "Profile created"}
         except Exception as e:
-            print(f"Error creating profile: {str(e)}")
             raise
 
 
@@ -103,45 +107,77 @@ class ProfileService:
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
             # Create Profile object
-
             profile = self.map_profile_data(profile_data)
+            
+            print(f"OAuth: Attempting to insert profile into database for email: {profile.email}")
             # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
+            print(f"OAuth: Database insertion result: {result}")
             
-            return
+            if result and result.data:
+                return {"success": True, "data": result.data[0] if result.data else {}}
+            
+            return {"success": True, "message": "Profile created"}
         except Exception as e:
-            print(f"Error creating profile: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             raise
 
     def map_profile_data(self, profile_data: dict) -> Profile:
         """
         Maps the input profile_data dictionary with camelCase keys to a Profile instance with snake_case fields.
         """
-        # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
-        resume = profile_data.get('resume')
-        
-        return Profile(
-            username=profile_data['username'],
-            password=profile_data['password'],
-            firstName=profile_data['firstName'],
-            lastName=profile_data['lastName'],
-            first_name=profile_data['firstName'],
-            last_name=profile_data['lastName'],
-            email=profile_data['email'],
-            phone=profile_data.get('phone') or None,
-            job_title=profile_data.get('jobTitle') or None,
-            experience=profile_data.get('experience') or None,
-            industry=profile_data.get('industry') or None,
-            career_level=profile_data.get('careerLevel') or None,
-            interview_type=profile_data.get('interviewType') or None,
-            preferred_language=profile_data.get('preferredLanguage') or None,
-            specialization=profile_data.get('specialization') or None,
-            resume_url=profile_data.get('resume_url') or None,
-            portfolio_url=profile_data.get('portfolioUrl') or None,
-            linkedin_url=profile_data.get('linkedinUrl') or None,
-            github_url=profile_data.get('githubUrl') or None,
-            key_skills=profile_data.get('keySkills') or None,
-            preferred_role=profile_data.get('preferredRole') or None,
-            expectations=profile_data.get('expectations') or None,
-            resume=resume,
-        )
+        try:
+            # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
+            resume = profile_data.get('resume')
+            
+            from datetime import datetime
+            
+
+            if not profile_data.get('username'):
+                username = profile_data.get('email', 'default_user').split('@')[0]
+            else:
+                username = profile_data['username']
+                
+            if not profile_data.get('password'):
+                import secrets
+                password = secrets.token_urlsafe(16)  
+            else:
+                password = profile_data['password']
+                
+            first_name = profile_data.get('firstName', profile_data.get('first_name', ''))
+            last_name = profile_data.get('lastName', profile_data.get('last_name', ''))
+            
+            if not first_name and not last_name:
+                first_name = username 
+                
+            return Profile(
+                created_at=profile_data.get('created_at') or datetime.now().isoformat(),
+                username=username,
+                password=password,
+                firstName=first_name,
+                lastName=last_name,
+                first_name=first_name,
+                last_name=last_name,
+                email=profile_data['email'],
+                phone=profile_data.get('phone') or None,
+                job_title=profile_data.get('jobTitle') or None,
+                experience=profile_data.get('experience') or None,
+                industry=profile_data.get('industry') or None,
+                career_level=profile_data.get('careerLevel') or None,
+                interview_type=profile_data.get('interviewType') or None,
+                preferred_language=profile_data.get('preferredLanguage') or None,
+                specialization=profile_data.get('specialization') or None,
+                resume_url=profile_data.get('resume_url') or None,
+                portfolio_url=profile_data.get('portfolioUrl') or None,
+                linkedin_url=profile_data.get('linkedinUrl') or None,
+                github_url=profile_data.get('githubUrl') or None,
+                key_skills=profile_data.get('keySkills') or None,
+                preferred_role=profile_data.get('preferredRole') or None,
+                expectations=profile_data.get('expectations') or None,
+                resume=resume,
+            )
+        except Exception as e:
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
