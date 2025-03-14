@@ -21,21 +21,41 @@ const LoginPage = () => {
     }
   }, [location]);
 
+  // Add sanitization function
+  const sanitizeInput = (input: string): string => {
+    // Remove potentially dangerous characters and HTML tags
+    return input.replace(/<[^>]*>?/gm, '').trim();
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Sanitize inputs
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPassword = password; // Don't trim passwords as spaces might be intentional
+    
     // Validation
-    if (!email || !password) {
+    if (!sanitizedEmail || !sanitizedPassword) {
       setError('Please enter both email and password.');
       return;
     }
     
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { 
+        email: sanitizedEmail, 
+        password: sanitizedPassword 
+      });
       
       if (response.status === 200) {
         console.log('Login successful');
-        login(email); // Updated to match new AuthContext
+        login(sanitizedEmail);
         navigate('/dashboard');
       }
     } catch (error) {

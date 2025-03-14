@@ -63,17 +63,4 @@ test.describe('User Dashboard', () => {
     await expect(page).toHaveURL(/prompts/);
   });
 
-  // test('should log out when clicking logout button', async ({ page }) => {
-  //   // Click the logout icon
-  //   await page.locator('svg').
-  //   // Alternative approach if the above doesn't work:
-  //   // await page.locator('svg').nth(1).click(); // Assuming it's the second SVG icon
-    
-  //   // Verify navigation to home page
-  //   await expect(page).toHaveURL(/\/$/);
-    
-  //   // Verify localStorage is cleared
-  //   const isLoggedOut = await page.evaluate(() => !localStorage.getItem('user_email'));
-  //   expect(isLoggedOut).toBeTruthy();
-  // });
 }); 
