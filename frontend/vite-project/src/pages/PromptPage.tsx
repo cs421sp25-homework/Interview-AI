@@ -173,7 +173,7 @@ const PromptPage = () => {
   };
   
   const handleDelete = (index: number, id: number) => {
-    if (confirm("Are you sure you want to delete this configuration?")) {
+    if (window.confirm("Are you sure you want to delete this configuration?")) {
       axios
         .delete(`${API_BASE_URL}/api/delete_interview_config/${id}`)
         .then((response) => {
@@ -244,8 +244,8 @@ const PromptPage = () => {
             >
               <div className={styles.cardContent}>
                 <div>
-                  <h3 className={styles.interviewName}>{interview.interview_name}</h3>
-                  <div className={styles.cardDetails}>
+                  <h3 className={styles.interviewName} data-testid="interview-name">{interview.interview_name}</h3>
+                  <div className={styles.cardDetails} data-testid="card-details">
                     <p><strong>Company:</strong> {interview.company_name}</p>
                     <p><strong>Question Type:</strong> {interview.question_type}</p>
                     <p><strong>Interview Type:</strong> {interview.interview_type}</p>
@@ -255,6 +255,7 @@ const PromptPage = () => {
                 <div className={styles.menuContainer}>
                   <MoreVertical 
                     className={styles.menuIcon} 
+                    data-testid="config-menu-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(menuOpen === index ? null : index);
@@ -263,18 +264,24 @@ const PromptPage = () => {
 
                   {menuOpen === index && (
                     <div className={styles.menuDropdown}>
-                      <button onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(index);
-                        setMenuOpen(null);
-                      }}>
+                      <button 
+                        data-testid="edit-config-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(index);
+                          setMenuOpen(null);
+                        }}
+                      >
                         <Edit size={16} /> Edit
                       </button>
-                      <button onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(index, interview.id);
-                        setMenuOpen(null);
-                      }}>
+                      <button 
+                        data-testid="delete-config-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(index, interview.id);
+                          setMenuOpen(null);
+                        }}
+                      >
                         <Trash size={16} /> Delete
                       </button>
                     </div>
@@ -314,6 +321,7 @@ const PromptPage = () => {
                   value={interview_name}
                   onChange={(e) => setInterviewName(e.target.value)}
                   placeholder="Enter interview session name"
+                  data-testid="interview-name-input"
                   required
                 />
               </div>
@@ -328,6 +336,7 @@ const PromptPage = () => {
                   value={company_name}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Enter the company name"
+                  data-testid="company-name-input"
                   required
                 />
               </div>
@@ -368,14 +377,21 @@ const PromptPage = () => {
                 <button 
                   type="button" 
                   className={styles.buttonSecondary}
+                  data-testid="cancel-button"
                   onClick={() => setIsModalOpen(false)}
                 >
                   Cancel
                 </button>
-                <button type="button" className={styles.buttonPrimary} onClick={handleSaveConfig}>
+                <button 
+                  type="button" 
+                  className={styles.buttonPrimary} 
+                  data-testid="save-update-button"
+                  onClick={handleSaveConfig}
+                >
                   {isEditing ? 'Update' : 'Save'}
                 </button>
               </div>
+
             </form>
           </div>
         </div>
