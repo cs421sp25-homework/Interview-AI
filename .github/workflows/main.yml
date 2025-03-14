@@ -40,14 +40,17 @@ jobs:
         run: |
           cd frontend/vite-project
           pnpm install
+          # Install Playwright as a dev dependency
+          pnpm add -D @playwright/test
 
       # 6. Install dependencies for the backend.
       - name: Install Backend Dependencies
         run: |
-          pip install poetry pytest
+          pip install poetry
           cd backend
           poetry install
-          poetry add pytest  # Explicitly add pytest to the poetry environment
+          # Add missing dependencies to poetry environment
+          poetry add pytest gtts PyPDF2 pydantic fastapi uvicorn
 
       # 7. Start backend server in the background.
       - name: Start Backend Server
@@ -66,26 +69,23 @@ jobs:
         run: sleep 10
         # Alternatively, consider using a tool like "wait-on" for a more robust check.
 
+      # 10. Run backend tests (if you have tests set up using pytest or similar).
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
 
       # 11. Install Playwright browsers.
       - name: Install Playwright Browsers
         run: |
           cd frontend/vite-project
-          pnpm exec playwright install --with-deps
+          npx playwright install --with-deps
 
       # 12. Run Playwright tests.
       - name: Run Playwright Tests
         run: |
           cd frontend/vite-project
-          pnpm exec playwright test
-
-
-        # 10. Run backend tests (if you have tests set up using pytest or similar).
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
-    
+          npx playwright test
 
       # 13. Upload test reports as artifacts.
       - name: Upload Test Reports
