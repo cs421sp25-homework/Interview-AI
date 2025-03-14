@@ -8,6 +8,7 @@ import API_BASE_URL from '../config/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -21,14 +22,38 @@ const LoginPage = () => {
     }
   }, [location]);
 
-  // Add sanitization function
-  const sanitizeInput = (input: string): string => {
-    // Remove potentially dangerous characters and HTML tags
-    return input.replace(/<[^>]*>?/gm, '').trim();
+  // Add email validation function
+  const validateEmail = (email: string): { isValid: boolean; error: string } => {
+    if (!email.includes('@')) {
+      return { isValid: false, error: 'Please enter a valid email address.' };
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { isValid: false, error: 'Please enter a valid email address' };
+    }
+    
+    return { isValid: true, error: '' };
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    
+    if (newEmail) {
+      const { error } = validateEmail(newEmail);
+      setEmailError(error);
+    } else {
+      setEmailError('');
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Reset errors
+    setError('');
     
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email);
@@ -41,9 +66,9 @@ const LoginPage = () => {
     }
     
     // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(sanitizedEmail)) {
-      setError('Please enter a valid email address.');
+    const { isValid, error: validationError } = validateEmail(sanitizedEmail);
+    if (!isValid) {
+      setEmailError(validationError);
       return;
     }
     
@@ -58,14 +83,26 @@ const LoginPage = () => {
         login(sanitizedEmail);
         navigate('/dashboard');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      setError('Invalid email or password');
+      if (error.response?.data?.message === 'Invalid email format') {
+        setEmailError('Invalid email format. Please check your email address.');
+      } else if (error.response?.status === 401) {
+        setError('Invalid email or password');
+      } else {
+        setError('An error occurred during login. Please try again.');
+      }
     }
   };
 
   const handleOAuthLogin = (provider: string) => {
     window.location.href = `${API_BASE_URL}/api/oauth/${provider}`;
+  };
+
+  // Add sanitization function
+  const sanitizeInput = (input: string): string => {
+    // Remove potentially dangerous characters and HTML tags
+    return input.replace(/<[^>]*>?/gm, '').trim();
   };
 
   return (
@@ -92,11 +129,17 @@ const LoginPage = () => {
             <label className={styles.formLabel}>Email</label>
             <input
               type="email"
-              className={styles.formInput}
+              className={`${styles.formInput} ${emailError ? styles.inputError : ''}`}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
+              onBlur={() => {
+                if (email && !email.includes('@')) {
+                  setEmailError('Please enter a valid email address.');
+                }
+              }}
               placeholder="Enter your email"
             />
+            {emailError && <p className={styles.fieldError}>{emailError}</p>}
           </div>
 
           <div className={styles.formGroup}>
