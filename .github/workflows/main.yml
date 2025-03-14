@@ -27,12 +27,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'  # Adjust as needed
-
-      # 4. Install dependencies for the frontend.
-      - name: Install Frontend Dependencies
-        run: |
-          cd frontend/vite-project
-          pnpm install
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+  
+      # Install pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm
+  
+      # Install dependencies using pnpm
+      - name: Install Dependencies
+        run: pnpm install
 
       # 5. Install dependencies for the backend.
       - name: Install Backend Dependencies
