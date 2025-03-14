@@ -28,11 +28,6 @@ jobs:
         with:
           python-version: '3.x'  # Adjust as needed
           
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-  
       # Install pnpm
       - name: Install pnpm
         run: npm install -g pnpm
