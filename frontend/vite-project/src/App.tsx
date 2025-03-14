@@ -14,7 +14,6 @@ import 'antd/dist/reset.css';
 import OnGoingVoice from './pages/OnGoingVoice';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
-import '@ant-design/v5-patch-for-react-19';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
 
 function App() {

@@ -507,17 +507,37 @@ const SettingsPage: React.FC = () => {
         label: 'First Name',
         value: profile.firstName,
         error: errors.firstName,
-        onChange: (v: string) => setProfile({ ...profile, firstName: v })
+        onChange: (v: string) => setProfile({ ...profile, firstName: v }),
+        testId: 'first-name-input'
       },
       {
         label: 'Last Name',
         value: profile.lastName,
         error: errors.lastName,
-        onChange: (v: string) => setProfile({ ...profile, lastName: v })
+        onChange: (v: string) => setProfile({ ...profile, lastName: v }),
+        testId: 'last-name-input'
       },
-      { label: 'Job Title', value: profile.title, error: '', onChange: (v: string) => setProfile({ ...profile, title: v }) },
-      { label: 'Email', value: profile.email, error: errors.email, onChange: (v: string) => setProfile({ ...profile, email: v }) },
-      { label: 'Phone', value: profile.phone, error: errors.phone, onChange: (v: string) => setProfile({ ...profile, phone: v }) },
+      { 
+        label: 'Job Title', 
+        value: profile.title, 
+        error: '', 
+        onChange: (v: string) => setProfile({ ...profile, title: v }),
+        testId: 'job-title-input'
+      },
+      { 
+        label: 'Email', 
+        value: profile.email, 
+        error: errors.email, 
+        onChange: (v: string) => setProfile({ ...profile, email: v }),
+        testId: 'email-input'
+      },
+      { 
+        label: 'Phone', 
+        value: profile.phone, 
+        error: errors.phone, 
+        onChange: (v: string) => setProfile({ ...profile, phone: v }),
+        testId: 'phone-input'
+      },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
@@ -526,6 +546,7 @@ const SettingsPage: React.FC = () => {
           className={`${styles.input} ${field.error ? styles.inputError : ''}`}
           value={field.value}
           onChange={(e) => field.onChange(e.target.value)}
+          data-testid={field.testId}
         />
         {field.error && <span className={styles.error}>{field.error}</span>}
       </div>
@@ -553,19 +574,38 @@ const SettingsPage: React.FC = () => {
 
     {/* Links */}
     {[
-      { label: 'LinkedIn URL', value: profile.linkedin, error: errors.linkedin, onChange: (v: string) => setProfile({ ...profile, linkedin: v }) },
-      { label: 'GitHub URL', value: profile.github, error: errors.github, onChange: (v: string) => setProfile({ ...profile, github: v }) },
-      { label: 'Portfolio URL', value: profile.portfolio, error: errors.portfolio, onChange: (v: string) => setProfile({ ...profile, portfolio: v }) },
+      { 
+        label: 'LinkedIn URL', 
+        value: profile.linkedin, 
+        error: errors.linkedin, 
+        onChange: (v: string) => setProfile({ ...profile, linkedin: v }),
+        testId: 'linkedin-input'
+      },
+      { 
+        label: 'GitHub URL', 
+        value: profile.github, 
+        error: errors.github, 
+        onChange: (v: string) => setProfile({ ...profile, github: v }),
+        testId: 'github-input'
+      },
+      { 
+        label: 'Portfolio URL', 
+        value: profile.portfolio, 
+        error: errors.portfolio, 
+        onChange: (v: string) => setProfile({ ...profile, portfolio: v }),
+        testId: 'portfolio-input'
+      },
     ].map((field, idx) => (
       <div className={styles.formGroup} key={idx}>
         <label>{field.label}</label>
         <input
           type="url"
-          className={`${styles.input} ${field.error ? styles.inputError : ''}`} // 如果有错误，添加 inputError 样式
+          className={`${styles.input} ${field.error ? styles.inputError : ''}`}
           value={field.value}
           onChange={(e) => field.onChange(e.target.value)}
+          data-testid={field.testId}
         />
-        {field.error && <span className={styles.error}>{field.error}</span>}  {/* 如果有错误，显示提示 */}
+        {field.error && <span className={styles.error}>{field.error}</span>}
       </div>
     ))}
 
@@ -575,25 +615,29 @@ const SettingsPage: React.FC = () => {
     {/* Education Cards */}
     <h3>Education</h3>
     {profile.education_history.map((edu, idx) => (
-      <div key={idx} className={styles.card}>
+      <div key={idx} className={styles.card} data-testid={`education-card-${idx}`}>
         <div className={styles.cardHeader}>
-          <strong>Education {idx + 1}</strong>
-          <Trash size={16} className={styles.icon} onClick={() => deleteEducation(idx)} />
+          <strong data-testid={`education-title-${idx}`}>Education {idx + 1}</strong>
+          <Trash size={16} className={styles.icon} onClick={() => deleteEducation(idx)} data-testid="trash" />
         </div>
 
-
         {[
-          { label: 'School', value: edu.institution, key: 'institution' },
-          { label: 'Degree', value: edu.degree, key: 'degree' },
-          { label: 'Date', value: edu.dates, key: 'dates' },
-          { label: 'Location', value: edu.location, key: 'location' },
+          { label: 'School', value: edu.institution, key: 'institution', testId: `institution-input-${idx}` },
+          { label: 'Degree', value: edu.degree, key: 'degree', testId: `degree-input-${idx}` },
+          { label: 'Date', value: edu.dates, key: 'dates', testId: `dates-input-${idx}` },
+          { label: 'Location', value: edu.location, key: 'location', testId: `location-input-${idx}` },
         ].map((field, i) => (
           <div key={i} className={styles.formGroup}>
             <label>{field.label}</label>
-            <input type="text" className={styles.input} value={field.value} onChange={(e) => handleEducationChange(idx, field.key as keyof EducationItem, e.target.value)} />
+            <input 
+              type="text" 
+              className={styles.input} 
+              value={field.value} 
+              onChange={(e) => handleEducationChange(idx, field.key as keyof EducationItem, e.target.value)} 
+              data-testid={field.testId}
+            />
           </div>
         ))}
-
 
         <div className={styles.formGroup}>
           <label>Description</label>
@@ -612,25 +656,29 @@ const SettingsPage: React.FC = () => {
   <div className={styles.column}>
     <h3>Experience</h3>
     {profile.experience.map((exp, idx) => (
-      <div key={idx} className={styles.card}>
+      <div key={idx} className={styles.card} data-testid={`experience-card-${idx}`}>
         <div className={styles.cardHeader}>
-          <strong>Experience {idx + 1}</strong>
-          <Trash size={16} className={styles.icon} onClick={() => deleteExperience(idx)} />
+          <strong data-testid={`experience-title-${idx}`}>Experience {idx + 1}</strong>
+          <Trash size={16} className={styles.icon} onClick={() => deleteExperience(idx)} data-testid="trash" />
         </div>
 
-
         {[
-          { label: 'Title', value: exp.title, key: 'title' },
-          { label: 'Organization', value: exp.organization, key: 'organization' },
-          { label: 'Date', value: exp.dates, key: 'dates' },
-          { label: 'Location', value: exp.location, key: 'location' },
+          { label: 'Title', value: exp.title, key: 'title', testId: `title-input-${idx}` },
+          { label: 'Organization', value: exp.organization, key: 'organization', testId: `organization-input-${idx}` },
+          { label: 'Date', value: exp.dates, key: 'dates', testId: `exp-dates-input-${idx}` },
+          { label: 'Location', value: exp.location, key: 'location', testId: `exp-location-input-${idx}` },
         ].map((field, i) => (
           <div key={i} className={styles.formGroup}>
             <label>{field.label}</label>
-            <input type="text" className={styles.input} value={field.value} onChange={(e) => handleExperienceChange(idx, field.key as keyof ExperienceItem, e.target.value)} />
+            <input 
+              type="text" 
+              className={styles.input} 
+              value={field.value} 
+              onChange={(e) => handleExperienceChange(idx, field.key as keyof ExperienceItem, e.target.value)} 
+              data-testid={field.testId}
+            />
           </div>
         ))}
-
 
         <div className={styles.formGroup}>
           <label>Description</label>
@@ -647,7 +695,13 @@ const SettingsPage: React.FC = () => {
 
 
 {/* Save Button */}
-<button className={styles.saveButton} onClick={handleSave}><Save size={20}/> Save Changes</button>
+<button 
+  className={styles.saveButton} 
+  onClick={handleSave} 
+  data-testid="save-changes-button"
+>
+  <Save size={20}/> Save Changes
+</button>
       </main>
     </div>
   );
