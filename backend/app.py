@@ -893,18 +893,7 @@ def api_speech2text():
             return jsonify({"error": "Audio file is required", "message": "Please upload an audio file."}), 400
 
         audio_file = request.files['audio']
-        audio_bytes = audio_file.read()
-
-        # Optionally convert to WAV if needed
-        try:
-            # First, try processing as-is.
-            transcript = speech_to_text(audio_bytes)
-        except Exception as original_error:
-            # If it fails, try converting.
-            app.logger.info("Attempting conversion to WAV.")
-            wav_io = convert_to_wav(audio_bytes)
-            transcript = speech_to_text(wav_io.read())
-
+        transcript = speech_to_text(audio_file.read())
         return jsonify({"transcript": transcript}), 200
 
     except Exception as e:

@@ -3,11 +3,15 @@
 import API_BASE_URL from '../config/api';
 
 export function text2speech(text: string) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    // Optional: set utterance.lang or choose a voice
-    // utterance.lang = 'en-US';
-    speechSynthesis.speak(utterance);
-  }  
+  // Cancel any ongoing utterances to prevent duplicate speech.
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  // Optional: set language or voice here if needed.
+  // utterance.lang = 'en-US';
+  speechSynthesis.speak(utterance);
+}
+
+
 
 /**
  * Calls the speech2text API to convert recorded audio into text.
