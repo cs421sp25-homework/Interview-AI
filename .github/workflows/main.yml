@@ -66,11 +66,6 @@ jobs:
         run: sleep 10
         # Alternatively, consider using a tool like "wait-on" for a more robust check.
 
-      # 10. Run backend tests (if you have tests set up using pytest or similar).
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
 
       # 11. Install Playwright browsers.
       - name: Install Playwright Browsers
@@ -83,6 +78,14 @@ jobs:
         run: |
           cd frontend/vite-project
           pnpm exec playwright test
+
+
+        # 10. Run backend tests (if you have tests set up using pytest or similar).
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
+    
 
       # 13. Upload test reports as artifacts.
       - name: Upload Test Reports
