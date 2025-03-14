@@ -22,62 +22,69 @@ jobs:
         with:
           node-version: lts/*
 
-      # 3. Set up Python (for backend tasks).
+      # 3. Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      # 4. Set up Python (for backend tasks).
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'  # Adjust as needed
-          
-      # Install pnpm
-      - name: Install pnpm
-        run: npm install -g pnpm
-  
-      # Install dependencies using pnpm
-      - name: Install Dependencies
-        run: pnpm install
 
-      # 5. Install dependencies for the backend.
+      # 5. Install dependencies for the frontend.
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend/vite-project
+          pnpm install
+
+      # 6. Install dependencies for the backend.
       - name: Install Backend Dependencies
         run: |
+          pip install poetry pytest
           cd backend
           poetry install
+          poetry add pytest  # Explicitly add pytest to the poetry environment
 
-      # 6. Start backend server in the background.
+      # 7. Start backend server in the background.
       - name: Start Backend Server
         run: |
           cd backend
           nohup poetry run python app.py &
 
-      # 7. Start frontend server in the background.
+      # 8. Start frontend server in the background.
       - name: Start Frontend Server
         run: |
           cd frontend/vite-project
           nohup pnpm run dev &
 
-      # 8. Wait until both servers are likely up.
+      # 9. Wait until both servers are likely up.
       - name: Wait for servers to be ready
         run: sleep 10
         # Alternatively, consider using a tool like "wait-on" for a more robust check.
 
-      # 9. Run backend tests (if you have tests set up using pytest or similar).
+      # 10. Run backend tests (if you have tests set up using pytest or similar).
       - name: Run Backend Tests
         run: |
           cd backend
-          poetry run pytest
+          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
 
-      # 10. Install Playwright browsers.
+      # 11. Install Playwright browsers.
       - name: Install Playwright Browsers
         run: |
           cd frontend/vite-project
           pnpm exec playwright install --with-deps
 
-      # 11. Run Playwright tests.
+      # 12. Run Playwright tests.
       - name: Run Playwright Tests
         run: |
           cd frontend/vite-project
           pnpm exec playwright test
 
-      # 12. Upload test reports as artifacts.
+      # 13. Upload test reports as artifacts.
       - name: Upload Test Reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -98,17 +105,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Build and deploy the frontend.
+      # 2. Install pnpm for deployment
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      # 3. Set up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      # 4. Build and deploy the frontend.
       - name: Build Frontend
         run: |
           cd frontend/vite-project
+          pnpm install
           pnpm run build
+          
       - name: Deploy Frontend
         run: |
           echo "Deploying frontend..."
           # Replace this with your actual frontend deployment commands.
 
-      # 3. Deploy the backend.
+      # 5. Deploy the backend.
       - name: Deploy Backend
         run: |
           cd backend
