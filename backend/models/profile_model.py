@@ -4,6 +4,7 @@ from typing import List, Optional
 from models.resume_model import ResumeData, EducationHistory, Experience
 
 class Profile(BaseModel):
+    created_at: str
     username: str 
     password: str
     first_name: str | None = None

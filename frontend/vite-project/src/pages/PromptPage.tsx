@@ -1,276 +1,389 @@
-import React, { useState, useEffect } from 'react';
-import { Bot, Plus, Trash2, Save, MessageSquare, Sparkles, Settings } from 'lucide-react';
-import styles from './PromptPage.module.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bot, Plus, X, MoreVertical, Edit, Trash, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-
-interface Prompt {
-  id: number;
-  text: string;
-}
-
-interface Settings {
-  followUp: boolean;
-  technical: boolean;
-  behavioral: boolean;
-  feedback: boolean;
-}
+import styles from './PromptPage.module.css';
+import axios from 'axios';
+import API_BASE_URL from '../config/api'
+import { message } from 'antd';
 
 const PromptPage = () => {
+  interface InterviewConfig {
+    id: number;
+    interview_name: string;
+    company_name: string;
+    job_description: string;
+    question_type: string;
+    interview_type: string;
+  }
+
   const navigate = useNavigate();
-  const { userEmail } = useAuth();
-  const [activeTab, setActiveTab] = useState('custom');
-  const [customPrompts, setCustomPrompts] = useState<Prompt[]>([
-    { id: 1, text: 'Tell me about your experience with project management.' },
-    { id: 2, text: 'How do you handle difficult team dynamics?' }
-  ]);
-  const [newPrompt, setNewPrompt] = useState('');
-  const [settings, setSettings] = useState<Settings>({
-    followUp: true,
-    technical: true,
-    behavioral: true,
-    feedback: true
-  });
+  const [id, setInterviewId] = useState<number|null>(null);
+  const [interview_name, setInterviewName] = useState('');
+  const [company_name, setCompanyName] = useState('');
+  const [job_description, setJobDescription] = useState('');
+  const [question_type, setQuestionType] = useState('behavioral');
+  const [interview_type, setInterviewType] = useState('text');
+  const [savedInterviewConfigs, setSavedInterviewConfigs] = useState<InterviewConfig[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState<InterviewConfig | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const email = localStorage.getItem('user_email') || '';
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if the user is authenticated
-    if (!userEmail) {
-      navigate('/login'); // Redirect to the login page if not authenticated
-      return;
-    }
-    // ... rest of the useEffect logic ...
-  }, [userEmail, navigate]);
+    try {
+      // Check if user is logged in
+      if (!email) {
+        console.log("User not logged in, redirecting to login page");
+        navigate('/login');
+        return;
+      }
 
-  const handleAddPrompt = () => {
-    if (newPrompt.trim()) {
-      setCustomPrompts([
-        ...customPrompts,
-        { id: Date.now(), text: newPrompt.trim() }
-      ]);
-      setNewPrompt('');
+      axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`)
+        .then((response) => {
+          console.log("API Response:", response.data);
+          setSavedInterviewConfigs(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching interview configs:", error);
+        });
+    } catch (error) {
+      console.error('Error in PromptPage:', error);
+      navigate('/login');
     }
-  };
+  }, []);
 
-  const handleDeletePrompt = (id: number) => {
-    setCustomPrompts(customPrompts.filter(prompt => prompt.id !== id));
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuOpen !== null && pageRef.current && !pageRef.current.contains(event.target as Node)) {
+        setMenuOpen(null);
+      }
+    };
 
-  const promptTemplates = [
-    {
-      title: 'Technical Interview',
-      description: 'Focus on technical skills and problem-solving abilities',
-      prompts: [
-        'Explain a challenging technical problem you solved',
-        'Walk me through your development process',
-        'How do you ensure code quality?'
-      ]
-    },
-    {
-      title: 'Leadership Interview',
-      description: 'Assess leadership and management capabilities',
-      prompts: [
-        'Describe your leadership style',
-        'How do you motivate your team?',
-        'Tell me about a successful project you led'
-      ]
-    },
-    {
-      title: 'Behavioral Interview',
-      description: 'Evaluate past experiences and behavior patterns',
-      prompts: [
-        'Tell me about a time you failed',
-        'How do you handle conflicts?',
-        'Describe a successful collaboration'
-      ]
-    }
-  ];
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const handleStartInterview = () => {
-    navigate('/interview');
+    if (selectedConfig) {
+      startInterviewWithConfig(selectedConfig);
+    } else {
+      message.error('Please select a configuration first');
+    }
+  };  
+  
+  const startInterviewWithConfig = async (config: InterviewConfig) => {
+    try {
+      localStorage.setItem('current_config', config.interview_name);
+      localStorage.setItem('current_config_id', config.id.toString());
+      
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
+        if (response.data && response.data.data && response.data.data.photo_url) {
+          localStorage.setItem('user_photo_url', response.data.data.photo_url);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile for photo URL:', error);
+      }
+      
+      localStorage.removeItem('current_thread_id');
+      
+      if (config.interview_type === 'voice') {
+        navigate(`/interview/voice`);
+      } else {
+        navigate(`/interview/text`);
+      }
+    } catch (error) {
+      console.error('Error starting interview:', error);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    const interviewConfig = {
+      id,
+      interview_name,
+      company_name,
+      job_description,
+      question_type,
+      interview_type,
+      email
+    };
+  
+    if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.question_type || !interviewConfig.interview_type) {
+      message.error("Please fill in all required fields marked with *");
+      return;
+    }
+  
+    try {
+      if (isEditing && id) { 
+        await axios.put(`${API_BASE_URL}/api/update_interview_config/${id}`, interviewConfig);
+        console.log("Interview configuration updated successfully.");
+        message.success("Interview configuration updated successfully!");
+        
+        const updatedConfigs = savedInterviewConfigs.map(config => 
+          config.id === id ? {...interviewConfig, id: config.id} as InterviewConfig : config
+        );
+        setSavedInterviewConfigs(updatedConfigs);
+        
+        setSelectedConfig({...interviewConfig, id} as InterviewConfig);
+      } else { 
+        const response = await axios.post(`${API_BASE_URL}/api/create_interview_config`, interviewConfig);
+        console.log("New interview configuration saved successfully.");
+        message.success("New interview configuration saved successfully!");
+        
+        if (response.data && response.data.id) {
+          const newConfig = {
+            ...interviewConfig,
+            id: response.data.id
+          } as InterviewConfig;
+          
+          setSavedInterviewConfigs([...savedInterviewConfigs, newConfig]);
+          setSelectedConfig(newConfig);
+        }
+      }
+  
+      setIsModalOpen(false);
+      setIsEditing(false);
+      setInterviewId(null);
+      setInterviewName('');
+      setCompanyName('');
+      setJobDescription('');
+      setQuestionType('behavioral');
+      setInterviewType('text');
+    } catch (error) {
+      console.error("Error saving interview configuration:", error);
+      message.error("Failed to save configuration. Please try again.");
+    }
+  };
+
+  const handleEdit = (index: number) => {
+    const selected = savedInterviewConfigs[index];
+    setInterviewId(selected.id);
+    setInterviewName(selected.interview_name);
+    setCompanyName(selected.company_name);
+    setJobDescription(selected.job_description || '');
+    setQuestionType(selected.question_type);
+    setInterviewType(selected.interview_type);
+    setIsEditing(true);
+    setIsModalOpen(true); 
+  };
+  
+  const handleDelete = (index: number, id: number) => {
+    if (confirm("Are you sure you want to delete this configuration?")) {
+      axios
+        .delete(`${API_BASE_URL}/api/delete_interview_config/${id}`)
+        .then((response) => {
+          if (response.status === 200) {
+            const updatedConfigs = savedInterviewConfigs.filter((_, i) => i !== index);
+            setSavedInterviewConfigs(updatedConfigs);
+            message.success('Interview configuration deleted successfully!');
+            
+            if (selectedConfig && selectedConfig.id === id) {
+              setSelectedConfig(null);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Error deleting interview config:", error);
+          message.error('Failed to delete the interview configuration. Please try again.');
+        });
+    }
+  };
+  
+  const openCreateModal = () => {
+    setIsEditing(false);
+    setInterviewId(null);
+    setInterviewName('');
+    setCompanyName('');
+    setJobDescription('');
+    setQuestionType('behavioral');
+    setInterviewType('text');
+    setIsModalOpen(true);
   };
 
   return (
-    <div>
-      {/* Navigation */}
+    <div className={styles.pageContainer} ref={pageRef}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
-          <div className={styles.logo}>
-            <Bot size={32} color="#ec4899" />
+          <div className={styles.logo} onClick={() => navigate('/')}>  
+            <Bot className={styles.logoIcon} />
             <span className={styles.logoText}>InterviewAI</span>
           </div>
+          <button 
+            className={styles.backButton} 
+            onClick={() => navigate('/dashboard')}
+          >
+            Back to Dashboard
+          </button>
         </div>
       </nav>
 
-      <div className={styles.promptContainer}>
-        <div className={styles.promptHeader}>
-          <h1>Customize Your Interview</h1>
-          <p>Create and manage interview prompts to personalize your practice session</p>
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <h1>Interview Configurations</h1>
+          <p>Select a configuration and click "Start Interview"</p>
         </div>
 
-        <div className={styles.promptTabs}>
-          <button 
-            className={`${styles.tabButton} ${activeTab === 'custom' ? styles.active : ''}`}
-            onClick={() => setActiveTab('custom')}
-          >
-            <MessageSquare size={20} />
-            Custom Prompts
-          </button>
-          <button 
-            className={`${styles.tabButton} ${activeTab === 'templates' ? styles.active : ''}`}
-            onClick={() => setActiveTab('templates')}
-          >
-            <Sparkles size={20} />
-            Templates
-          </button>
-          <button 
-            className={`${styles.tabButton} ${activeTab === 'settings' ? styles.active : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Settings size={20} />
-            Settings
-          </button>
+        <button 
+          className={styles.buttonPrimary} 
+          onClick={openCreateModal}
+        >
+          <Plus size={20} /> Create Custom Interview Configuration
+        </button>
+
+        <div className={styles.interviewList}>
+          {savedInterviewConfigs.map((interview, index) => (
+            <div
+              key={index}
+              className={`${styles.interviewCard} ${selectedConfig === interview ? styles.selectedCard : ''}`}
+              onClick={() => setSelectedConfig(interview)}
+            >
+              <div className={styles.cardContent}>
+                <div>
+                  <h3 className={styles.interviewName}>{interview.interview_name}</h3>
+                  <div className={styles.cardDetails}>
+                    <p><strong>Company:</strong> {interview.company_name}</p>
+                    <p><strong>Question Type:</strong> {interview.question_type}</p>
+                    <p><strong>Interview Type:</strong> {interview.interview_type}</p>
+                  </div>
+                </div>
+
+                <div className={styles.menuContainer}>
+                  <MoreVertical 
+                    className={styles.menuIcon} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(menuOpen === index ? null : index);
+                    }} 
+                  />
+
+                  {menuOpen === index && (
+                    <div className={styles.menuDropdown}>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(index);
+                        setMenuOpen(null);
+                      }}>
+                        <Edit size={16} /> Edit
+                      </button>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(index, interview.id);
+                        setMenuOpen(null);
+                      }}>
+                        <Trash size={16} /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {activeTab === 'custom' && (
-          <div className={styles.promptCard}>
-            <div style={{ marginBottom: '2rem' }}>
-              <textarea
-                className={styles.promptInput}
-                placeholder="Enter your custom interview prompt..."
-                value={newPrompt}
-                onChange={(e) => setNewPrompt(e.target.value)}
-                rows={3}
-              />
-              <button className={styles.buttonPrimary} onClick={handleAddPrompt}>
-                <Plus size={20} />
-                Add Prompt
-              </button>
-            </div>
+        <button 
+          type="button" 
+          className={`${styles.buttonPrimary} ${!selectedConfig ? styles.buttonDisabled : ''}`} 
+          onClick={handleStartInterview}
+          disabled={!selectedConfig}
+        >
+          <Play size={20} /> Start Interview with Selected Configuration
+        </button>
+        
+      </main>
 
-            <div className={styles.promptList}>
-              {customPrompts.map(prompt => (
-                <div key={prompt.id} className={styles.promptItem}>
-                  <div>{prompt.text}</div>
-                  <div className={styles.promptActions}>
-                    <button className={styles.iconButton} onClick={() => handleDeletePrompt(prompt.id)}>
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {isModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeButton} onClick={() => setIsModalOpen(false)}>
+              <X size={20} />
+            </button>
+            <h2>{isEditing ? 'Edit Interview Configuration' : 'Create New Configuration'}</h2>
+            <form className={styles.formCard}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Session Name <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={interview_name}
+                  onChange={(e) => setInterviewName(e.target.value)}
+                  placeholder="Enter interview session name"
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Company Name <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={company_name}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Enter the company name"
+                  required
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Job Description <span className={styles.optional}>(optional)</span>
+                </label>
+                <textarea
+                  className={styles.formInput}
+                  value={job_description}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Enter the job description (optional)"
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Question Type <span className={styles.required}>*</span>
+                </label>
+                <select className={styles.formInput} value={question_type} onChange={(e) => setQuestionType(e.target.value)} required>
+                  <option value="behavioral">Behavioral</option>
+                  <option value="technical">Technical</option>
+                </select>
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Interview Type <span className={styles.required}>*</span>
+                </label>
+                <select className={styles.formInput} value={interview_type} onChange={(e) => setInterviewType(e.target.value)} required>
+                  <option value="text">Text</option>
+                  <option value="voice">Voice</option>
+                </select>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button 
+                  type="button" 
+                  className={styles.buttonSecondary}
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="button" className={styles.buttonPrimary} onClick={handleSaveConfig}>
+                  {isEditing ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-
-        {activeTab === 'templates' && (
-          <div className={styles.promptCard}>
-            <h2>Interview Templates</h2>
-            <p>Select a template to load pre-defined interview prompts</p>
-            
-            <div className={styles.promptTemplates}>
-              {promptTemplates.map((template, index) => (
-                <div key={index} className={styles.templateCard}>
-                  <h3>{template.title}</h3>
-                  <p>{template.description}</p>
-                  <button className={styles.buttonPrimary} style={{ marginTop: '1rem' }}>
-                    Use Template
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div className={styles.promptCard}>
-            <h2>Interview Settings</h2>
-            <p>Customize your interview experience</p>
-
-            <div className={styles.settingsGrid}>
-              <div className={styles.settingItem}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3>Follow-up Questions</h3>
-                    <p>Allow AI to ask follow-up questions</p>
-                  </div>
-                  <label className={styles.toggleSwitch}>
-                    <input
-                      type="checkbox"
-                      className={styles.toggleInput}
-                      checked={settings.followUp}
-                      onChange={() => setSettings({ ...settings, followUp: !settings.followUp })}
-                    />
-                    <span className={styles.toggleSlider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.settingItem}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3>Technical Questions</h3>
-                    <p>Include technical assessment questions</p>
-                  </div>
-                  <label className={styles.toggleSwitch}>
-                    <input
-                      type="checkbox"
-                      className={styles.toggleInput}
-                      checked={settings.technical}
-                      onChange={() => setSettings({ ...settings, technical: !settings.technical })}
-                    />
-                    <span className={styles.toggleSlider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.settingItem}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3>Behavioral Questions</h3>
-                    <p>Include behavioral assessment questions</p>
-                  </div>
-                  <label className={styles.toggleSwitch}>
-                    <input
-                      type="checkbox"
-                      className={styles.toggleInput}
-                      checked={settings.behavioral}
-                      onChange={() => setSettings({ ...settings, behavioral: !settings.behavioral })}
-                    />
-                    <span className={styles.toggleSlider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.settingItem}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3>Real-time Feedback</h3>
-                    <p>Receive feedback during the interview</p>
-                  </div>
-                  <label className={styles.toggleSwitch}>
-                    <input
-                      type="checkbox"
-                      className={styles.toggleInput}
-                      checked={settings.feedback}
-                      onChange={() => setSettings({ ...settings, feedback: !settings.feedback })}
-                    />
-                    <span className={styles.toggleSlider}></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.startInterviewContainer}>
-          <button 
-            className={styles.buttonPrimary}
-            onClick={handleStartInterview}
-          >
-            Start Interview
-          </button>
         </div>
-      </div>
+      )}
+
+      <footer className={styles.footer}>
+        © 2025 InterviewAI. All rights reserved.
+      </footer>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Bot, FileText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-re
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './OAuthSignUpForm.module.css';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 interface FormData {
   username: string;
@@ -205,7 +206,7 @@ const MultiStepForm = () => {
       // Add OAuth flag to indicate this is an OAuth signup
       formDataToSend.append('isOAuth', 'true');
 
-      const response = await axios.post('http://localhost:5001/api/oauth/signup', formDataToSend, {
+      const response = await axios.post(`${API_BASE_URL}/api/oauth/signup`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

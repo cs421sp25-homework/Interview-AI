@@ -1,0 +1,33 @@
+.interviewHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 16px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .centeredTitle {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .backButton {
+    background: none;
+    border: none;
+    color: #1890ff;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .placeholder {
+    width: 120px; /* Matches the width of the button to balance layout */
+  }
+  

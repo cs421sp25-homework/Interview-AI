@@ -1,20 +1,33 @@
-from flask import Blueprint, request, jsonify
 import speech_recognition as sr
 
-stt_bp = Blueprint('stt', __name__)
+def speech_to_text(audio_file_path: str) -> str:
+    """
+    Convert speech in an audio file to text using the SpeechRecognition library and the Google Speech API.
 
-@stt_bp.route('/', methods=['POST'])
-def speech_to_text():
-    if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file provided'}), 400
+    Args:
+        audio_file_path (str): The path to the audio file (e.g., WAV file).
 
-    audio_file = request.files['audio']
+    Returns:
+        str: The transcribed text.
+
+    Raises:
+        Exception: If the transcription fails.
+    """
     recognizer = sr.Recognizer()
 
+    # Open the audio file using the SpeechRecognition AudioFile class.
+    with sr.AudioFile(audio_file_path) as source:
+        audio_data = recognizer.record(source)
+
+    # Use Google Speech API to transcribe the audio.
+    transcript = recognizer.recognize_google(audio_data)
+    return transcript
+
+# Example usage:
+if __name__ == '__main__':
+    audio_path = "input.wav"  # Replace with the path to your audio file
     try:
-        with sr.AudioFile(audio_file) as source:
-            audio_data = recognizer.record(source)
-        transcript = recognizer.recognize_google(audio_data)
-        return jsonify({'transcript': transcript})
+        result = speech_to_text(audio_path)
+        print("Transcript:", result)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print("An error occurred during speech-to-text processing:", e)
