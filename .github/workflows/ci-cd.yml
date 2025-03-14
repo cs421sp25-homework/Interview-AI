@@ -64,11 +64,11 @@ jobs:
           cd backend
           nohup poetry run python app.py &
 
-      # 9. Start frontend server in the background.
-      - name: Start Frontend Server
+      # 9. Install Playwright browsers.
+      - name: Install Playwright Browsers
         run: |
           cd frontend/vite-project
-          nohup pnpm run dev &
+          npx playwright install --with-deps
 
       # 10. Wait until both servers are likely up.
       - name: Wait for servers to be ready
@@ -85,15 +85,42 @@ jobs:
       - name: Install Playwright Browsers
         run: |
           cd frontend/vite-project
-          npx playwright install --with-deps
+          cat > playwright.config.ts << 'EOL'
+          import { defineConfig, devices } from '@playwright/test';
+          
+          export default defineConfig({
+            testDir: './e2e',
+            fullyParallel: true,
+            forbidOnly: !!process.env.CI,
+            retries: process.env.CI ? 2 : 0,
+            workers: process.env.CI ? 1 : undefined,
+            reporter: 'html',
+            use: {
+              baseURL: 'http://localhost:5173',
+              trace: 'on-first-retry',
+            },
+            webServer: {
+              command: 'pnpm run dev',
+              url: 'http://localhost:5173',
+              reuseExistingServer: false,
+              timeout: 120 * 1000,
+            },
+            projects: [
+              {
+                name: 'chromium',
+                use: { ...devices['Desktop Chrome'] },
+              },
+            ],
+          });
+          EOL
 
-      # 13. Run Playwright tests.
+      # 12. Run Playwright tests.
       - name: Run Playwright Tests
         run: |
           cd frontend/vite-project
-          npx playwright test -ui
+          npx playwright test
 
-      # 14. Upload test reports as artifacts.
+      # 13. Upload test reports as artifacts.
       - name: Upload Test Reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
