@@ -12,6 +12,7 @@ import OAuthSignUpForm from './pages/OAuthSignUpForm';
 // import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
 import OnGoingVoice from './pages/OnGoingVoice';
+import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import '@ant-design/v5-patch-for-react-19';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
@@ -31,7 +32,7 @@ function App() {
       <Route path="/auth/callback" element={<AuthCallback />} />
 
       <Route path="/interview/text" element={<InterviewPage />} />
-      <Route path="/interview/voice" element={<OnGoingVoice />} />
+      <Route path="/interview/voice" element={<VoiceInterviewPage />} />
       <Route path="/interview/history" element={<InterviewHistoryPage />} />
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
 
