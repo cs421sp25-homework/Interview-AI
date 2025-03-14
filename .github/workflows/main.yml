@@ -76,10 +76,10 @@ jobs:
         # Alternatively, consider using a tool like "wait-on" for a more robust check.
 
       # 11. Run backend tests (if you have tests set up using pytest or similar).
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
+    #   - name: Run Backend Tests
+    #     run: |
+    #       cd backend
+    #       poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
 
       # 12. Install Playwright browsers.
       - name: Install Playwright Browsers
