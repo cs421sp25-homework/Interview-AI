@@ -25,6 +25,9 @@ from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
 from supabase import create_client
 from services.config_service import ConfigService
+from utils.text_2_speech import text_to_speech
+from utils.speech_2_text import speech_to_text
+from utils.audio_conversion import convert_to_wav
 
 # Load environment variables
 load_dotenv()
@@ -837,7 +840,78 @@ def delete_chat_history_by_id(id):
     except Exception as e:
         print(f"Error deleting interview log: {str(e)}")
         return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
-    
+
+@app.route('/api/text2speech', methods=['POST'])
+def api_text2speech():
+    """
+    Convert text to speech, upload the resulting MP3 file to Supabase storage,
+    and return its public URL.
+    """
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        if not text:
+            return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
+
+        # Generate the audio file.
+        audio_file_path = text_to_speech(text)
+
+        # Create a unique filename for storage.
+        unique_filename = f"{uuid.uuid4()}.mp3"
+        # Set the bucket name to "audios" as it exists in your Supabase project.
+        bucket_name = "audios"
+        # Use the unique filename directly as the storage path.
+        storage_path = unique_filename
+
+        app.logger.info(f"Uploading to bucket: {bucket_name}, storage_path: {storage_path}")
+
+        # Read the generated audio file.
+        with open(audio_file_path, "rb") as audio_file:
+            audio_data = audio_file.read()
+
+        # Upload the audio file with the correct MIME type.
+        storage_service.upload_file(bucket_name, storage_path, audio_data, 'audio/mpeg')
+
+        # Retrieve the public URL.
+        audio_url = storage_service.get_public_url(bucket_name, storage_path)
+
+        # Clean up the temporary file.
+        os.remove(audio_file_path)
+
+        return jsonify({"audioUrl": audio_url}), 200
+
+    except Exception as e:
+        app.logger.error(f"Failed to convert text to speech: {e}")
+        return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
+
+
+
+@app.route('/api/speech2text', methods=['POST'])
+def api_speech2text():
+    try:
+        if 'audio' not in request.files:
+            return jsonify({"error": "Audio file is required", "message": "Please upload an audio file."}), 400
+
+        audio_file = request.files['audio']
+        audio_bytes = audio_file.read()
+
+        # Optionally convert to WAV if needed
+        try:
+            # First, try processing as-is.
+            transcript = speech_to_text(audio_bytes)
+        except Exception as original_error:
+            # If it fails, try converting.
+            app.logger.info("Attempting conversion to WAV.")
+            wav_io = convert_to_wav(audio_bytes)
+            transcript = speech_to_text(wav_io.read())
+
+        return jsonify({"transcript": transcript}), 200
+
+    except Exception as e:
+        app.logger.error(f"Speech-to-text error: {e}")
+        return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
