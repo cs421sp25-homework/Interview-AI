@@ -1,20 +1,22 @@
-from flask import Blueprint, request, jsonify
+import io
 import speech_recognition as sr
+from openai import OpenAI
+import io
 
-stt_bp = Blueprint('stt', __name__)
+def speech_to_text(audio_input) -> str:
+    if isinstance(audio_input, bytes):
+        audio_file = io.BytesIO(audio_input)
+        # Set a filename so Whisper can detect the format.
+        audio_file.name = "recording.wav"
+    elif isinstance(audio_input, str):
+        audio_file = open(audio_input, "rb")
+    else:
+        raise ValueError("Unsupported audio input type. Must be a file path (str) or bytes.")
 
-@stt_bp.route('/', methods=['POST'])
-def speech_to_text():
-    if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file provided'}), 400
 
-    audio_file = request.files['audio']
-    recognizer = sr.Recognizer()
-
-    try:
-        with sr.AudioFile(audio_file) as source:
-            audio_data = recognizer.record(source)
-        transcript = recognizer.recognize_google(audio_data)
-        return jsonify({'transcript': transcript})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    client = OpenAI()
+    transcription = transcription = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=audio_file
+    )
+    return transcription.text

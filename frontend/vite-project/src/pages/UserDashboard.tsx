@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './UserDashboard.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -32,7 +33,8 @@ const UserDashboard = () => {
     email: '',
     interviews: 0,
     resumeReviews: 0,
-    joined: ''
+    joined: '',
+    photoUrl: null as string | null
   });
 
   useEffect(() => {
@@ -41,20 +43,49 @@ const UserDashboard = () => {
         console.log("Fetching profile for email:", userEmail);
         const email = localStorage.getItem('user_email') || 'test@example.com';
 
-        const response = await axios.get(`http://localhost:5001/api/profile/${email}`);
-
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
+        
         if (response.data.data) {
           const profile = response.data.data;
+          
+          if (profile.photo_url) {
+            localStorage.setItem('user_photo_url', profile.photo_url);
+          }
+          
+          let joinedDate = '';
+          try {
+            if (profile.created_at) {
+              const createdAtUTC = new Date(profile.created_at);
+              
+              if (!isNaN(createdAtUTC.getTime())) {
+                const options: Intl.DateTimeFormatOptions = { 
+                  timeZone: 'America/New_York',
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour12: true
+                };
+                
+                joinedDate = `${createdAtUTC.toLocaleString('en-US', options)} `;
+              } else {
+                joinedDate = 'Invalid date';
+              }
+            } else {
+              joinedDate = 'Not available';
+            }
+          } catch (error) {
+            console.error("Error parsing date:", error);
+            joinedDate = 'Date error';
+          }
+          
           setUserData({
             name: `${profile.first_name} ${profile.last_name}`,
             title: profile.job_title || '',
             email: profile.email,
             interviews: profile.interviews_completed || 0,
             resumeReviews: profile.resume_reviews || 0,
-            joined: new Date(profile.created_at).toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric'
-            })
+            joined: joinedDate,
+            photoUrl: profile.photo_url || null
           });
         }
       } catch (error) {
@@ -97,18 +128,20 @@ const UserDashboard = () => {
               <span>InterviewAI</span>
             </div>
             <div className={styles.navLinks}>
-              <Settings 
-                size={24} 
-                color="#4b5563" 
-                style={{ cursor: 'pointer' }} 
+              <button 
+                className={styles.navButton}
                 onClick={() => navigate('/settings')}
-              />
-              <LogOut 
-                size={24} 
-                color="#4b5563" 
-                style={{ cursor: 'pointer' }} 
+              >
+                <Settings size={20} color="#4b5563" />
+                <span>Profile Settings</span>
+              </button>
+              <button 
+                className={styles.navButton}
                 onClick={handleLogout}
-              />
+              >
+                <LogOut size={20} color="#4b5563" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </nav>
@@ -119,7 +152,15 @@ const UserDashboard = () => {
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>
                 <div className={styles.profileAvatar}>
-                  <User size={48} color="#ec4899" />
+                  {userData.photoUrl ? (
+                    <img 
+                      src={userData.photoUrl} 
+                      alt="Profile" 
+                      className={styles.avatarImage} 
+                    />
+                  ) : (
+                    <User size={48} color="#ec4899" />
+                  )}
                 </div>
                 <h2>{userData.name}</h2>
                 <p style={{ color: 'var(--text-light)' }}>{userData.title}</p>
@@ -162,7 +203,7 @@ const UserDashboard = () => {
                   </div>
                   <h3>Start Interview</h3>
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
-                    Customize and start your interview
+                    Start With Customized Configuration
                   </p>
                   <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
                     Start Now
@@ -173,12 +214,12 @@ const UserDashboard = () => {
                   <div className={styles.actionIcon}>
                     <FileText size={24} color="#ec4899" />
                   </div>
-                  <h3>Start Now</h3>
+                  <h3>History</h3>
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
-                    Get expert analysis on your resume
+                    View your past interview sessions
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary}>
-                    Upload Resume
+                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview/history')}>
+                    View
                   </button>
                 </div>
               </div>

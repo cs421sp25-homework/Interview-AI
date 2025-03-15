@@ -10,7 +10,7 @@ const AuthCallback = () => {
     console.log('Search params', searchParams);
     const error = searchParams.get('error');
     const email = searchParams.get('email');
-    const isNewUser = searchParams.get('is_new_user') === 'True';
+    const isNewUser = searchParams.get('is_new_user') === 'True' || searchParams.get('is_new_user') === 'true';
 
     if (error) {
       console.error('Auth Error:', error);

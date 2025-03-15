@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import styles from './LoginPage.module.css';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ const LoginPage = () => {
     }
     
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
       
       if (response.status === 200) {
         console.log('Login successful');
@@ -50,7 +51,7 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    window.location.href = `http://localhost:5001/api/oauth/${provider}`;
+    window.location.href = `${API_BASE_URL}/api/oauth/${provider}`;
   };
 
   return (
