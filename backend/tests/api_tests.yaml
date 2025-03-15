@@ -1,0 +1,40 @@
+---
+- config:
+    - testset: "InterviewAI API Tests"
+    - timeout: 10  # Timeout in seconds
+
+- test:
+    name: "Health Check"
+    url: "http://localhost:5001/api/health"
+    method: "GET"
+    validators:
+      - compare: {jsonpath_mini: "status", comparator: "eq", expected: "ok"}
+
+- test:
+    name: "Login Validation - Missing Fields"
+    url: "http://localhost:5001/api/auth/login"
+    method: "POST"
+    body: '{}'
+    headers: {Content-Type: application/json}
+    validators:
+      - compare: {status_code: 400}
+      - compare: {jsonpath_mini: "error", comparator: "contains", expected: "required"}
+
+- test:
+    name: "Login Success"
+    url: "http://localhost:5001/api/auth/login"
+    method: "POST"
+    body: '{"email": "test@example.com", "password": "correctpassword123"}'
+    headers: {Content-Type: application/json}
+    validators:
+      - compare: {status_code: 200}
+      - compare: {jsonpath_mini: "message", comparator: "eq", expected: "Login successful"}
+
+- test:
+    name: "Signup Validation"
+    url: "http://localhost:5001/api/auth/signup"
+    method: "POST"
+    body: '{"email": "invalid-email", "password": "short"}'
+    headers: {Content-Type: application/json}
+    validators:
+      - compare: {status_code: 400} 

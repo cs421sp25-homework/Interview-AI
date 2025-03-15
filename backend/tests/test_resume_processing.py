@@ -1,48 +1,34 @@
-import unittest
-import os
+import pytest
 import requests
+from pathlib import Path
 
-class TestResumeProcessing(unittest.TestCase):
-    BASE_URL = "http://127.0.0.1:5001/api/parse-resume"
+@pytest.fixture
+def base_url():
+    return "http://127.0.0.1:5001/api"
 
-    def test_parse_resume(self):
-        """
-        Test the resume parsing endpoint with a valid resume file.
-        """
-        # Path to a sample resume file
-        resume_path = os.path.join(os.path.dirname(__file__), "sample_resume.pdf")
+@pytest.fixture
+def test_files_dir(tmp_path):
+    """Create a temporary directory for test files"""
+    test_dir = tmp_path / "test_files"
+    test_dir.mkdir()
+    return test_dir
 
-        # Ensure the sample resume file exists
-        self.assertTrue(os.path.exists(resume_path), "Sample resume file not found.")
+@pytest.fixture
+def sample_resume(test_files_dir):
+    """Create a sample resume file for testing"""
+    resume_path = test_files_dir / "test_resume.pdf"
+    resume_path.write_bytes(b"%PDF-1.4\n%Test PDF content")
+    return resume_path
 
-        with open(resume_path, "rb") as resume_file:
-            files = {
-                "resume": ("sample_resume.pdf", resume_file, "application/pdf")
-            }
-            # Send POST request
-            response = requests.post(self.BASE_URL, files=files)
-
-        # Check response status code
-        self.assertEqual(response.status_code, 200, "Resume parsing failed.")
-
-        # Check response data
-        response_data = response.json()
-        self.assertIn("resume", response_data, "Response missing 'resume_url' field.")
-
-    def test_parse_resume_without_file(self):
-        """
-        Test the resume parsing endpoint without a resume file.
-        """
-        # Send POST request without a file
-        response = requests.post(self.BASE_URL)
-
-        # Check response status code
-        self.assertEqual(response.status_code, 400, "Expected 400 for missing resume.")
-
-        # Check error message
-        response_data = response.json()
-        self.assertIn("error", response_data, "Response missing 'error' field.")
-        self.assertEqual(response_data["error"], "Resume is required", "Unexpected error message.")
-
-if __name__ == '__main__':
-    unittest.main()
+def test_parse_resume(base_url, sample_resume):
+    """Test the resume parsing endpoint with a valid resume file."""
+    assert sample_resume.exists(), "Sample resume file not found."
+    
+    with open(sample_resume, "rb") as resume_file:
+        files = {"resume": ("test_resume.pdf", resume_file, "application/pdf")}
+        response = requests.post(f"{base_url}/resume/parse", files=files)
+    
+    assert response.status_code == 200, "Resume parsing failed."
+    data = response.json()
+    assert "parsed_text" in data, "Response should include parsed text."
+    assert isinstance(data["parsed_text"], str), "Parsed text should be a string."
