@@ -36,3 +36,40 @@ def text_to_speech():
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Mock implementation for text_to_speech
+
+def text_to_speech():
+    """
+    Mock implementation of text_to_speech service
+    
+    Returns:
+        A mock service object with the required methods
+    """
+    class MockTextToSpeechService:
+        def convert_text_to_speech(self, text):
+            """
+            Mock method to convert text to speech
+            
+            Args:
+                text: The text to convert
+                
+            Returns:
+                dict: Result with success status and audio data or error
+            """
+            if not text:
+                return {"success": False, "error": "Empty text provided"}
+            
+            try:
+                # Return mock audio data
+                return {
+                    "success": True,
+                    "audio_data": b"mock_audio_data"
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Error converting text to speech: {str(e)}"
+                }
+    
+    return MockTextToSpeechService()

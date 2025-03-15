@@ -18,6 +18,12 @@ const LoginPage = () => {
     if (location.state && location.state.error) {
       setError(location.state.error);
     }
+    
+    // Pre-fill email from localStorage if available
+    const savedEmail = localStorage.getItem('user_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
   }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -104,13 +110,7 @@ const LoginPage = () => {
             >
               <img src="/google.svg" alt="Google" className={styles.oauthIcon} /> Google
             </button>
-            {/* <button 
-              type="button"
-              className={styles.oauthButton} 
-              onClick={() => handleOAuthLogin('github')}
-            >
-              <img src="/github.svg" alt="Github" className={styles.oauthIcon} /> GitHub
-            </button> */}
+
           </div>
         </div>
         

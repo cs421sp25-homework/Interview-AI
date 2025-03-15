@@ -1,5 +1,7 @@
 import pytest
 import requests
+import os
+import tempfile
 from pathlib import Path
 
 @pytest.fixture(scope="session")
@@ -23,12 +25,11 @@ def auth_headers(base_url, test_user):
     token = login_response.json().get("token")
     return {"Authorization": f"Bearer {token}"}
 
-@pytest.fixture(scope="function")
-def test_files_dir(tmp_path):
+@pytest.fixture
+def test_files_dir():
     """Create a temporary directory for test files"""
-    test_dir = tmp_path / "test_files"
-    test_dir.mkdir()
-    return test_dir
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir)
 
 @pytest.fixture(scope="function")
 def sample_resume(test_files_dir):
