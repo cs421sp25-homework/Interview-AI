@@ -63,9 +63,18 @@ const MultiStepForm = () => {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Add this function for input sanitization
+  const sanitizeInput = (input: string): string => {
+    // Remove potentially dangerous characters and HTML tags
+    return input.replace(/<[^>]*>?/gm, '').trim();
+  };
+
   const updateFormData = (field: keyof FormData, value: string | File | null) => {
+    // Sanitize string inputs before updating state
+    const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : value;
+    
     setFormData(prev => {
-      const newFormData = { ...prev, [field]: value };
+      const newFormData = { ...prev, [field]: sanitizedValue };
 
       if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
         if (newFormData.password.length < 8) {
@@ -111,18 +120,20 @@ const MultiStepForm = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: {
-        if (
-          !formData.username.trim() ||
-          !formData.password.trim() ||
-          !formData.confirmPassword.trim()
-        ) {
-          alert('Please fill in all required fields.');
+        // Add more robust validation for username
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!usernameRegex.test(formData.username)) {
+          alert('Username must be 3-20 characters and contain only letters, numbers, and underscores.');
           return false;
         }
-        if (formData.password.length < 8) {
-          alert('Password must be at least 8 characters long.');
+        
+        // Add more robust validation for password
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+        if (!passwordRegex.test(formData.password)) {
+          alert('Password must be at least 8 characters and include at least one letter and one number.');
           return false;
         }
+        
         if (formData.password !== formData.confirmPassword) {
           alert('Passwords do not match.');
           return false;
