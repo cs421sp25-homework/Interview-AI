@@ -5,9 +5,7 @@ Goal: Foundational user authentication, profile setup, resume analysis.
 #### Must-Have Features:
 - As a user, I want to sign up/login using email/password or third-party authentication (Google) and log out, so that I can easily access my interview preparation account and keep my account protected when I am done using the app.
 
-- As a user, I want to have a profile page that allows me to upload my resume to generate my profile and also manually edit any resume related fields, including past experience and education so that the app can tailor my interview sessions to my background.
-
-- As a user, I want to have a profile page that allows me to customize my profiles such as name and profile picture, so that I can personalize account.
+- As a user, I want to have a profile page, where I can upload my resume to generate my profile and also manually edit any fields, including name, role, past experience, area of expertise, etc, so that the app can tailor my interview sessions to my background.
 
 
 #### Nice-to-Have Features:
@@ -30,6 +28,8 @@ Goal: AI question and conversation generation.
 
 -   As a user, I want to choose the type of questions I want to practice (technical, behavioral), so that I can prepare effectively for my target interviews.
 
+-   As a user, I want to review my past interview sessions, so that I can analyze my responses and identify areas for improvement.
+
 
 #### Nice-to-Have Features:
 
@@ -44,11 +44,8 @@ Goal: Feedback, scoring, session review capabilities, and response mechanism.
 
 -   As a user, I want to receive feedback on my responses by requesting it using a designated button, so that I can improve my interview performance.
 
--   As a user, I want to review my past interview sessions, so that I can analyze my responses and identify areas for improvement.
-
 -   As a user, I want to add some interview questions to "Favorites", so that I can easily revisit questions I believe are likely to appear in actual interviews.
 
--   As a user, I want to respond to interview questions using either voice or text, so that I can practice my communication skills in different formats.
 
 #### Nice-to-Have Features:
 
