@@ -2,6 +2,12 @@ import os
 import uuid
 import tempfile
 from gtts import gTTS
+from flask import Blueprint, request, jsonify, send_file
+import io
+from google.cloud import texttospeech
+
+# Create Blueprint for text-to-speech routes
+tts_bp = Blueprint('tts', __name__)
 
 def text_to_speech(text: str, output_file: str = None, lang: str = 'en') -> str:
     """
@@ -27,7 +33,7 @@ def text_to_speech(text: str, output_file: str = None, lang: str = 'en') -> str:
 
 
 @tts_bp.route('/', methods=['POST'])
-def text_to_speech():
+def tts_route():
     data = request.get_json()
     if not data or 'text' not in data:
         return jsonify({'error': 'No text provided'}), 400
@@ -61,7 +67,7 @@ def text_to_speech():
 
 # Mock implementation for text_to_speech
 
-def text_to_speech():
+def mock_text_to_speech():
     """
     Mock implementation of text_to_speech service
     
