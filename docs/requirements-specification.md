@@ -39,6 +39,8 @@ Must-Have: 
 
 4. As a user, I want to input the description of the job I am applying to, so that the AI can generate more related questions based on the specific job position.
 5. As a user, I want to choose the type of questions I want to practice (technical, behavioral, system design), so that I can prepare effectively for my target interviews.
+6. As a user, I want a dashboard so that I can have a visually clear way to see my skill levels and easily identify my strengths and weaknesses.
+
 
 6.  As a user, I want to receive feedback on my responses by requesting it using a designated button, so that I can improve my interview performance.
 
