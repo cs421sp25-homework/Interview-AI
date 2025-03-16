@@ -46,7 +46,6 @@ Goal: Feedback, scoring, session review capabilities, and response mechanism.
 
 -   As a user, I want to add some interview questions to "Favorites", so that I can easily revisit questions I believe are likely to appear in actual interviews.
 
--   As a user, I want to respond to interview questions using either voice or text, so that I can practice my communication skills in different formats.
 
 #### Nice-to-Have Features:
 
