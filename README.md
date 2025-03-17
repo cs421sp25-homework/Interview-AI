@@ -28,7 +28,7 @@ This guide walks you through setting up and running the **React + Vite** fronten
      ```
 
 5. **Git (optional)**  
-   - Use Git for version control or to clone your project repository if it’s hosted on a Git platform like GitHub or GitLab.
+   - Use Git for version control or to clone your project repository if it's hosted on a Git platform like GitHub or GitLab.
 
 ---
 
@@ -148,3 +148,63 @@ If you prefer to run the project with Docker Compose:
 - Run `docker-compose up --build` from the root directory.
 
 
+---
+
+## Deployment
+
+The application is deployed on [Render](https://dashboard.render.com/):
+- Frontend: https://interviewai-hack.onrender.com
+- Backend: https://interviewai-backend-7zxo.onrender.com
+
+Follow these steps to deploy or redeploy the application on Render:
+
+### Deploying the Backend
+
+1. Create a new **Web Service** on Render.
+2. Connect to your Git repository:
+   - Select your Git provider
+   - Choose the `team-01` repository
+3. Configure the service with the following settings:
+   - **Name**: Choose a descriptive name for your backend service
+   - **Runtime Environment**: Python 3
+   - **Branch**: `deployment`
+   - **Root Directory**: `backend`
+   - **Build Command**: `pip install poetry && poetry install --no-root`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`
+4. Set the following environment variables:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   FRONTEND_URL=your_deployed_frontend_url
+   VITE_API_BASE_URL=your_deployed_backend_url
+   PORT=5001
+   ```
+5. Click **Create Web Service** to deploy the backend.
+
+### Deploying the Frontend
+
+1. Create a new **Static Site** on Render (under the same project).
+2. Connect to your Git repository:
+   - Select your Git provider
+   - Choose the `team-01` repository
+3. Configure the service with the following settings:
+   - **Name**: Choose a descriptive name for your frontend service
+   - **Branch**: `deployment`
+   - **Root Directory**: `frontend/vite-project`
+   - **Build Command**: `pnpm install && pnpm build`
+   - **Publish Directory**: `dist`
+4. Set the following environment variables:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   FRONTEND_URL=your_deployed_frontend_url
+   VITE_API_BASE_URL=your_deployed_backend_url
+   PORT=5001
+   ```
+5. Click **Create Static Site** to deploy the frontend.
+
+### Post-Deployment Configuration
+
+After both services are deployed, update the environment variables in both services with the actual URLs.
