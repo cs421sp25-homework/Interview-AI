@@ -28,6 +28,8 @@ from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
+from llm.llm_interface import LLMInterface
+
 
 # Load environment variables
 load_dotenv()
@@ -678,10 +680,21 @@ def save_chat_history():
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
-    success = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
     
-    if not success:
+    
+    if not chat_history_result.get('success'):
         return jsonify({"error": "Failed to save chat history"}), 500
+    
+    interview_id = chat_history_result.get('interview_id')
+    if not interview_id:
+        return jsonify({"error": "Failed to get interview ID"}), 500
+    
+    analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id)
+    
+    if not analysis_result.get('success'):
+        print(f"Warning: Failed to save analysis for interview {interview_id}: {analysis_result.get('error', 'Unknown error')}")
+        # Continue anyway, don't fail the whole request
     
     try:
         result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
@@ -899,6 +912,118 @@ def api_speech2text():
     except Exception as e:
         app.logger.error(f"Speech-to-text error: {e}")
         return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
+    
+
+
+
+
+
+@app.route('/api/generate_good_response', methods=['POST'])
+def generate_good_response():
+    data = request.get_json()
+    user_message = data.get('message', '')
+    if not user_message:
+         return jsonify({"error": "Missing message"}), 400
+
+    # Build a prompt instructing the LLM to improve the candidate's answer.
+    prompt = f"Please provide an improved version of the following interview answer:\n\n{user_message}"
+
+    # Initialize the LLM interface and call the model.
+    llm_interface = LLMInterface()
+    messages = [HumanMessage(content=prompt)]
+    response = llm_interface.invoke(messages)
+
+    # Retrieve the last message's content as the enhanced response.
+    good_response = response[-1].content
+
+    return jsonify({"response": good_response})
+
+
+# service that returns the scores of the interview
+# mock the scores for now
+@app.route('/api/overall_scores/<id>', methods=['GET'])
+@app.route('/api/overall_scores/email/<email>', methods=['GET'])
+def get_overall_scores(id=None, email=None):
+    print(f"Getting overall scores for id: {id}, email: {email}")
+    # return the scores of the interview in a json such as
+    # {
+    #     "scores": {
+    #          "confidence": 0.95,
+    #          "communication": 0.95,
+    #          "technical": 0.90,
+    #          "problem_solving": 0.85,
+    #          "resume strength": 0.90,
+    #          "leadership": 0.90,
+    #     }
+    # }
+    try:
+        # In a real implementation, you would look up scores by id or email
+        return jsonify({"scores": {
+            "confidence": 0.95,
+            "communication": 0.95,
+            "technical": 0.90,
+            "problem_solving": 0.85,
+            "resume strength": 0.90,
+            "leadership": 0.90,
+        }})
+    except Exception as e:
+        return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
+
+
+@app.route('/api/interview_scores/<interview_id>', methods=['GET'])
+def get_interview_scores(interview_id: int):                 
+    print(f"Getting interview scores for id: {interview_id}")
+    # get the scores of the interview from the database
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview scores not found"}), 404
+        return jsonify({"scores": {
+            "confidence": result.data[0].get('confidence_score'),
+            "communication": result.data[0].get('communication_score'),
+            "technical": result.data[0].get('technical_accuracy_score'),
+            "problem_solving": result.data[0].get('problem_solving_score'),
+            "resume strength": result.data[0].get('resume_strength_score'),
+            "leadership": result.data[0].get('leadership_score'),
+        }}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview scores", "message": str(e)}), 500
+
+
+
+@app.route('/api/interview_feedback_strengths/<interview_id>', methods=['GET'])
+def get_interview_feedback_strengths(interview_id: int):
+    print(f"Getting interview feedback strengths for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"strengths": result.data[0].get('strengths')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback strengths", "message": str(e)}), 500
+
+
+@app.route('/api/interview_feedback_improvement_areas/<interview_id>', methods=['GET'])
+def get_interview_feedback_improvement_areas(interview_id: int):
+    print(f"Getting interview feedback improvement areas for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"improvement_areas": result.data[0].get('areas_for_improvement')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback improvement areas", "message": str(e)}), 500
+
+@app.route('/api/interview_feedback_specific_feedback/<interview_id>', methods=['GET'])
+def get_interview_feedback_specific_feedback(interview_id: int):
+    print(f"Getting interview feedback specific feedback for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"specific_feedback": result.data[0].get('specific_feedback')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback specific feedback", "message": str(e)}), 500
 
 
 if __name__ == '__main__':

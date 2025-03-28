@@ -36,6 +36,16 @@ const UserDashboard = () => {
     joined: '',
     photoUrl: null as string | null
   });
+  
+  // Add state for skill stats
+  const [skillStats, setSkillStats] = useState([
+    { subject: 'Technical Skills', A: 0 },
+    { subject: 'Communication', A: 0 },
+    { subject: 'Problem Solving', A: 0 },
+    { subject: 'Leadership', A: 0 },
+    { subject: 'Resume Strength', A: 0 },
+    { subject: 'Confidence', A: 0 }
+  ]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -87,6 +97,9 @@ const UserDashboard = () => {
             joined: joinedDate,
             photoUrl: profile.photo_url || null
           });
+          
+          // Fetch user's interview scores
+          fetchUserScores(profile.id || email);
         }
       } catch (error) {
         navigate('/login');
@@ -95,15 +108,36 @@ const UserDashboard = () => {
 
     fetchUserProfile();
   }, [userEmail, navigate]);
-
-  const skillStats = [
-    { subject: 'Technical Skills', A: 85 },
-    { subject: 'Communication', A: 92 },
-    { subject: 'Problem Solving', A: 88 },
-    { subject: 'Leadership', A: 78 },
-    { subject: 'Resume Strength', A: 90 },
-    { subject: 'Confidence', A: 82 }
-  ];
+  
+  // Add function to fetch user scores
+  const fetchUserScores = async (userId: string) => {
+    try {
+      console.log("Fetching scores for user:", userId);
+      // Use the email-specific endpoint if the userId looks like an email
+      const endpoint = userId.includes('@') 
+        ? `${API_BASE_URL}/api/overall_scores/email/${userId}`
+        : `${API_BASE_URL}/api/overall_scores/${userId}`;
+      
+      const response = await axios.get(endpoint);
+      
+      if (response.data && response.data.scores) {
+        const scores = response.data.scores;
+        
+        // Update skill stats with actual scores
+        setSkillStats([
+          { subject: 'Technical Skills', A: Math.round(scores.technical * 100) },
+          { subject: 'Communication', A: Math.round(scores.communication * 100) },
+          { subject: 'Problem Solving', A: Math.round(scores.problem_solving * 100) },
+          { subject: 'Leadership', A: Math.round(scores.leadership * 100) },
+          { subject: 'Resume Strength', A: Math.round(scores['resume strength'] * 100) },
+          { subject: 'Confidence', A: Math.round(scores.confidence * 100) }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching user scores:", error);
+      // Keep default values if there's an error
+    }
+  };
 
   const achievements = [
     'Technical Expert',
@@ -113,7 +147,6 @@ const UserDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    
     navigate('/');
   };
 
@@ -131,6 +164,7 @@ const UserDashboard = () => {
               <button 
                 className={styles.navButton}
                 onClick={() => navigate('/settings')}
+                data-testid="settings-button"
               >
                 <Settings size={20} color="#4b5563" />
                 <span>Profile Settings</span>
@@ -138,6 +172,7 @@ const UserDashboard = () => {
               <button 
                 className={styles.navButton}
                 onClick={handleLogout}
+                data-testid="logout-button"
               >
                 <LogOut size={20} color="#4b5563" />
                 <span>Logout</span>

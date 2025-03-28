@@ -66,8 +66,12 @@ const InterviewHistoryPage: React.FC = () => {
 
   const [selectedLog, setSelectedLog] = useState<InterviewLog | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [modal, contextHolder] = Modal.useModal();
   
   const navigate = useNavigate();
+  
+  const [performanceData, setPerformanceData] = useState<any>(null);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
   
   useEffect(() => {
     try {
@@ -127,14 +131,14 @@ const InterviewHistoryPage: React.FC = () => {
           
           if (log.updated_at) {
             const testDate = new Date(log.updated_at);
-            console.log(`UTC Time: ${testDate.toISOString()}`);
-            console.log(`Local Time: ${testDate.toString()}`);
-            console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
-              timeZone: 'America/New_York',
-              year: 'numeric',
-              month: 'numeric',
-              day: 'numeric',
-            }).format(testDate)}`);
+            // console.log(`UTC Time: ${testDate.toISOString()}`);
+            // console.log(`Local Time: ${testDate.toString()}`);
+            // console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
+            //   timeZone: 'America/New_York',
+            //   year: 'numeric',
+            //   month: 'numeric',
+            //   day: 'numeric',
+            // }).format(testDate)}`);
           }
           
           return {
@@ -276,7 +280,7 @@ const InterviewHistoryPage: React.FC = () => {
   const handleDeleteInterview = (log: InterviewLog) => {
     console.log("delete clicked");
   
-    confirm({
+    modal.confirm({
       title: 'Are you sure you want to delete this interview?',
       icon: <ExclamationCircleOutlined />,
       content: 'This action cannot be undone.',
@@ -304,6 +308,7 @@ const InterviewHistoryPage: React.FC = () => {
     });
   };
   
+  
   const handleBack = () => {
     navigate('/dashboard');
   };
@@ -318,9 +323,103 @@ const InterviewHistoryPage: React.FC = () => {
     }, 1500);
   };
   
-  const handleViewDetails = (log: InterviewLog) => {
+  const handleViewDetails = async (log: InterviewLog) => {
     setSelectedLog(log);
     setDetailModalVisible(true);
+    
+    // Fetch performance data when opening the details modal
+    setLoadingPerformance(true);
+    try {
+      // Fetch scores
+      const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
+      
+      if (!scoresResponse.ok) {
+        throw new Error(`Failed to fetch performance data: ${scoresResponse.status}`);
+      }
+      
+      const scoresData = await scoresResponse.json();
+      
+      // Fetch strengths
+      const strengthsResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_strengths/${log.id}`);
+      let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
+      
+      if (strengthsResponse.ok) {
+        const strengthsData = await strengthsResponse.json();
+        if (strengthsData.strengths && Array.isArray(JSON.parse(strengthsData.strengths))) {
+          strengths = JSON.parse(strengthsData.strengths);
+        }
+      }
+      
+      // Fetch improvement areas
+      const improvementResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_improvement_areas/${log.id}`);
+      let improvementAreas = ["Consider providing more specific examples", "Work on structuring responses"];
+      
+      if (improvementResponse.ok) {
+        const improvementData = await improvementResponse.json();
+        if (improvementData.improvement_areas && Array.isArray(JSON.parse(improvementData.improvement_areas))) {
+          improvementAreas = JSON.parse(improvementData.improvement_areas);
+        }
+      }
+      
+      // Fetch specific feedback
+      const feedbackResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_specific_feedback/${log.id}`);
+      let specificFeedback = "Performance data available for this interview.";
+      
+      if (feedbackResponse.ok) {
+        const feedbackData = await feedbackResponse.json();
+        if (feedbackData.specific_feedback) {
+          specificFeedback = feedbackData.specific_feedback;
+        }
+      }
+      
+      // Transform the data to match the expected format
+      if (scoresData.scores) {
+        setPerformanceData({
+          scores: {
+            confidence: scoresData.scores.confidence || 0.75,
+            communication: scoresData.scores.communication || 0.75,
+            technical: scoresData.scores.technical || 0.75,
+            problem_solving: scoresData.scores.problem_solving || 0.75,
+            resume_strength: scoresData.scores["resume strength"] || 0.75, // Note the different key format
+            leadership: scoresData.scores.leadership || 0.75
+          },
+          feedback: {
+            key_strengths: strengths,
+            improvement_areas: improvementAreas,
+            overall_feedback: specificFeedback
+          }
+        });
+      } else {
+        throw new Error("Invalid performance data format");
+      }
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+      message.error('Failed to load performance data');
+      // Set default performance data
+      setPerformanceData({
+        scores: {
+          confidence: 0.75,
+          communication: 0.75,
+          technical: 0.75,
+          problem_solving: 0.75,
+          resume_strength: 0.75,
+          leadership: 0.75
+        },
+        feedback: {
+          key_strengths: [
+            "Demonstrated communication skills",
+            "Showed technical knowledge"
+          ],
+          improvement_areas: [
+            "Consider providing more specific examples",
+            "Work on structuring responses"
+          ],
+          overall_feedback: "Performance data not available for this interview."
+        }
+      });
+    } finally {
+      setLoadingPerformance(false);
+    }
   };
   
   const columns = [
@@ -380,7 +479,7 @@ const InterviewHistoryPage: React.FC = () => {
       defaultSortOrder: 'descend' as const,
       render: (date: string) => {
         try {
-          console.log("Rendering date:", date);
+          // console.log("Rendering date:", date);
           
           const formattedTime = formatToEasternTime(date);
           
@@ -463,6 +562,7 @@ const InterviewHistoryPage: React.FC = () => {
   
   return (
     <div className={styles.interviewContainer}>
+      {contextHolder}
       <div className={styles.interviewHeader}>
         <button 
           className={styles.backButton}
@@ -524,7 +624,7 @@ const InterviewHistoryPage: React.FC = () => {
           className={styles.historyTable}
           locale={{ emptyText: 'No interview history found' }}
           onChange={(pagination, filters, sorter, extra) => {
-            console.log('Table params changed:', sorter);
+            // console.log('Table params changed:', sorter);
             // 可以在这里添加额外的排序逻辑
           }}
         />
@@ -533,7 +633,10 @@ const InterviewHistoryPage: React.FC = () => {
       <Modal
         title="Interview Details"
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setPerformanceData(null); // Clear performance data when closing modal
+        }}
         footer={[
           <Button key="back" onClick={() => setDetailModalVisible(false)}>
             Close
@@ -559,7 +662,7 @@ const InterviewHistoryPage: React.FC = () => {
               <Text type="secondary">
                 {(() => {
                   try {
-                    console.log("Modal date:", selectedLog.updated_at || selectedLog.date);
+                    // console.log("Modal date:", selectedLog.updated_at || selectedLog.date);
                     
                     // 使用工具函数处理时区
                     const dateStr = selectedLog.updated_at || selectedLog.date;
@@ -637,35 +740,71 @@ const InterviewHistoryPage: React.FC = () => {
             
             <div className={styles.detailSection}>
               <Title level={5}>Performance Summary</Title>
-              <div className={styles.performanceStats}>
-                <div className={styles.statItem}>
-                  <div className={styles.statValue}>85%</div>
-                  <div className={styles.statLabel}>Overall Score</div>
+              {loadingPerformance ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.spinner}></div>
+                  <Text>Loading performance data...</Text>
                 </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statValue}>92%</div>
-                  <div className={styles.statLabel}>Communication</div>
-                </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statValue}>78%</div>
-                  <div className={styles.statLabel}>Technical</div>
-                </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statValue}>88%</div>
-                  <div className={styles.statLabel}>Problem Solving</div>
-                </div>
-              </div>
+              ) : performanceData ? (
+                <>
+                  <div className={styles.performanceStats}>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.technical * 100)}%</div>
+                      <div className={styles.statLabel}>Technical</div>
+                    </div>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.communication * 100)}%</div>
+                      <div className={styles.statLabel}>Communication</div>
+                    </div>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.problem_solving * 100)}%</div>
+                      <div className={styles.statLabel}>Problem Solving</div>
+                    </div>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.confidence * 100)}%</div>
+                      <div className={styles.statLabel}>Confidence</div>
+                    </div>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.resume_strength * 100)}%</div>
+                      <div className={styles.statLabel}>Resume Strength</div>
+                    </div>
+                    <div className={styles.statItem}>
+                      <div className={styles.statValue}>{Math.round(performanceData.scores.leadership * 100)}%</div>
+                      <div className={styles.statLabel}>Leadership</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <Text>No performance data available for this interview.</Text>
+              )}
             </div>
             
-            <div className={styles.detailSection}>
-              <Title level={5}>Key Insights</Title>
-              <ul className={styles.insightsList}>
-                <li>Strong communication skills demonstrated throughout the interview</li>
-                <li>Good understanding of core concepts, but could improve on advanced topics</li>
-                <li>Provided clear examples from past experience</li>
-                <li>Consider providing more specific metrics in future interviews</li>
-              </ul>
-            </div>
+            {performanceData && performanceData.feedback && (
+              <>
+                <div className={styles.detailSection}>
+                  <Title level={5}>Key Strengths</Title>
+                  <ul className={styles.insightsList}>
+                    {performanceData.feedback.key_strengths.map((strength: string, index: number) => (
+                      <li key={`strength-${index}`}>{strength}</li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className={styles.detailSection}>
+                  <Title level={5}>Areas for Improvement</Title>
+                  <ul className={styles.insightsList}>
+                    {performanceData.feedback.improvement_areas.map((area: string, index: number) => (
+                      <li key={`improvement-${index}`}>{area}</li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className={styles.detailSection}>
+                  <Title level={5}>Overall Feedback</Title>
+                  <Text>{performanceData.feedback.overall_feedback}</Text>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Modal>
