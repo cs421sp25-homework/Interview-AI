@@ -28,6 +28,8 @@ from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
+from llm.llm_interface import LLMInterface
+
 
 # Load environment variables
 load_dotenv()
@@ -899,6 +901,31 @@ def api_speech2text():
     except Exception as e:
         app.logger.error(f"Speech-to-text error: {e}")
         return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
+    
+
+
+
+
+
+@app.route('/api/generate_good_response', methods=['POST'])
+def generate_good_response():
+    data = request.get_json()
+    user_message = data.get('message', '')
+    if not user_message:
+         return jsonify({"error": "Missing message"}), 400
+
+    # Build a prompt instructing the LLM to improve the candidate's answer.
+    prompt = f"Please provide an improved version of the following interview answer:\n\n{user_message}"
+
+    # Initialize the LLM interface and call the model.
+    llm_interface = LLMInterface()
+    messages = [HumanMessage(content=prompt)]
+    response = llm_interface.invoke(messages)
+
+    # Retrieve the last message's content as the enhanced response.
+    good_response = response[-1].content
+
+    return jsonify({"response": good_response})
 
 
 if __name__ == '__main__':
