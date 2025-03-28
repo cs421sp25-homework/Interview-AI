@@ -66,6 +66,7 @@ const InterviewHistoryPage: React.FC = () => {
 
   const [selectedLog, setSelectedLog] = useState<InterviewLog | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [modal, contextHolder] = Modal.useModal();
   
   const navigate = useNavigate();
   
@@ -276,7 +277,7 @@ const InterviewHistoryPage: React.FC = () => {
   const handleDeleteInterview = (log: InterviewLog) => {
     console.log("delete clicked");
   
-    confirm({
+    modal.confirm({
       title: 'Are you sure you want to delete this interview?',
       icon: <ExclamationCircleOutlined />,
       content: 'This action cannot be undone.',
@@ -303,6 +304,7 @@ const InterviewHistoryPage: React.FC = () => {
       },
     });
   };
+  
   
   const handleBack = () => {
     navigate('/dashboard');
@@ -463,6 +465,7 @@ const InterviewHistoryPage: React.FC = () => {
   
   return (
     <div className={styles.interviewContainer}>
+      {contextHolder}
       <div className={styles.interviewHeader}>
         <button 
           className={styles.backButton}
