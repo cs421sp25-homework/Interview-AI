@@ -680,10 +680,21 @@ def save_chat_history():
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
-    success = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
     
-    if not success:
+    
+    if not chat_history_result.get('success'):
         return jsonify({"error": "Failed to save chat history"}), 500
+    
+    interview_id = chat_history_result.get('interview_id')
+    if not interview_id:
+        return jsonify({"error": "Failed to get interview ID"}), 500
+    
+    analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id)
+    
+    if not analysis_result.get('success'):
+        print(f"Warning: Failed to save analysis for interview {interview_id}: {analysis_result.get('error', 'Unknown error')}")
+        # Continue anyway, don't fail the whole request
     
     try:
         result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
@@ -928,7 +939,59 @@ def generate_good_response():
     return jsonify({"response": good_response})
 
 
+# service that returns the scores of the interview
+# mock the scores for now
+@app.route('/api/overall_scores/<id>', methods=['GET'])
+@app.route('/api/overall_scores/email/<email>', methods=['GET'])
+def get_overall_scores(id=None, email=None):
+    print(f"Getting overall scores for id: {id}, email: {email}")
+    # return the scores of the interview in a json such as
+    # {
+    #     "scores": {
+    #          "confidence": 0.95,
+    #          "communication": 0.95,
+    #          "technical": 0.90,
+    #          "problem_solving": 0.85,
+    #          "resume strength": 0.90,
+    #          "leadership": 0.90,
+    #     }
+    # }
+    try:
+        # In a real implementation, you would look up scores by id or email
+        return jsonify({"scores": {
+            "confidence": 0.95,
+            "communication": 0.95,
+            "technical": 0.90,
+            "problem_solving": 0.85,
+            "resume strength": 0.90,
+            "leadership": 0.90,
+        }})
+    except Exception as e:
+        return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
+
+
+@app.route('/api/interview_scores/<interview_id>', methods=['GET'])
+def get_interview_scores(interview_id: int):                 
+    print(f"Getting interview scores for id: {interview_id}")
+    # get the scores of the interview from the database
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview scores not found"}), 404
+        return jsonify({"scores": {
+            "confidence": result.data[0].get('confidence_score'),
+            "communication": result.data[0].get('communication_score'),
+            "technical": result.data[0].get('technical_accuracy_score'),
+            "problem_solving": result.data[0].get('problem_solving_score'),
+            "resume strength": result.data[0].get('resume_strength_score'),
+            "leadership": result.data[0].get('leadership_score'),
+        }}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview scores", "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
     app.run(debug=True, host='0.0.0.0', port=port)
+
