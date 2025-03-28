@@ -828,7 +828,7 @@ def get_interview_logs(email):
 @app.route('/api/chat_history/<id>', methods=['DELETE'])
 def delete_chat_history_by_id(id):
     """
-    Deletes an interview log and its associated chat history by interview log ID.
+    Deletes an interview log and its associated chat history and performance records by interview log ID.
     """
     try:
         if not id:
@@ -841,6 +841,9 @@ def delete_chat_history_by_id(id):
 
         thread_id = result.data[0].get('thread_id')
 
+        # Delete associated performance records (new table dependency)
+        supabase.table('interview_performance').delete().eq('interview_id', id).execute()
+
         # Delete the interview log record
         supabase.table('interview_logs').delete().eq('id', id).execute()
 
@@ -848,7 +851,10 @@ def delete_chat_history_by_id(id):
         if thread_id:
             chat_history_service.delete_chat_history(thread_id)
 
-        return jsonify({"success": True, "message": "Interview log and chat history deleted successfully"}), 200
+        return jsonify({
+            "success": True,
+            "message": "Interview log, performance records, and chat history deleted successfully"
+        }), 200
 
     except Exception as e:
         print(f"Error deleting interview log: {str(e)}")

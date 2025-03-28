@@ -363,15 +363,7 @@ const PromptPage = () => {
                 </select>
               </div>
               
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Interview Type <span className={styles.required}>*</span>
-                </label>
-                <select className={styles.formInput} value={interview_type} onChange={(e) => setInterviewType(e.target.value)} required>
-                  <option value="text">Text</option>
-                  <option value="voice">Voice</option>
-                </select>
-              </div>
+              
 
               <div className={styles.modalActions}>
                 <button 
