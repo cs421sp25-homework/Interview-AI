@@ -48,7 +48,6 @@ Goal: Feedback, scoring, session review capabilities, and response mechanism.
 
 -   As a user, I want to add some interview questions to "Favorites", so that I can easily revisit questions I believe are likely to appear in actual interviews.
 
--   As a user, I want to respond to interview questions using either voice or text, so that I can practice my communication skills in different formats.
 
 #### Nice-to-Have Features:
 
@@ -66,6 +65,7 @@ Goal: Advanced personalization and language/behavioral analysis.
 -   As a user, I want the AI to provide an overall score for the interview according to some rubric, so that I can keep track of my improvement quantitatively.
 
 -   As a user, I want to see a list of all of the interview questions where my responses need improvement, so that I can focus on improving my weakest areas.
+
 
 #### Nice-to-Have Features:
 
