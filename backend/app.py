@@ -901,7 +901,39 @@ def api_speech2text():
         return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
 
 
+# service that returns the scores of the interview
+# mock the scores for now
+@app.route('/api/overall_scores/<id>', methods=['GET'])
+@app.route('/api/overall_scores/email/<email>', methods=['GET'])
+def get_overall_scores(id=None, email=None):
+    print(f"Getting overall scores for id: {id}, email: {email}")
+    # return the scores of the interview in a json such as
+    # {
+    #     "scores": {
+    #          "confidence": 0.95,
+    #          "communication": 0.95,
+    #          "technical": 0.90,
+    #          "problem_solving": 0.85,
+    #          "resume strength": 0.90,
+    #          "leadership": 0.90,
+    #     }
+    # }
+    try:
+        # In a real implementation, you would look up scores by id or email
+        return jsonify({"scores": {
+            "confidence": 0.95,
+            "communication": 0.95,
+            "technical": 0.90,
+            "problem_solving": 0.85,
+            "resume strength": 0.90,
+            "leadership": 0.90,
+        }})
+    except Exception as e:
+        return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
     app.run(debug=True, host='0.0.0.0', port=port)
+
