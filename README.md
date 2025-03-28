@@ -208,3 +208,27 @@ Follow these steps to deploy or redeploy the application on Render:
 ### Post-Deployment Configuration
 
 After both services are deployed, update the environment variables in both services with the actual URLs.
+
+
+# Testing 
+
+## TODO
+
+
+# Troubleshooting
+
+## Dependency Resolution Issues
+
+If you encounter dependency conflicts or installation problems with Poetry:
+
+1. Delete the existing lock file:
+   ```bash
+   rm poetry.lock
+   ```
+
+2. Reinstall dependencies:
+   ```bash
+   poetry install
+   ```
+
+This will regenerate the lock file with fresh dependency resolution, which often resolves common installation issues.
