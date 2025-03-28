@@ -678,10 +678,21 @@ def save_chat_history():
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
-    success = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
     
-    if not success:
+    
+    if not chat_history_result.get('success'):
         return jsonify({"error": "Failed to save chat history"}), 500
+    
+    interview_id = chat_history_result.get('interview_id')
+    if not interview_id:
+        return jsonify({"error": "Failed to get interview ID"}), 500
+    
+    analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id)
+    
+    if not analysis_result.get('success'):
+        print(f"Warning: Failed to save analysis for interview {interview_id}: {analysis_result.get('error', 'Unknown error')}")
+        # Continue anyway, don't fail the whole request
     
     try:
         result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
