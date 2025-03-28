@@ -38,11 +38,13 @@ Must-Have: 
 3. As a user, I want the AI to analyze my profile, so that it can generate some relevant technical/behavioral interview questions for me.
 
 4. As a user, I want to input the description of the job I am applying to, so that the AI can generate more related questions based on the specific job position.
-5. As a user, I want to choose the type of questions I want to practice (technical, behavioral, system design), so that I can prepare effectively for my target interviews.
+5. As a user, I want to choose the type of questions I want to practice (technical, behavioral), so that I can prepare effectively for my target interviews.
+6. As a user, I want a dashboard so that I can have a visually clear way to see my skill levels and easily identify my strengths and weaknesses.
+
 
 6.  As a user, I want to receive feedback on my responses by requesting it using a designated button, so that I can improve my interview performance.
 
-7.  As a user, I want the AI to ask follow-up questions based on my responses, so that I can simulate a real interview experience.
+7. As a user, I want to have a continuous conversation with the AI, so that the interviewer can ask follow-up questions based on my responses and thus simulate a real interview experience.
 
 
 8. As a user, I want to review my past interview sessions, so that I can analyze my responses and identify areas for improvement.

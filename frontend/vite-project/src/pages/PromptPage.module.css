@@ -141,6 +141,24 @@
   color: #111827;
 }
 
+.backButton {
+  background-color: transparent;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: #f9fafb;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
 .main {
   flex: 1;
   display: flex;
@@ -209,6 +227,18 @@
   margin-bottom: 0.5rem;
 }
 
+.required {
+  color: #ec4899;
+  margin-left: 4px;
+}
+
+.optional {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
 .formInput {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -240,21 +270,12 @@
   cursor: pointer;
   transition: background-color 0.2s;
   margin-top: 1rem;
+  margin-bottom: 1rem;
+  height: 2.75rem;
 }
 
 .buttonPrimary:hover {
   background-color: #db2777;
-}
-
-.oauthContainer {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem 2.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 450px;
-  text-align: center;
-  margin-bottom: 1.5rem;
 }
 
 .orText {
@@ -282,19 +303,15 @@
   right: 0;
 }
 
-.oauthButtons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.oauthButton {
+.interviewCard {
+  position: relative;
   flex: 1;
+  flex-direction: column;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: left;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 1.5rem 2.5rem;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
@@ -303,70 +320,37 @@
   color: #4b5563;
   cursor: pointer;
   transition: all 0.2s;
+  margin-bottom: 1rem; 
 }
-
-.oauthButton:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-2px);
-}
-
-.oauthIcon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.signupContainer {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+.interviewList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 1rem; 
+  margin-top: 1rem;
   width: 100%;
-  max-width: 450px;
-  text-align: center;
 }
 
-.signupLink {
-  color: #4b5563;
-  font-size: 0.875rem;
-}
-
-.signupLink span {
-  color: #ec4899;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.signupLink span:hover {
-  color: #db2777;
-  text-decoration: underline;
-}
-
-.footer {
-  text-align: center;
-  padding: 2rem;
-  background-color: white;
-  color: #6b7280;
-  border-top: 1px solid #e5e7eb;
-  margin-top: auto;
+@media (max-width: 992px) {
+  .interviewList {
+    grid-template-columns: repeat(2, 1fr); 
+  }
 }
 
 @media (max-width: 640px) {
+  .interviewList {
+    grid-template-columns: 1fr; 
+  }
+  
   .main {
     padding: 2rem 1rem;
   }
   
-  .formCard, .oauthContainer, .signupContainer {
+  .formCard {
     padding: 1.5rem;
   }
   
   .header h1 {
     font-size: 1.75rem;
-  }
-  
-  .oauthButtons {
-    flex-direction: column;
   }
 }
 .modalOverlay {
@@ -399,4 +383,168 @@
   background: none;
   border: none;
   cursor: pointer;
+}
+.cardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.interviewCard:hover {
+  background-color: #fdf2f8;
+  border-color: #ec4899;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.15);
+}
+
+.selectedCard {
+  border: 2px solid #ec4899;
+  background-color: #fdf2f8;
+}
+
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.interviewName {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.menuContainer {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  cursor: pointer;
+}
+
+.menuIcon {
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.menuIcon:hover {
+  color: #ec4899;
+}
+
+.menuDropdown {
+  position: absolute;
+  top: 1.5rem;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menuDropdown button {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menuDropdown button:hover {
+  background-color: #fdf2f8;
+  color: #ec4899;
+}
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
+}
+
+.startButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ec4899;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.startButton:hover {
+  background-color: #db2777;
+}
+
+.buttonSecondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 16px;
+  height: 2.75rem;
+  width: 100%;
+}
+
+.buttonSecondary:hover {
+  background-color: #e5e7eb;
+}
+
+.buttonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonDisabled:hover {
+  background-color: #ec4899;
+  transform: none;
+  box-shadow: none;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modalActions button {
+  flex: 1;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.modal h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  text-align: center;
 }

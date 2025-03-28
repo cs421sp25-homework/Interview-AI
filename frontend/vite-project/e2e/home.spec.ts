@@ -6,7 +6,7 @@ test.describe('Home Page', () => {
     await page.goto('/');
     
     // Check that the logo is visible
-    await expect(page.getByRole('navigation').getByText('InterviewAI')).toBeVisible();
+    await expect(page.getByRole('navigation').getByText('InterviewAI', { exact: true })).toBeVisible();
     
     // Check that the hero section is visible
     await expect(page.getByRole('heading', { name: 'Ace Your Next Interview with AI', exact: true })).toBeVisible();

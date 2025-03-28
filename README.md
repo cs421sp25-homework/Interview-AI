@@ -1,4 +1,6 @@
-Below is a step-by-step guide to setting up and running a **React + Vite** application using **pnpm**, along with a **Python** backend using **Poetry** and **Flask**. This guide assumes you have a basic understanding of the terminal/command line and have both **Node.js** and **Python** installed on your system. 
+# Setting Up the Development Environment for InterviewAI
+
+This guide walks you through setting up and running the **React + Vite** frontend and **Flask** backend for the **InterviewAI** project. You can choose to run it locally or using Docker Compose.
 
 ---
 
@@ -16,10 +18,17 @@ Below is a step-by-step guide to setting up and running a **React + Vite** appli
 
 4. **Poetry**  
    - [Poetry Installation Guide](https://python-poetry.org/docs/#installation)  
-   - After installation, verify by running `poetry --version`.  
+   - If Poetry is not installed, you can install it using:
+     ```bash
+     pip install poetry
+     ```
+   - After installation, verify by running:
+     ```bash
+     poetry --version
+     ```
 
 5. **Git (optional)**  
-   - Use Git for version control or to clone your project repository if it’s hosted on a Git platform like GitHub or GitLab.
+   - Use Git for version control or to clone your project repository if it's hosted on a Git platform like GitHub or GitLab.
 
 ---
 
@@ -28,7 +37,7 @@ Below is a step-by-step guide to setting up and running a **React + Vite** appli
 For clarity, you might organize your files and folders as follows:
 
 ```
-my-project/
+team-01/
 ├─ frontend/vite-project/
 │  ├─ index.html
 │  ├─ package.json
@@ -45,136 +54,157 @@ my-project/
 
 - `frontend/` contains the React + Vite app.
 - `backend/` contains the Python (Flask) server.
-- You may have additional directories (e.g., `tests`, `docs`) as needed.
+- `.env` file should be created in the **root directory** (`team-01/.env`).
 
 ---
 
-## Setting Up the Frontend (React + Vite) with pnpm
+## Step 1: Create a `.env` File
 
-1. **Install dependencies with pnpm**  
-   Go to `frontend/vite-project/` directory:
-   ```bash
-   cd frontend/vite-project/
-   pnpm install
-   ```
-   This reads the `package.json` and installs the necessary dependencies, creating a `pnpm-lock.yaml` file.
+Before running the application, create a `.env` file in the **root directory** (`team-01/.env`). This file will store environment variables required for the backend and frontend configurations.
 
-2. **Project Configuration**  
-   - **package.json**: ensures that your `scripts` section includes something like:
-     ```json
-     {
-       "scripts": {
-         "dev": "vite",
-         "build": "vite build",
-         "preview": "vite preview"
-       }
-     }
-     ```
+### Local Development `.env` Setup
+For running the project locally, use the following configuration in `team-01/.env`:
 
-3. **Running the Frontend**  
-   From within the `frontend/vite-project/` directory:
-   ```bash
-   pnpm dev
-   ```
-   - By default, Vite will start a development server at `http://localhost:5173/` (the exact port may differ).
-   - To create a production-ready build:
-     ```bash
-     pnpm build
-     ```
-     This will generate static files in the `dist/` folder.
-
----
-## **Setting Up the Backend (Python + Flask) with Poetry**  
-
-Follow these steps to set up and run the `backend` project using **Poetry** for dependency management.
-
----
-
-### **1. Install Poetry**  
-If Poetry is not installed, follow the official guide [here](https://python-poetry.org/docs/#installation) or install it using:  
-```bash
-pip install poetry
-```
-After installation, verify it by running:  
-```bash
-poetry --version
-```
-
----
-
-### **2. Install Dependencies & Create Virtual Environment**  
-Navigate to the `backend` directory and install dependencies:  
-```bash
-cd backend
-poetry install
-```
-This command:
-- Creates a virtual environment (stored in `backend/.venv/`).
-- Installs all dependencies listed in `pyproject.toml`.
-
----
-
-
-### **3. Create .env file**
-Create a file in `backend/` directory named `.env` with the contents:
 ```bash
 SUPABASE_URL=******
 SUPABASE_KEY=******
 OPENAI_API_KEY=ENTER_YOUR_OPENAI_API_KEY
 FRONTEND_URL=http://127.0.0.1:5173
+PORT=5001
+VITE_API_BASE_URL=http://127.0.0.1:5001
 ```
-Please ask us for the Supabase URL & KEY!
 
-### **4. Project Structure**  
-After setup, your `backend/` directory should look like this:  
-```
-backend/
-├── pyproject.toml    # Poetry config file
-├── poetry.lock       # Dependency lock file
-├── app.py            # Main Flask application
-└── .env              # .env file
-```
-- **`app.py`** contains your Flask routes and logic.
+_If you need Supabase credentials, please request them from the team._
 
 ---
 
-### **5. Run the Flask Server**  
-Start the server using:  
-```bash
-poetry run python app.py
-```
-Or, if you have activated the Poetry shell:  
-```bash
-poetry shell
-python app.py
-```
-Our backend, Flask, will run on **`http://127.0.0.1:5001`**.
+## Running the Project Locally
+
+### **Backend Setup (Flask + Poetry)**
+
+1. Navigate to the backend directory:
+   ```bash
+   cd team-01/backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   poetry install
+   ```
+
+3. Run the backend server:
+   ```bash
+   poetry run python app.py
+   ```
+   The backend will run on `http://127.0.0.1:5001`.
+
+---
+
+### **Frontend Setup (React + Vite + pnpm)**
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd team-01/frontend/vite-project
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+   The frontend will be available at `http://127.0.0.1:5173`.
+
+---
+
+## Running the Project with Docker Compose
+
+If you prefer to run the project with Docker Compose:
+
+1. Ensure **Docker** or **Docker Desktop** is installed.
+2. Make sure your `.env` file is properly set up.
+3. Navigate to the project root (`team-01/`) and run:
+   ```bash
+   docker-compose up --build
+   ```
+4. Once running, access the frontend at `http://127.0.0.1:5173`.
 
 ---
 
 ## Summary
 
-1. **Frontend** (React + Vite):
-   - Use `pnpm` to install and manage dependencies.
-   - Run development server with `pnpm dev`.
-   - Build production artifacts with `pnpm build`.
+### **Running Locally:**
+- Create `.env` with local URLs.
+- Install dependencies (`poetry install`, `pnpm install`).
+- Start backend (`poetry run python app.py`).
+- Start frontend (`pnpm dev`).
 
-2. **Backend** (Flask):
-   - Use `Poetry` for Python dependency management.
-   - Run your Flask development server with `poetry run python app.py`.
-
-3. **Combine & Deploy**:
-   - In development, run two separate terminals for front and back ends.
-   - In production, build the React app and optionally serve static files from Flask or a dedicated static hosting solution. 
-
-By following these steps, you can maintain a clean and modern setup for both your frontend and backend while leveraging the benefits of **pnpm** (faster, disk-space efficient package management) and **Poetry** (reliable, isolated Python environments with clear dependency management).
+### **Running with Docker Compose:**
+- Ensure `.env` is set up properly.
+- Ensure **Docker** or **Docker Desktop** is installed.
+- Run `docker-compose up --build` from the root directory.
 
 
-## Run the project with Docker Compose
+---
 
-1. Make sure you have Docker or Docker Desktop installed.
-2. Run the following command to start the project:
-```bash
-docker-compose up --build
-```
-3. Navigate to `http://127.0.0.1:5173` to use our app.
+## Deployment
+
+The application is deployed on [Render](https://dashboard.render.com/):
+- Frontend: https://interviewai-hack.onrender.com
+- Backend: https://interviewai-backend-7zxo.onrender.com
+
+Follow these steps to deploy or redeploy the application on Render:
+
+### Deploying the Backend
+
+1. Create a new **Web Service** on Render.
+2. Connect to your Git repository:
+   - Select your Git provider
+   - Choose the `team-01` repository
+3. Configure the service with the following settings:
+   - **Name**: Choose a descriptive name for your backend service
+   - **Runtime Environment**: Python 3
+   - **Branch**: `deployment`
+   - **Root Directory**: `backend`
+   - **Build Command**: `pip install poetry && poetry install --no-root`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`
+4. Set the following environment variables:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   FRONTEND_URL=your_deployed_frontend_url
+   VITE_API_BASE_URL=your_deployed_backend_url
+   PORT=5001
+   ```
+5. Click **Create Web Service** to deploy the backend.
+
+### Deploying the Frontend
+
+1. Create a new **Static Site** on Render (under the same project).
+2. Connect to your Git repository:
+   - Select your Git provider
+   - Choose the `team-01` repository
+3. Configure the service with the following settings:
+   - **Name**: Choose a descriptive name for your frontend service
+   - **Branch**: `deployment`
+   - **Root Directory**: `frontend/vite-project`
+   - **Build Command**: `pnpm install && pnpm build`
+   - **Publish Directory**: `dist`
+4. Set the following environment variables:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   FRONTEND_URL=your_deployed_frontend_url
+   VITE_API_BASE_URL=your_deployed_backend_url
+   PORT=5001
+   ```
+5. Click **Create Static Site** to deploy the frontend.
+
+### Post-Deployment Configuration
+
+After both services are deployed, update the environment variables in both services with the actual URLs.

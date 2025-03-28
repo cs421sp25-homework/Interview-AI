@@ -1,0 +1,513 @@
+.interviewContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 2000px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  background-color: #f9fafb;
+  overflow: hidden;
+  min-height: 500px;
+  max-height: 100vh;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.interviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.interviewHeader h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: transparent;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.spacer {
+  width: 120px; /* 与backButton宽度大致相同，保持平衡 */
+}
+
+.historyContent {
+  flex: 1;
+  overflow: auto;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  width: 100%;
+}
+
+.historyContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboardButton {
+  height: 40px;
+}
+
+.filterSection {
+  margin-bottom: 2rem;
+  padding: 1.5rem 2rem;
+  background-color: #f9fafb;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filterLeft {
+  display: flex;
+  align-items: center;
+}
+
+.filterRight {
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 450px;
+}
+
+.datePicker {
+  width: 450px;
+}
+
+.typeFilter {
+  width: 250px;
+}
+
+.historyTable {
+  background-color: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.interviewTitle {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.interviewCompany {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.companyName {
+  color: #4b5563;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.detailContent {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  padding: 2rem;
+}
+
+.detailSection {
+  margin-bottom: 2rem;
+}
+
+.detailSection:last-child {
+  margin-bottom: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: #f9fafb;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.detailItem:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transform: translateY(-3px);
+}
+
+.performanceStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.statItem {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ec4899;
+  margin-bottom: 0.25rem;
+}
+
+.statLabel {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.insightsList {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.insightsList li {
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.insightsList li:last-child {
+  margin-bottom: 0;
+}
+
+.interviewName {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.125rem;
+}
+
+.dateInfo {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.timeInfo {
+  display: none;
+}
+
+.tagContainer {
+  display: flex;
+}
+
+.questionTypeTag {
+  display: none;
+}
+
+.questionCount {
+  display: none;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 操作按钮容器样式 */
+.actionButtonsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 带文字的操作按钮样式 */
+.actionButtonWithLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: auto;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  margin: 0 2px;
+}
+
+/* 覆盖Ant Design默认样式 */
+.actionButtonWithLabel:global(.ant-btn-link) {
+  color: inherit;
+  padding: 6px 10px;
+}
+
+.actionButtonWithLabel:global(.ant-btn-link):hover {
+  color: inherit;
+  background-color: transparent;
+}
+
+.actionButtonWithLabel:global(.ant-btn-link):focus {
+  color: inherit;
+}
+
+/* 确保danger属性不影响文字颜色 */
+.actionButtonWithLabel:global(.ant-btn-dangerous) {
+  color: inherit;
+}
+
+.actionButtonWithLabel:hover {
+  background-color: #f9f0f6;
+  border-color: #f3d4e4;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.actionIcon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.actionText {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+/* 特定操作按钮样式 */
+.viewButton .actionIcon {
+  color: #1890ff;
+}
+
+.viewButton .actionText {
+  color: #1890ff;
+}
+
+.viewButton:hover {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.detailsButton .actionIcon {
+  color: #722ed1;
+}
+
+.detailsButton .actionText {
+  color: #722ed1;
+}
+
+.detailsButton:hover {
+  background-color: #f9f0ff;
+  border-color: #d3adf7;
+}
+
+.exportButton .actionIcon {
+  color: #52c41a;
+}
+
+.exportButton .actionText {
+  color: #52c41a;
+}
+
+.exportButton:hover {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.deleteButton .actionIcon {
+  color: #ff4d4f;
+}
+
+.deleteButton .actionText {
+  color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  background-color: #fff1f0;
+  border-color: #ffa39e;
+}
+
+/* 表格行悬停效果 */
+.historyTable :global(.ant-table-tbody > tr:hover) {
+  background-color: #fdf2f8 !important;
+}
+
+/* 表格标题样式 */
+.historyTable :global(.ant-table-thead > tr > th) {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #111827;
+  padding: 20px 24px;
+  font-size: 1rem;
+}
+
+/* 增强排序图标的显示 */
+.historyTable :global(.ant-table-column-sorter) {
+  margin-left: 6px;
+}
+
+.historyTable :global(.ant-table-column-sorter-up.active),
+.historyTable :global(.ant-table-column-sorter-down.active) {
+  color: #ec4899;
+}
+
+/* 排序标题悬停效果 */
+.historyTable :global(.ant-table-thead th.ant-table-column-sort:hover) {
+  background-color: #fdf2f8;
+}
+
+/* 性能统计卡片悬停效果 */
+.statItem:hover {
+  box-shadow: 0 4px 6px rgba(236, 72, 153, 0.1);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* 调整表格行高 */
+.historyTable :global(.ant-table-tbody > tr > td) {
+  padding: 20px 24px;
+  font-size: 1rem;
+}
+
+.detailModal :global(.ant-modal-content) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.detailModal :global(.ant-modal-header) {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detailModal :global(.ant-modal-body) {
+  padding: 2rem;
+}
+
+.detailModal :global(.ant-modal-footer) {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+@media (max-width: 768px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .performanceStats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* 响应式操作按钮 */
+  .actionButtonsContainer {
+    gap: 2px;
+  }
+  
+  .actionButtonWithLabel {
+    padding: 4px 8px;
+    margin: 0 1px;
+  }
+  
+  .actionIcon {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
+  .actionText {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  /* 在很小的屏幕上进一步压缩 */
+  .actionButtonWithLabel {
+    padding: 3px 6px;
+  }
+  
+  .actionIcon {
+    font-size: 14px;
+    margin-bottom: 1px;
+  }
+  
+  .actionText {
+    font-size: 9px;
+  }
+}
+
+/* 特定操作按钮悬停效果增强 */
+.viewButton:hover .actionIcon,
+.viewButton:hover .actionText {
+  color: #096dd9;  /* 稍深的蓝色 */
+}
+
+.detailsButton:hover .actionIcon,
+.detailsButton:hover .actionText {
+  color: #531dab;  /* 稍深的紫色 */
+}
+
+.exportButton:hover .actionIcon,
+.exportButton:hover .actionText {
+  color: #389e0d;  /* 稍深的绿色 */
+}
+
+.deleteButton:hover .actionIcon,
+.deleteButton:hover .actionText {
+  color: #cf1322;  /* 稍深的红色 */
+}
+
+/* 列标题和排序提示样式 */
+.columnTitleWithTip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sortTip {
+  font-size: 10px;
+  font-weight: normal;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+} 

@@ -1,0 +1,172 @@
+name: CI/CD Pipeline
+
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # 1. Check out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js (for frontend tasks).
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      # 3. Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      # 4. Set up Python (for backend tasks).
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'  # Adjust as needed
+
+      # 5. Install dependencies for the frontend.
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend/vite-project
+          pnpm install
+          # Install Playwright as a dev dependency
+          pnpm add -D @playwright/test
+
+      # 6. Install system dependencies for speech recognition
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev python3-pyaudio
+
+      # 7. Install dependencies for the backend.
+      - name: Install Backend Dependencies
+        run: |
+          pip install poetry
+          cd backend
+          poetry install
+          # Add missing dependencies to poetry environment
+          poetry add pytest gtts PyPDF2 pydantic fastapi uvicorn SpeechRecognition pyaudio
+
+      # 8. Start backend server in the background.
+      - name: Start Backend Server
+        run: |
+          cd backend
+          nohup poetry run python app.py &
+
+      # 9. Install Playwright browsers.
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend/vite-project
+          npx playwright install --with-deps
+
+      # 10. Wait until both servers are likely up.
+      - name: Wait for servers to be ready
+        run: sleep 10
+        # Alternatively, consider using a tool like "wait-on" for a more robust check.
+
+      # 11. Run backend tests (if you have tests set up using pytest or similar).
+    #   - name: Run Backend Tests
+    #     run: |
+    #       cd backend
+    #       poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
+
+      # 12. Install Playwright browsers.
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend/vite-project
+          cat > playwright.config.ts << 'EOL'
+          import { defineConfig, devices } from '@playwright/test';
+          
+          export default defineConfig({
+            testDir: './e2e',
+            fullyParallel: true,
+            forbidOnly: !!process.env.CI,
+            retries: process.env.CI ? 2 : 0,
+            workers: process.env.CI ? 1 : undefined,
+            reporter: 'html',
+            use: {
+              baseURL: 'http://localhost:5173',
+              trace: 'on-first-retry',
+            },
+            webServer: {
+              command: 'pnpm run dev',
+              url: 'http://localhost:5173',
+              reuseExistingServer: false,
+              timeout: 120 * 1000,
+            },
+            projects: [
+              {
+                name: 'chromium',
+                use: { ...devices['Desktop Chrome'] },
+              },
+            ],
+          });
+          EOL
+
+      # 12. Run Playwright tests.
+      - name: Run Playwright Tests
+        run: |
+          cd frontend/vite-project
+          npx playwright test
+
+      # 13. Upload test reports as artifacts.
+      - name: Upload Test Reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            backend/test-reports/
+            frontend/vite-project/playwright-report/
+
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: test
+    # Only deploy on main branch if tests succeed.
+    if: github.ref == 'refs/heads/main' && success()
+    steps:
+      # 1. Check out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install pnpm for deployment
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      # 3. Set up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      # 4. Build and deploy the frontend.
+      - name: Build Frontend
+        run: |
+          cd frontend/vite-project
+          pnpm install
+          pnpm run build
+          
+      - name: Deploy Frontend
+        run: |
+          echo "Deploying frontend..."
+          # Replace this with your actual frontend deployment commands.
+
+      # 5. Deploy the backend.
+      - name: Deploy Backend
+        run: |
+          cd backend
+          echo "Deploying backend..."
+          # Replace this with your actual backend deployment commands.
