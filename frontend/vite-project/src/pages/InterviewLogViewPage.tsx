@@ -18,10 +18,29 @@ const InterviewLogViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // log id from route
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
 
-  // 避免布局跳跃，确保容器在组件初始渲染时就已经存在
+  const handleGenerateResponse = async (messageText: string, index: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/generate_good_response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText }),
+      });
+      const data = await res.json();
+      if (data.response) {
+        setGeneratedResponse(prev => ({ ...prev, [index]: data.response }));
+      } else {
+        message.error('Failed to generate response');
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('Failed to generate response');
+    }
+  };
+
+  // Avoid layout shift by ensuring container exists on first render.
   useEffect(() => {
-    // 立即设置容器尺寸为固定值
     const container = document.getElementById('logViewContainer');
     if (container) {
       container.style.height = 'calc(100vh - 100px)';
@@ -30,16 +49,13 @@ const InterviewLogViewPage: React.FC = () => {
     setLoading(true);
     if (location.state && (location.state as any).conversation) {
       setMessages((location.state as any).conversation);
-      // 使用较短的延迟，但仍然确保UI有时间渲染
       setTimeout(() => setLoading(false), 300);
     } else {
-      // Option 2: fetch the interview log from the API using the id
       const fetchLog = async () => {
         try {
           const userEmail = localStorage.getItem('user_email') || '';
           const res = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
           const data = await res.json();
-          // find the log by id
           const log = data.data.find((l: any) => String(l.id) === id);
           if (log && log.log) {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
@@ -69,7 +85,6 @@ const InterviewLogViewPage: React.FC = () => {
     navigate('/interview/history');
   };
 
-  // 自定义加载图标
   const antIcon = <LoadingOutlined style={{ fontSize: 40, color: '#ec4899' }} spin />;
 
   return (
@@ -122,7 +137,20 @@ const InterviewLogViewPage: React.FC = () => {
                   )}
                 </div>
                 <div className={msg.sender === 'ai' ? styles.aiMessage : styles.userMessage}>
-                  {msg.text}
+                  <div className={styles.messageContent}>
+                    {msg.text}
+                  </div>
+                  {msg.sender === 'user' && (
+                    <div className={styles.generatedContainer}>
+                      {generatedResponses[index] ? (
+                        <div className={styles.generatedResponse}>{generatedResponses[index]}</div>
+                      ) : (
+                        <Button onClick={() => handleGenerateResponse(msg.text, index)}>
+                          Generate AI Response
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

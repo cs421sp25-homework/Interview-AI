@@ -29,6 +29,8 @@ from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
 import json
+from llm.llm_interface import LLMInterface
+
 
 # Load environment variables
 load_dotenv()
@@ -827,7 +829,7 @@ def get_interview_logs(email):
 @app.route('/api/chat_history/<id>', methods=['DELETE'])
 def delete_chat_history_by_id(id):
     """
-    Deletes an interview log and its associated chat history by interview log ID.
+    Deletes an interview log and its associated chat history and performance records by interview log ID.
     """
     try:
         if not id:
@@ -840,6 +842,9 @@ def delete_chat_history_by_id(id):
 
         thread_id = result.data[0].get('thread_id')
 
+        # Delete associated performance records (new table dependency)
+        supabase.table('interview_performance').delete().eq('interview_id', id).execute()
+
         # Delete the interview log record
         supabase.table('interview_logs').delete().eq('id', id).execute()
 
@@ -847,7 +852,10 @@ def delete_chat_history_by_id(id):
         if thread_id:
             chat_history_service.delete_chat_history(thread_id)
 
-        return jsonify({"success": True, "message": "Interview log and chat history deleted successfully"}), 200
+        return jsonify({
+            "success": True,
+            "message": "Interview log, performance records, and chat history deleted successfully"
+        }), 200
 
     except Exception as e:
         print(f"Error deleting interview log: {str(e)}")
@@ -911,6 +919,31 @@ def api_speech2text():
     except Exception as e:
         app.logger.error(f"Speech-to-text error: {e}")
         return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
+    
+
+
+
+
+
+@app.route('/api/generate_good_response', methods=['POST'])
+def generate_good_response():
+    data = request.get_json()
+    user_message = data.get('message', '')
+    if not user_message:
+         return jsonify({"error": "Missing message"}), 400
+
+    # Build a prompt instructing the LLM to improve the candidate's answer.
+    prompt = f"Please provide an improved version of the following interview answer:\n\n{user_message}"
+
+    # Initialize the LLM interface and call the model.
+    llm_interface = LLMInterface()
+    messages = [HumanMessage(content=prompt)]
+    response = llm_interface.invoke(messages)
+
+    # Retrieve the last message's content as the enhanced response.
+    good_response = response[-1].content
+
+    return jsonify({"response": good_response})
 
 
 # service that returns the scores of the interview
