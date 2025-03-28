@@ -990,8 +990,43 @@ def get_interview_scores(interview_id: int):
         return jsonify({"error": "Failed to get interview scores", "message": str(e)}), 500
 
 
+
+@app.route('/api/interview_feedback_strengths/<interview_id>', methods=['GET'])
+def get_interview_feedback_strengths(interview_id: int):
+    print(f"Getting interview feedback strengths for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"strengths": result.data[0].get('strengths')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback strengths", "message": str(e)}), 500
+
+
+@app.route('/api/interview_feedback_improvement_areas/<interview_id>', methods=['GET'])
+def get_interview_feedback_improvement_areas(interview_id: int):
+    print(f"Getting interview feedback improvement areas for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"improvement_areas": result.data[0].get('areas_for_improvement')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback improvement areas", "message": str(e)}), 500
+
+@app.route('/api/interview_feedback_specific_feedback/<interview_id>', methods=['GET'])
+def get_interview_feedback_specific_feedback(interview_id: int):
+    print(f"Getting interview feedback specific feedback for id: {interview_id}")
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview feedback not found"}), 404
+        return jsonify({"specific_feedback": result.data[0].get('specific_feedback')}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview feedback specific feedback", "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
     app.run(debug=True, host='0.0.0.0', port=port)
-

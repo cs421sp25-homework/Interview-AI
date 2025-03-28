@@ -264,16 +264,29 @@ class ChatHistoryService:
             # Strengths prompt - get a list of strengths
             strengths_prompt = [
                 {"role": "system", "content": """
-                You are an expert interview analyzer. Analyze the following interview conversation and provide 3-5 key strengths 
-                demonstrated by the candidate. Format your response as a JSON array of strings, like this:
+                You are an expert interview analyzer with years of experience in talent acquisition and candidate assessment. 
+                Carefully analyze the following interview conversation and provide 3-5 key strengths demonstrated by the candidate.
                 
-                ["Excellent communication skills", "Strong technical knowledge", "Clear problem-solving approach"]
+                Consider the following aspects in your analysis:
+                - Communication skills (clarity, conciseness, articulation)
+                - Technical knowledge and expertise
+                - Problem-solving approach and methodology
+                - Leadership qualities and teamwork examples
+                - Adaptability and learning mindset
+                - Specific accomplishments that demonstrate skills
+                
+                Be specific and detailed in identifying strengths, looking for concrete examples from the conversation.
+                
+                Format your response as a JSON array of strings, like this:
+                
+                ["Excellent communication skills with clear articulation of complex concepts", 
+                "Strong technical knowledge in database optimization and system architecture", 
+                "Clear problem-solving approach with methodical debugging techniques"]
                 
                 Your response must be ONLY a valid JSON array of strings, with no additional text or explanation.
                 """},
                 {"role": "user", "content": f"Interview type: {config_name}\n\nConversation:\n{json.dumps(conversation, indent=2)}"}
             ]
-            
             try:
                 strengths_response = client.chat.completions.create(
                     model="gpt-4o-mini",
@@ -296,8 +309,20 @@ class ChatHistoryService:
             # Weaknesses prompt - get a list of areas for improvement
             weaknesses_prompt = [
                 {"role": "system", "content": """
-                You are an expert interview analyzer. Analyze the following interview conversation and provide 3-5 specific areas 
-                for improvement. Format your response as a JSON array of strings, like this:
+                You are an expert interview analyzer with years of experience in talent acquisition and candidate assessment. 
+                Carefully analyze the following interview conversation and provide 3-5 key areas for improvement demonstrated by the candidate.
+                
+                Consider the following aspects in your analysis:
+                - Communication skills (clarity, conciseness, articulation)
+                - Technical knowledge and expertise
+                - Problem-solving approach and methodology
+                - Leadership qualities and teamwork examples
+                - Adaptability and learning mindset
+                - Specific accomplishments that demonstrate skills
+                 
+                Be specific and detailed in identifying areas for improvement, looking for concrete examples from the conversation.
+                
+                Format your response as a JSON array of strings, like this:
                 
                 ["Could provide more specific examples", "Should elaborate more on technical details", "Consider using the STAR method more consistently"]
                 
@@ -329,7 +354,7 @@ class ChatHistoryService:
             specific_feedback_prompt = [
                 {"role": "system", "content": """
                 You are an expert interview analyzer. Analyze the following interview conversation and provide a concise 
-                overall assessment of the candidate's performance (maximum 200 characters).
+                overall assessment of the candidate's performance (minimum 100 characters, maximum 500 characters).
                 
                 Your response should be a single string with no JSON formatting or additional text.
                 """},

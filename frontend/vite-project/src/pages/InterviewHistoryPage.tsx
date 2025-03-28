@@ -330,37 +330,63 @@ const InterviewHistoryPage: React.FC = () => {
     // Fetch performance data when opening the details modal
     setLoadingPerformance(true);
     try {
-      // console.log(`Fetching performance data for interview ID: ${log.id}`);
-      const response = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
+      // Fetch scores
+      const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch performance data: ${response.status}`);
+      if (!scoresResponse.ok) {
+        throw new Error(`Failed to fetch performance data: ${scoresResponse.status}`);
       }
       
-      const data = await response.json();
-      // console.log('Fetched performance data:', data);
+      const scoresData = await scoresResponse.json();
+      
+      // Fetch strengths
+      const strengthsResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_strengths/${log.id}`);
+      let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
+      
+      if (strengthsResponse.ok) {
+        const strengthsData = await strengthsResponse.json();
+        if (strengthsData.strengths && Array.isArray(JSON.parse(strengthsData.strengths))) {
+          strengths = JSON.parse(strengthsData.strengths);
+        }
+      }
+      
+      // Fetch improvement areas
+      const improvementResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_improvement_areas/${log.id}`);
+      let improvementAreas = ["Consider providing more specific examples", "Work on structuring responses"];
+      
+      if (improvementResponse.ok) {
+        const improvementData = await improvementResponse.json();
+        if (improvementData.improvement_areas && Array.isArray(JSON.parse(improvementData.improvement_areas))) {
+          improvementAreas = JSON.parse(improvementData.improvement_areas);
+        }
+      }
+      
+      // Fetch specific feedback
+      const feedbackResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_specific_feedback/${log.id}`);
+      let specificFeedback = "Performance data available for this interview.";
+      
+      if (feedbackResponse.ok) {
+        const feedbackData = await feedbackResponse.json();
+        if (feedbackData.specific_feedback) {
+          specificFeedback = feedbackData.specific_feedback;
+        }
+      }
       
       // Transform the data to match the expected format
-      if (data.scores) {
+      if (scoresData.scores) {
         setPerformanceData({
           scores: {
-            confidence: data.scores.confidence || 0.75,
-            communication: data.scores.communication || 0.75,
-            technical: data.scores.technical || 0.75,
-            problem_solving: data.scores.problem_solving || 0.75,
-            resume_strength: data.scores["resume strength"] || 0.75, // Note the different key format
-            leadership: data.scores.leadership || 0.75
+            confidence: scoresData.scores.confidence || 0.75,
+            communication: scoresData.scores.communication || 0.75,
+            technical: scoresData.scores.technical || 0.75,
+            problem_solving: scoresData.scores.problem_solving || 0.75,
+            resume_strength: scoresData.scores["resume strength"] || 0.75, // Note the different key format
+            leadership: scoresData.scores.leadership || 0.75
           },
           feedback: {
-            key_strengths: [
-              "Demonstrated communication skills",
-              "Showed technical knowledge"
-            ],
-            improvement_areas: [
-              "Consider providing more specific examples",
-              "Work on structuring responses"
-            ],
-            overall_feedback: "Performance data available for this interview."
+            key_strengths: strengths,
+            improvement_areas: improvementAreas,
+            overall_feedback: specificFeedback
           }
         });
       } else {
