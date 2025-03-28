@@ -943,6 +943,26 @@ def get_overall_scores(id=None, email=None):
         return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
 
 
+@app.route('/api/interview_scores/<interview_id>', methods=['GET'])
+def get_interview_scores(interview_id: int):                 
+    print(f"Getting interview scores for id: {interview_id}")
+    # get the scores of the interview from the database
+    try:
+        result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
+        if not result.data:
+            return jsonify({"error": "Interview scores not found"}), 404
+        return jsonify({"scores": {
+            "confidence": result.data[0].get('confidence_score'),
+            "communication": result.data[0].get('communication_score'),
+            "technical": result.data[0].get('technical_accuracy_score'),
+            "problem_solving": result.data[0].get('problem_solving_score'),
+            "resume strength": result.data[0].get('resume_strength_score'),
+            "leadership": result.data[0].get('leadership_score'),
+        }}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to get interview scores", "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 
