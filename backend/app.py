@@ -2,7 +2,7 @@ import uuid
 from models.config_model import Interview
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, send_file
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
@@ -854,11 +854,53 @@ def delete_chat_history_by_id(id):
         print(f"Error deleting interview log: {str(e)}")
         return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
 
+# @app.route('/api/text2speech', methods=['POST'])
+# def api_text2speech():
+#     """
+#     Convert text to speech, upload the resulting MP3 file to Supabase storage,
+#     and return its public URL.
+#     """
+#     try:
+#         data = request.get_json()
+#         text = data.get('text', '')
+#         if not text:
+#             return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
+
+#         # Generate the audio file.
+#         audio_file_path = text_to_speech(text)
+
+#         # Create a unique filename for storage.
+#         unique_filename = f"{uuid.uuid4()}.mp3"
+#         # Set the bucket name to "audios" as it exists in your Supabase project.
+#         bucket_name = "audios"
+#         # Use the unique filename directly as the storage path.
+#         storage_path = unique_filename
+
+#         app.logger.info(f"Uploading to bucket: {bucket_name}, storage_path: {storage_path}")
+
+#         # Read the generated audio file.
+#         with open(audio_file_path, "rb") as audio_file:
+#             audio_data = audio_file.read()
+
+#         # Upload the audio file with the correct MIME type.
+#         storage_service.upload_file(bucket_name, storage_path, audio_data, 'audio/mpeg')
+
+#         # Retrieve the public URL.
+#         audio_url = storage_service.get_public_url(bucket_name, storage_path)
+
+#         # Clean up the temporary file.
+#         os.remove(audio_file_path)
+
+#         return jsonify({"audioUrl": audio_url}), 200
+
+#     except Exception as e:
+#         app.logger.error(f"Failed to convert text to speech: {e}")
+#         return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
+
 @app.route('/api/text2speech', methods=['POST'])
 def api_text2speech():
     """
-    Convert text to speech, upload the resulting MP3 file to Supabase storage,
-    and return its public URL.
+    Convert text to speech using OpenAI's TTS API and return the generated audio data.
     """
     try:
         data = request.get_json()
@@ -866,37 +908,22 @@ def api_text2speech():
         if not text:
             return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
 
-        # Generate the audio file.
-        audio_file_path = text_to_speech(text)
+        # Generate the audio using our OpenAI TTS utility.
+        audio_io = text_to_speech(text)
+        # Optionally, generate a unique filename for the response.
+        filename = f"{uuid.uuid4()}.mp3"
 
-        # Create a unique filename for storage.
-        unique_filename = f"{uuid.uuid4()}.mp3"
-        # Set the bucket name to "audios" as it exists in your Supabase project.
-        bucket_name = "audios"
-        # Use the unique filename directly as the storage path.
-        storage_path = unique_filename
-
-        app.logger.info(f"Uploading to bucket: {bucket_name}, storage_path: {storage_path}")
-
-        # Read the generated audio file.
-        with open(audio_file_path, "rb") as audio_file:
-            audio_data = audio_file.read()
-
-        # Upload the audio file with the correct MIME type.
-        storage_service.upload_file(bucket_name, storage_path, audio_data, 'audio/mpeg')
-
-        # Retrieve the public URL.
-        audio_url = storage_service.get_public_url(bucket_name, storage_path)
-
-        # Clean up the temporary file.
-        os.remove(audio_file_path)
-
-        return jsonify({"audioUrl": audio_url}), 200
+        # Return the audio file directly.
+        return send_file(
+            audio_io,
+            mimetype="audio/mpeg",
+            as_attachment=False,
+            download_name=filename
+        )
 
     except Exception as e:
         app.logger.error(f"Failed to convert text to speech: {e}")
         return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
-
 
 
 @app.route('/api/speech2text', methods=['POST'])

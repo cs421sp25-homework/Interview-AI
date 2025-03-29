@@ -12,6 +12,7 @@ interface ChatMessage {
   text: string;
   sender: 'user' | 'ai';
   audioUrl?: string;
+  autoPlayed?: boolean; // new property: true if the AI message was auto-played already
 }
 
 const VoiceInterviewPage: React.FC = () => {
@@ -64,6 +65,20 @@ const VoiceInterviewPage: React.FC = () => {
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Auto-play new AI messages once when added.
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.sender === 'ai' && !lastMsg.autoPlayed) {
+      text2speech(lastMsg.text);
+      // Mark the message as auto-played.
+      setMessages(prevMessages => {
+        const updated = [...prevMessages];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], autoPlayed: true };
+        return updated;
+      });
     }
   }, [messages]);
 
@@ -124,7 +139,7 @@ const VoiceInterviewPage: React.FC = () => {
           data.response ||
           `Welcome to your voice interview session for "${config_name}". Click the microphone below to start speaking.`;
         setMessages([{ text: welcomeMessage, sender: 'ai' }]);
-        text2speech(welcomeMessage); // Speak the welcome message using browser TTS.
+        // Remove auto-play from here so it only happens in the useEffect above.
         setIsChatReady(true);
         setIsLoading(false);
       } catch (error) {
@@ -156,7 +171,6 @@ const VoiceInterviewPage: React.FC = () => {
 
         mediaRecorder.addEventListener('stop', () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-          // Process the recorded audio.
           handleRecordingComplete(audioBlob);
         });
 
@@ -202,7 +216,7 @@ const VoiceInterviewPage: React.FC = () => {
         sender: 'ai',
       };
       setMessages(prevMessages => [...prevMessages, aiMessage]);
-      text2speech(aiMessage.text); // Use browser TTS to speak the AI response.
+      // Auto-play of AI messages is handled by the useEffect above.
     } catch (error) {
       console.error('Error processing voice chat:', error);
       message.error('Failed to send message. Please try again.');
@@ -222,6 +236,9 @@ const VoiceInterviewPage: React.FC = () => {
     }
   };
 
+  // When a message bubble is clicked, play its corresponding audio.
+  // For user messages, play the original recording.
+  // For AI messages, replay the TTS using the openaiTTS or browser TTS function.
   const handlePlayMessage = (msg: ChatMessage) => {
     if (msg.sender === 'user' && msg.audioUrl) {
       const audio = new Audio(msg.audioUrl);
@@ -286,7 +303,6 @@ const VoiceInterviewPage: React.FC = () => {
           <X size={20} /> End Interview
         </button>
       </div>
-
       <div className={styles.chatInterface}>
         <div ref={chatContainerRef} className={styles.chatContainer}>
           {messages.map((msg, index) => (
@@ -320,19 +336,8 @@ const VoiceInterviewPage: React.FC = () => {
               </div>
             </div>
           ))}
-          <div className={styles.voiceInstructions}>
-            <h3>Voice Interview Instructions</h3>
-            <ul>
-              <li>Click the microphone button to start/stop recording</li>
-              <li>Speak clearly and at a normal pace</li>
-              <li>Your responses will be processed automatically</li>
-              <li>Click a message bubble to replay its audio</li>
-              <li>Click "End Interview" when you're finished</li>
-            </ul>
-          </div>
         </div>
         <div className={styles.micContainer}>
-          {/* Use the same mic button as in OnGoingVoice */}
           <button 
             className={`${styles.largeMic} ${isRecording ? styles.recording : ''}`} 
             onClick={toggleRecording}

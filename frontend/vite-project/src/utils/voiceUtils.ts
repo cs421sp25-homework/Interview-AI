@@ -2,16 +2,20 @@
 
 import API_BASE_URL from '../config/api';
 
-export function text2speech(text: string) {
-  // Cancel any ongoing utterances to prevent duplicate speech.
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  // Optional: set language or voice here if needed.
-  // utterance.lang = 'en-US';
-  speechSynthesis.speak(utterance);
+export async function text2speech(text: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/text2speech`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    throw new Error("Text-to-Speech conversion failed");
+  }
+  const audioBlob = await res.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+  audio.play();
 }
-
-
 
 /**
  * Calls the speech2text API to convert recorded audio into text.
