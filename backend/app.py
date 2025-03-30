@@ -29,6 +29,7 @@ from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
+import json
 from llm.llm_interface import LLMInterface
 
 
@@ -895,7 +896,7 @@ def get_interview_logs(email):
 @app.route('/api/chat_history/<id>', methods=['DELETE'])
 def delete_chat_history_by_id(id):
     """
-    Deletes an interview log and its associated chat history by interview log ID.
+    Deletes an interview log and its associated chat history and performance records by interview log ID.
     """
     try:
         if not id:
@@ -908,6 +909,9 @@ def delete_chat_history_by_id(id):
 
         thread_id = result.data[0].get('thread_id')
 
+        # Delete associated performance records (new table dependency)
+        supabase.table('interview_performance').delete().eq('interview_id', id).execute()
+
         # Delete the interview log record
         supabase.table('interview_logs').delete().eq('id', id).execute()
 
@@ -915,7 +919,10 @@ def delete_chat_history_by_id(id):
         if thread_id:
             chat_history_service.delete_chat_history(thread_id)
 
-        return jsonify({"success": True, "message": "Interview log and chat history deleted successfully"}), 200
+        return jsonify({
+            "success": True,
+            "message": "Interview log, performance records, and chat history deleted successfully"
+        }), 200
 
     except Exception as e:
         print(f"Error deleting interview log: {str(e)}")
@@ -1034,28 +1041,69 @@ def generate_good_response():
 @app.route('/api/overall_scores/email/<email>', methods=['GET'])
 def get_overall_scores(id=None, email=None):
     print(f"Getting overall scores for id: {id}, email: {email}")
-    # return the scores of the interview in a json such as
-    # {
-    #     "scores": {
-    #          "confidence": 0.95,
-    #          "communication": 0.95,
-    #          "technical": 0.90,
-    #          "problem_solving": 0.85,
-    #          "resume strength": 0.90,
-    #          "leadership": 0.90,
-    #     }
-    # }
+
     try:
-        # In a real implementation, you would look up scores by id or email
-        return jsonify({"scores": {
-            "confidence": 0.95,
-            "communication": 0.95,
-            "technical": 0.90,
-            "problem_solving": 0.85,
-            "resume strength": 0.90,
-            "leadership": 0.90,
-        }})
+        result = supabase.table('interview_performance').select('*').eq('user_email', email).execute()
+            
+        if not result.data or len(result.data) == 0:
+                # Return default data if no interviews found
+            return jsonify({
+                "scores": {
+                    "confidence": 0,
+                    "communication": 0,
+                    "technical": 0,
+                    "problem_solving": 0,
+                    "resume strength": 0,
+                    "leadership": 0
+                }
+            })
+            
+        # Calculate average scores across all interviews
+        total_interviews = len(result.data)
+        total_confidence = 0
+        total_communication = 0
+        total_technical = 0
+        total_problem_solving = 0
+        total_resume_strength = 0
+        total_leadership = 0
+            
+        # Collect all strengths and improvement areas
+        all_strengths = []
+        all_improvements = []
+            
+        for interview in result.data:
+            total_confidence += interview.get('confidence_score', 0)
+            total_communication += interview.get('communication_score', 0)
+            total_technical += interview.get('technical_accuracy_score', 0)
+            total_problem_solving += interview.get('problem_solving_score', 0)
+            total_resume_strength += interview.get('resume_strength_score', 0)
+            total_leadership += interview.get('leadership_score', 0)
+            
+        # Calculate averages
+        avg_confidence = total_confidence / total_interviews
+        avg_communication = total_communication / total_interviews
+        avg_technical = total_technical / total_interviews
+        avg_problem_solving = total_problem_solving / total_interviews
+        avg_resume_strength = total_resume_strength / total_interviews
+        avg_leadership = total_leadership / total_interviews
+            
+            
+        return jsonify({
+            "scores": {
+                "confidence": avg_confidence,
+                "communication": avg_communication,
+                "technical": avg_technical,
+                "problem_solving": avg_problem_solving,
+                "resume strength": avg_resume_strength,
+                "leadership": avg_leadership
+            }
+        })
+        
+
     except Exception as e:
+        print(f"Error getting overall scores: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
 
 

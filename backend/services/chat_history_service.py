@@ -386,6 +386,7 @@ class ChatHistoryService:
             # Store the analysis in the database
             result = self.supabase.table('interview_performance').upsert({
                 'interview_id': interview_id,
+                'user_email': user_email,
                 'technical_accuracy_score': analysis.get('technical', 0),
                 'communication_score': analysis.get('communication', 0),
                 'confidence_score': analysis.get('confidence', 0),
