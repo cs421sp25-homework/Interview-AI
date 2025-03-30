@@ -1139,6 +1139,21 @@ def remove_favorite_question(id):
     except Exception as e:
         return jsonify({"error": "Failed to remove favorite question", "message": str(e)}), 500
 
+@app.route('/api/favorite_questions/session/<session_id>', methods=['DELETE'])
+def delete_favorite_questions_by_session(session_id):
+    """
+    Deletes all favorite questions for a specific session.
+    """
+    try:
+        if not session_id:
+            return jsonify({"error": "Session ID is required"}), 400
+
+        # Delete all favorite questions for this session
+        result = supabase.table('interview_questions').delete().eq('session_id', session_id).execute()
+        return jsonify({"message": "Favorite questions deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to delete favorite questions", "message": str(e)}), 500
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001)) 

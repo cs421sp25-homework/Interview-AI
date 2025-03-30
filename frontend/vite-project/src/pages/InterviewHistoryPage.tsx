@@ -277,15 +277,16 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleDeleteInterview = (log: InterviewLog) => {
-    modalInstance.confirm({
+    modal.confirm({
       title: 'Are you sure you want to delete this interview?',
       icon: <ExclamationCircleOutlined />,
-      content: 'This action cannot be undone.',
+      content: 'This action cannot be undone. The interview session will be deleted, but your favorite questions will be preserved.',
       okText: 'Yes, Delete',
       cancelText: 'Cancel',
       okType: 'danger',
       onOk: async () => {
         try {
+          // Delete only the interview log
           const response = await fetch(`${API_BASE_URL}/api/chat_history/${log.id}`, {
             method: 'DELETE',
           });
