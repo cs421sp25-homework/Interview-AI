@@ -4,6 +4,7 @@ import styles from './InterviewPage.module.css';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
+import InterviewMessage from '../components/InterviewMessage';
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
@@ -140,6 +141,24 @@ const InterviewPage: React.FC = () => {
             // Continue even if profile fetch fails
           }
           console.log("User profile:", userProfile);
+
+          // Fetch config details to get company name and type
+          try {
+            const configResponse = await fetch(`${API_BASE_URL}/api/interview_config/${config_id}`);
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              if (configData.data) {
+                const config = configData.data;
+                // Store these values in localStorage for persistence
+                localStorage.setItem('current_company_name', config.company_name || '');
+                localStorage.setItem('current_interview_type', config.interview_type || '');
+                localStorage.setItem('current_question_type', config.question_type || '');
+              }
+            }
+          } catch (configError) {
+            console.error('Error fetching config details:', configError);
+            // Continue even if config fetch fails
+          }
           
           const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
             method: 'POST',
@@ -351,13 +370,17 @@ const InterviewPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div
-                className={`${styles.message} ${
-                  message.sender === 'ai' ? styles.aiMessage : styles.userMessage
-                }`}
-              >
-                {message.text || <span>&nbsp;</span>}
-              </div>
+              {message.sender === 'ai' ? (
+                <InterviewMessage
+                  message={message}
+                  messageId={`${threadId}-${index}`}
+                  threadId={threadId || ''}
+                />
+              ) : (
+                <div className={`${styles.message} ${styles.userMessage}`}>
+                  {message.text || <span>&nbsp;</span>}
+                </div>
+              )}
             </div>
           ))}
         </div>

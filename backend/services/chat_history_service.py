@@ -17,7 +17,7 @@ class ChatHistoryService:
         self.logger = logging.getLogger(__name__)
 
     
-    def save_chat_history(self, thread_id: str, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None) -> Dict[str, Any]:
+    def save_chat_history(self, thread_id: str, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None, company_name: str = None, interview_type: str = None, question_type: str = None) -> Dict[str, Any]:
         """Save or update chat history
         
         Args:
@@ -26,6 +26,9 @@ class ChatHistoryService:
             messages: List of messages
             config_name: Configuration name
             config_id: Configuration ID
+            company_name: Company name
+            interview_type: Interview type
+            question_type: Question type
             
         Returns:
             Dict[str, Any]: Result with success status and interview ID
@@ -78,6 +81,12 @@ class ChatHistoryService:
                 
                 if config_id:
                     update_data['config_id'] = config_id
+                if company_name:
+                    update_data['company_name'] = company_name
+                if interview_type:
+                    update_data['interview_type'] = interview_type
+                if question_type:
+                    update_data['question_type'] = question_type
                 
                 self.supabase.table(self.table_name).update(update_data).eq('id', interview_id).execute()
                 self.logger.info(f"Updated chat history for thread_id {thread_id}, interview_id {interview_id}")
@@ -94,6 +103,12 @@ class ChatHistoryService:
                 
                 if config_id:
                     insert_data['config_id'] = config_id
+                if company_name:
+                    insert_data['company_name'] = company_name
+                if interview_type:
+                    insert_data['interview_type'] = interview_type
+                if question_type:
+                    insert_data['question_type'] = question_type
                 
                 result = self.supabase.table(self.table_name).insert(insert_data).execute()
                 if result.data and len(result.data) > 0:

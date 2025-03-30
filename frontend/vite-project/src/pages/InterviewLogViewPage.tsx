@@ -5,20 +5,32 @@ import { message, Button, Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewLogViewPage.module.css';
+import InterviewMessage from '../components/InterviewMessage';
 
 interface Message {
   text: string;
   sender: 'user' | 'ai';
 }
 
+interface InterviewLog {
+  id: number;
+  thread_id: string;
+  log: Message[];
+}
+
+interface LocationState {
+  conversation: Message[];
+}
+
 const InterviewLogViewPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // log id from route
+  const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
+  const [threadId, setThreadId] = useState<string | null>(null);
 
   const handleGenerateResponse = async (messageText: string, index: number) => {
     try {
@@ -47,8 +59,8 @@ const InterviewLogViewPage: React.FC = () => {
     }
     
     setLoading(true);
-    if (location.state && (location.state as any).conversation) {
-      setMessages((location.state as any).conversation);
+    if (location.state && (location.state as LocationState).conversation) {
+      setMessages((location.state as LocationState).conversation);
       setTimeout(() => setLoading(false), 300);
     } else {
       const fetchLog = async () => {
@@ -56,10 +68,11 @@ const InterviewLogViewPage: React.FC = () => {
           const userEmail = localStorage.getItem('user_email') || '';
           const res = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
           const data = await res.json();
-          const log = data.data.find((l: any) => String(l.id) === id);
+          const log = data.data.find((l: InterviewLog) => String(l.id) === id);
           if (log && log.log) {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
             setMessages(conversation);
+            setThreadId(log.thread_id);
           } else {
             message.error('Interview log not found.');
           }
@@ -136,11 +149,17 @@ const InterviewLogViewPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className={msg.sender === 'ai' ? styles.aiMessage : styles.userMessage}>
-                  <div className={styles.messageContent}>
-                    {msg.text}
-                  </div>
-                  {msg.sender === 'user' && (
+                {msg.sender === 'ai' ? (
+                  <InterviewMessage
+                    message={msg}
+                    messageId={`${id}-${index}`}
+                    threadId={threadId || ''}
+                  />
+                ) : (
+                  <div className={styles.userMessage}>
+                    <div className={styles.messageContent}>
+                      {msg.text}
+                    </div>
                     <div className={styles.generatedContainer}>
                       {generatedResponses[index] ? (
                         <div className={styles.generatedResponse}>{generatedResponses[index]}</div>
@@ -150,8 +169,8 @@ const InterviewLogViewPage: React.FC = () => {
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

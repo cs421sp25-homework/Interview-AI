@@ -29,13 +29,21 @@ from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
 from llm.llm_interface import LLMInterface
+from datetime import datetime
 
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 app.register_error_handler(400, handle_bad_request)
 
@@ -741,12 +749,12 @@ def get_oauth_email():
 def get_interview_config(email):
     try:
         result = config_service.get_configs(email)
-        if result:
-            return jsonify(result), 200
-        else:
-            return jsonify({'message': 'Configuration not found.'}), 404
+        # Return empty array if no configs found, instead of 404 error
+        return jsonify(result if result else []), 200
     except Exception as e:
-        return jsonify({'message': str(e)}), 400
+        print(f"Error getting configs: {str(e)}")
+        # Return empty array instead of error
+        return jsonify([]), 200
 
 
 @app.route('/api/create_interview_config', methods=['POST'])
@@ -805,16 +813,24 @@ def get_interview_logs(email):
         
         enhanced_logs = []
         for log in result.data:
-            config_id = log.get('config_id')
-            if config_id:
-                config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
-                if config_result.data and len(config_result.data) > 0:
-                    config = config_result.data[0]
-                    log['question_type'] = config.get('question_type', 'Unknown')
-                    log['job_description'] = config.get('job_description', '')
-                    log['config_company_name'] = config.get('company_name', 'Unknown')
-                    log['interview_type'] = config.get('interview_type', 'Unknown')
-                    log['interview_name'] = config.get('interview_name', 'Unknown')
+            # Use stored values if available, otherwise try to get from config
+            if not log.get('company_name') or not log.get('interview_type'):
+                config_id = log.get('config_id')
+                if config_id:
+                    config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
+                    if config_result.data and len(config_result.data) > 0:
+                        config = config_result.data[0]
+                        if not log.get('company_name'):
+                            log['company_name'] = config.get('company_name', 'Unknown')
+                        if not log.get('interview_type'):
+                            log['interview_type'] = config.get('interview_type', 'Unknown')
+                        if not log.get('question_type'):
+                            log['question_type'] = config.get('question_type', 'Unknown')
+                        if not log.get('interview_name'):
+                            log['interview_name'] = config.get('interview_name', 'Unknown')
+                        if not log.get('job_description'):
+                            log['job_description'] = config.get('job_description', '')
+            
             enhanced_logs.append(log)
             
         return jsonify({"data": enhanced_logs}), 200
@@ -1008,7 +1024,6 @@ def get_interview_feedback_strengths(interview_id: int):
     except Exception as e:
         return jsonify({"error": "Failed to get interview feedback strengths", "message": str(e)}), 500
 
-
 @app.route('/api/interview_feedback_improvement_areas/<interview_id>', methods=['GET'])
 def get_interview_feedback_improvement_areas(interview_id: int):
     print(f"Getting interview feedback improvement areas for id: {interview_id}")
@@ -1031,6 +1046,98 @@ def get_interview_feedback_specific_feedback(interview_id: int):
     except Exception as e:
         return jsonify({"error": "Failed to get interview feedback specific feedback", "message": str(e)}), 500
 
+@app.route('/api/favorite_questions/<email>', methods=['GET'])
+def get_favorite_questions(email):
+    """
+    Retrieves all favorite questions for a specific user.
+    Optionally filters by session_id if provided in query parameters.
+    """
+    try:
+        if not email:
+            return jsonify({"data": []}), 200
+
+        print(f"Fetching favorite questions for email: {email}")
+        
+        # Build the query
+        query = supabase.table('interview_questions').select('*').eq('email', email).eq('is_favorite', True)
+        
+        # Check if session_id is provided in query parameters
+        session_id = request.args.get('session_id')
+        if session_id:
+            print(f"Filtering by session_id: {session_id}")  # Add logging
+            query = query.eq('session_id', session_id)
+            
+        print(f"Final query: {query}")  # Add logging
+        result = query.execute()
+        
+        print(f"Query result: {result}")
+        # Always return a 200 status code with data array (empty if no favorites)
+        return jsonify({"data": result.data if result.data else []}), 200
+    except Exception as e:
+        print(f"Error in get_favorite_questions: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        # Return empty array instead of error for better UX
+        return jsonify({"data": []}), 200
+
+@app.route('/api/favorite_questions', methods=['POST'])
+def add_favorite_question():
+    """
+    Adds a question to favorites.
+    """
+    try:
+        data = request.json
+        print("Received data for favorite question:", data)
+        
+        # Validate required fields
+        required_fields = ['question_text', 'session_id', 'email']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Set is_favorite to True if not provided
+        if 'is_favorite' not in data:
+            data['is_favorite'] = True
+            
+        # Set created_at if not provided
+        if 'created_at' not in data:
+            data['created_at'] = datetime.utcnow().isoformat()
+            
+        print("Attempting to insert data into Supabase:", data)
+        
+        # First check if the question already exists
+        existing = supabase.table('interview_questions').select('*').eq('question_text', data['question_text']).eq('session_id', data['session_id']).eq('email', data['email']).execute()
+        
+        if existing.data and len(existing.data) > 0:
+            # Update existing record
+            result = supabase.table('interview_questions').update({
+                'is_favorite': data['is_favorite'],
+                'updated_at': datetime.utcnow().isoformat()
+            }).eq('id', existing.data[0]['id']).execute()
+        else:
+            # Insert new record
+            result = supabase.table('interview_questions').insert(data).execute()
+        
+        if not result.data:
+            return jsonify({"error": "Failed to insert/update data"}), 500
+            
+        return jsonify({"data": result.data[0]}), 201
+    except Exception as e:
+        print("Error in add_favorite_question:", str(e))
+        import traceback
+        print("Traceback:", traceback.format_exc())
+        return jsonify({"error": "Failed to add favorite question", "message": str(e)}), 500
+
+@app.route('/api/favorite_questions/<id>', methods=['DELETE'])
+def remove_favorite_question(id):
+    """
+    Removes a question from favorites.
+    """
+    try:
+        result = supabase.table('interview_questions').delete().eq('id', id).execute()
+        return jsonify({"message": "Question removed from favorites"}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to remove favorite question", "message": str(e)}), 500
 
 if __name__ == '__main__':
     import os

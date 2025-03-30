@@ -331,29 +331,29 @@
 }
 
 .detailsButton .actionIcon {
-  color: #722ed1;
+  color: #22c55e;
 }
 
 .detailsButton .actionText {
-  color: #722ed1;
+  color: #22c55e;
 }
 
 .detailsButton:hover {
   background-color: #f9f0ff;
-  border-color: #d3adf7;
+  border-color: #a5ffc6;
 }
 
-.exportButton .actionIcon {
-  color: #52c41a;
+.favoritesButton .actionIcon {
+  color: #ff69b4;
 }
 
-.exportButton .actionText {
-  color: #52c41a;
+.favoritesButton .actionText {
+  color: #ff69b4;
 }
 
-.exportButton:hover {
+.favoritesButton:hover {
   background-color: #f6ffed;
-  border-color: #b7eb8f;
+  border-color: #ffaad4;
 }
 
 .deleteButton .actionIcon {
@@ -484,12 +484,12 @@
 
 .detailsButton:hover .actionIcon,
 .detailsButton:hover .actionText {
-  color: #531dab;  /* 稍深的紫色 */
+  color: #22c55e;  /* 稍深的紫色 */
 }
 
-.exportButton:hover .actionIcon,
-.exportButton:hover .actionText {
-  color: #389e0d;  /* 稍深的绿色 */
+.favoritesButton:hover .actionIcon,
+.favoritesButton:hover .actionText {
+  color: #ff69b4;  /* 稍深的绿色 */
 }
 
 .deleteButton:hover .actionIcon,
@@ -510,4 +510,4 @@
   color: #6b7280;
   margin-top: 4px;
   font-style: italic;
-} 
+}

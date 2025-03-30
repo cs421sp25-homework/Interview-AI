@@ -1,0 +1,42 @@
+.messageContainer {
+  position: relative;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.aiMessage {
+  background-color: #f0f2f5;
+  margin-right: auto;
+}
+
+.userMessage {
+  background-color: #e6f7ff;
+  margin-left: auto;
+}
+
+.messageContent {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.favoriteButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #d9d9d9;
+  transition: color 0.3s;
+}
+
+.favoriteButton:hover {
+  color: #ff69b4;
+}
+
+.favoriteActive {
+  color: #ff69b4;
+}
+
+.favoriteActive:hover {
+  color: #ff1493;
+} 
