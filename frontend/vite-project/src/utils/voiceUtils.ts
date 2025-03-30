@@ -14,18 +14,17 @@ export async function text2speech(text: string, audioRefs?: React.MutableRefObje
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     
-    // Track audio element if refs are provided
+    // Add to audio refs if provided
     if (audioRefs) {
       audioRefs.current.push(audio);
+      audio.onended = () => {
+        audioRefs.current = audioRefs.current.filter(a => a !== audio);
+      };
     }
 
     return new Promise<number>((resolve) => {
       audio.onloadedmetadata = () => {
-        const duration = audio.duration || Math.max(1, text.split(' ').length / 3);
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          resolve(duration);
-        };
+        resolve(audio.duration || 0);
         audio.play();
       };
       audio.onerror = () => resolve(0);
