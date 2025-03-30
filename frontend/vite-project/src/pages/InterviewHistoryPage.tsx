@@ -609,7 +609,12 @@ const InterviewHistoryPage: React.FC = () => {
           Back to Dashboard
         </button>
         <h1>Interview History</h1>
-        <div className={styles.spacer}></div>
+        <button 
+          className={styles.backButton}
+          onClick={() => navigate('/favorites')}
+        >
+          <HeartOutlined /> View All Favorite Questions
+        </button>
       </div>
 
       <div className={styles.historyContent}>

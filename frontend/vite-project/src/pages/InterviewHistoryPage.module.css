@@ -49,6 +49,14 @@
   color: #111827;
 }
 
+.backButton .anticon {
+  color: #ff69b4;
+}
+
+.backButton span {
+  color: #ff69b4;
+}
+
 .spacer {
   width: 120px; /* 与backButton宽度大致相同，保持平衡 */
 }
