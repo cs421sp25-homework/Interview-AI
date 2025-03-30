@@ -12,7 +12,7 @@ interface ChatMessage {
   sender: 'user' | 'ai';
   audioUrl?: string;
   duration?: number;
-  autoPlayed?: boolean;
+  isReady: boolean; // Tracks if audio is ready to display
 }
 
 const VoiceInterviewPage: React.FC = () => {
@@ -30,7 +30,6 @@ const VoiceInterviewPage: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRefs = useRef<HTMLAudioElement[]>([]);
-  const hasPlayedWelcome = useRef(false);
 
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
@@ -84,35 +83,6 @@ const VoiceInterviewPage: React.FC = () => {
       [index]: !prev[index]
     }));
   }, []);
-
-  // Auto-play AI messages (only once)
-  useEffect(() => {
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.sender === 'ai' && !lastMsg.autoPlayed) {
-      const playMessage = async () => {
-        // Skip if we've already played the welcome message
-        if (messages.length === 1 && hasPlayedWelcome.current) return;
-        
-        const duration = await text2speech(lastMsg.text, audioRefs);
-        
-        setMessages(prevMessages => {
-          const updated = [...prevMessages];
-          updated[updated.length - 1] = { 
-            ...updated[updated.length - 1], 
-            duration,
-            autoPlayed: true 
-          };
-          return updated;
-        });
-
-        if (messages.length === 1) {
-          hasPlayedWelcome.current = true;
-        }
-      };
-      
-      playMessage();
-    }
-  }, [messages]);
 
   // Save chat history
   const saveChatHistory = useCallback(async (currentThreadId: string, chatMessages: ChatMessage[]) => {
@@ -203,12 +173,20 @@ const VoiceInterviewPage: React.FC = () => {
         setThreadId(data.thread_id);
         const welcomeMessage = data.response || `Welcome to your voice interview session for "${config_name}". Click the microphone below to start speaking.`;
         
-        // Initialize with autoPlayed: false
+        // Create message in loading state
         setMessages([{ 
           text: welcomeMessage, 
           sender: 'ai',
-          duration: 0,
-          autoPlayed: false
+          isReady: false
+        }]);
+        
+        // Generate audio and update when ready
+        const duration = await text2speech(welcomeMessage, audioRefs);
+        setMessages([{ 
+          text: welcomeMessage, 
+          sender: 'ai',
+          duration,
+          isReady: true
         }]);
         
         setIsChatReady(true);
@@ -291,7 +269,8 @@ const VoiceInterviewPage: React.FC = () => {
         text: transcript,
         sender: 'user',
         audioUrl: audioUrl,
-        duration: duration
+        duration: duration,
+        isReady: true // User messages are ready immediately
       };
       
       setMessages(prev => [...prev, userMessage]);
@@ -326,13 +305,20 @@ const VoiceInterviewPage: React.FC = () => {
       
       const data = await res.json();
       
+      // Create AI message in loading state
       const aiMessage: ChatMessage = {
         text: data.response || "I'm thinking about my response...",
         sender: 'ai',
-        autoPlayed: false
+        isReady: false
       };
       
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Generate speech and update when ready
+      const duration = await text2speech(aiMessage.text, audioRefs);
+      setMessages(prev => prev.map(msg => 
+        msg === aiMessage ? {...msg, duration, isReady: true} : msg
+      ));
     } catch (error) {
       console.error('Chat error:', error);
       message.error('Failed to send message. Please try again.');
@@ -352,7 +338,11 @@ const VoiceInterviewPage: React.FC = () => {
       message.loading('Saving your voice interview responses...', 1);
       const finalMessages: ChatMessage[] = [
         ...messages,
-        { text: "Voice interview session ended", sender: 'ai' },
+        { 
+          text: "Voice interview session ended", 
+          sender: 'ai',
+          isReady: true // No audio for ending message
+        },
       ];
       const saveResult = await saveChatHistory(threadId, finalMessages);
       if (saveResult) {
@@ -399,7 +389,7 @@ const VoiceInterviewPage: React.FC = () => {
       </div>
       <div className={styles.chatInterface}>
         <div ref={chatContainerRef} className={styles.chatContainer}>
-          {messages.map((msg, index) => (
+          {messages.filter(msg => msg.isReady).map((msg, index) => (
             <div
               key={index}
               className={`${styles.messageWrapper} ${
