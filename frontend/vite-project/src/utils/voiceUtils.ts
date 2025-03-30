@@ -1,6 +1,6 @@
 import API_BASE_URL from '../config/api';
 
-export async function text2speech(text: string): Promise<number> {
+export async function text2speech(text: string, audioRefs?: React.MutableRefObject<HTMLAudioElement[]>): Promise<number> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/text2speech`, {
       method: 'POST',
@@ -13,11 +13,20 @@ export async function text2speech(text: string): Promise<number> {
     const audioBlob = await response.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
+    
+    // Track audio element if refs are provided
+    if (audioRefs) {
+      audioRefs.current.push(audio);
+    }
 
     return new Promise<number>((resolve) => {
       audio.onloadedmetadata = () => {
-        resolve(audio.duration || 0);
-        audio.play(); // Play after getting duration
+        const duration = audio.duration || Math.max(1, text.split(' ').length / 3);
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          resolve(duration);
+        };
+        audio.play();
       };
       audio.onerror = () => resolve(0);
     });

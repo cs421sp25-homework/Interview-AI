@@ -68,6 +68,12 @@
   color: #333;
 }
 
+.toggleTextLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .toggleTextContent {
   display: flex;
   align-items: center;
@@ -76,14 +82,15 @@
 
 /* Message Text */
 .messageText {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background-color: #f8f8f8;
+  width: 100%;
+  max-width: 600px; /* Wider than bubble but constrained */
+  word-wrap: break-word;
+  white-space: pre-wrap; /* Preserves formatting but wraps */
+  overflow-wrap: anywhere;
+  padding: 8px;
+  background: #f8f8f8;
   border-radius: 4px;
-  max-width: 100%;
-  word-break: break-word;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  margin-top: 4px;
 }
 
 /* Sender-specific styles */
@@ -750,7 +757,8 @@
   height: 100vh;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
+  width: 100%;
+  padding: 0 20px;
   background-color: #f9fafb;
   overflow: hidden;
   min-height: 500px;
@@ -855,6 +863,8 @@
 }
 
 .chatContainer {
+  width: 100%;
+  max-width: 100%;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;

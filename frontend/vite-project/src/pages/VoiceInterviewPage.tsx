@@ -322,28 +322,38 @@ const VoiceInterviewPage: React.FC = () => {
   }
 
   return (
-    <div className={styles.interviewContainer}>
+    <div className={styles.interviewContainer} style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <div className={styles.interviewHeader}>
-        <button className={styles.backButton} onClick={handleBackToDashboard}>
+        <button 
+          className={styles.backButton}
+          onClick={handleBackToDashboard}
+        >
           <Home size={18} />
           Back to Dashboard
         </button>
         <h1>Voice Interview: {config_name}</h1>
-        <button className={styles.endButton} onClick={handleEndInterview}>
+        <button 
+          className={styles.endButton} 
+          onClick={handleEndInterview}
+        >
           <X size={20} /> End Interview
         </button>
       </div>
+  
       <div className={styles.chatInterface}>
-        <div ref={chatContainerRef} className={styles.chatContainer}>
-          {messages.map((msg, index) => (
+        <div 
+          ref={chatContainerRef}
+          className={styles.chatContainer}
+        >
+          {messages.map((message, index) => (
             <div
               key={index}
               className={`${styles.messageWrapper} ${
-                msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
+                message.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
               }`}
             >
               <div className={styles.avatarContainer}>
-                {msg.sender === 'ai' ? (
+                {message.sender === 'ai' ? (
                   <div className={styles.botAvatar}>
                     <Bot size={24} />
                   </div>
@@ -360,9 +370,9 @@ const VoiceInterviewPage: React.FC = () => {
                 )}
               </div>
               <VoiceBubble
-                message={msg}
+                message={message}
                 isPlaying={currentlyPlaying === index}
-                onPlay={() => handlePlayMessage(msg, index)}
+                onPlay={() => handlePlayMessage(message, index)}
                 onToggleText={() => toggleShowText(index)}
                 showText={!!showTextForMessage[index]}
               />
