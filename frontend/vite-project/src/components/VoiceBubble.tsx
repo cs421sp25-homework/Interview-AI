@@ -1,4 +1,3 @@
-// components/VoiceBubble.tsx
 import React from 'react';
 import { Mic, Bot } from 'lucide-react';
 import styles from '../pages/InterviewPage.module.css';
@@ -17,32 +16,46 @@ interface VoiceBubbleProps {
 }
 
 const VoiceBubble: React.FC<VoiceBubbleProps> = ({
-    message,
-    isPlaying,
-    onPlay,
-    onToggleText,
-    showText
-  }) => {
-    // Fixed width for all bubbles regardless of duration
-    const bubbleWidth = 160; // Fixed width in pixels
-  
-    return (
-      <div className={`${styles.voiceBubbleContainer} ${message.sender === 'ai' ? styles.aiBubble : styles.userBubble}`}>
-        <div 
-          className={`${styles.voiceBubble} ${isPlaying ? styles.playing : ''}`}
-          style={{ width: `${bubbleWidth}px` }}
-          onClick={onPlay}
-        >
-          <div className={styles.voiceIcon}>
-            {message.sender === 'ai' ? <Bot size={16} /> : <Mic size={16} />}
-          </div>
-          <div className={styles.duration}>
-            {message.duration ? message.duration.toFixed(1) + 's' : '0.0s'}
-          </div>
+  message,
+  isPlaying,
+  onPlay,
+  onToggleText,
+  showText
+}) => {
+  return (
+    <div className={`${styles.voiceBubbleContainer} ${message.sender === 'ai' ? styles.aiBubble : styles.userBubble}`}>
+      <div 
+        className={`${styles.voiceBubble} ${isPlaying ? styles.playing : ''}`}
+        onClick={onPlay}
+      >
+        <div className={styles.voiceIcon}>
+          {message.sender === 'ai' ? <Bot size={16} /> : <Mic size={16} />}
         </div>
-        {/* ... rest of the component ... */}
+        <div className={styles.duration}>
+          {message.duration ? message.duration.toFixed(1) + 's' : '0.0s'}
+        </div>
       </div>
-    );
-  };
+      <button 
+        className={styles.toggleTextButton}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleText();
+        }}
+        aria-label={showText ? "Hide transcription" : "Show transcription"}
+      >
+        {showText ? (
+          <span className={styles.toggleTextContent}>Hide Text</span>
+        ) : (
+          <span className={styles.toggleTextContent}>Show Text</span>
+        )}
+      </button>
+      {showText && (
+        <div className={styles.messageText}>
+          {message.text}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default VoiceBubble;

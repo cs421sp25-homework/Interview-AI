@@ -1,37 +1,30 @@
 import API_BASE_URL from '../config/api';
 
 export async function text2speech(text: string): Promise<number> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/text2speech`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/text2speech`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
 
-        if (!response.ok) {
-            throw new Error(`TTS failed: ${response.status}`);
-        }
+    if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
 
-        const duration = parseFloat(response.headers.get('X-Audio-Duration') || '0');
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        return new Promise<number>((resolve) => {
-            const audio = new Audio(audioUrl);
-            audio.onended = () => {
-                URL.revokeObjectURL(audioUrl);
-                resolve(duration);
-            };
-            audio.onerror = () => {
-                URL.revokeObjectURL(audioUrl);
-                resolve(duration);
-            };
-            audio.play();
-        });
-    } catch (error) {
-        console.error('Text-to-speech error:', error);
-        throw error;
-    }
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+
+    return new Promise<number>((resolve) => {
+      audio.onloadedmetadata = () => {
+        resolve(audio.duration || 0);
+        audio.play(); // Play after getting duration
+      };
+      audio.onerror = () => resolve(0);
+    });
+  } catch (error) {
+    console.error('Text-to-speech error:', error);
+    return 0;
+  }
 }
 
 export async function speech2text(audioBlob: Blob): Promise<string> {

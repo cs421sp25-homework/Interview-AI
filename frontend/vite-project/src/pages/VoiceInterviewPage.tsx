@@ -213,35 +213,22 @@ const VoiceInterviewPage: React.FC = () => {
 
   const handleRecordingComplete = async (audioBlob: Blob) => {
     try {
-      // Create audio element to get duration
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
+      // Create a new audio context to analyze the blob
+      const audioContext = new AudioContext();
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
-      // Wait for metadata to load to get accurate duration
-      const duration = await new Promise<number>((resolve) => {
-        const onLoaded = () => {
-          audio.removeEventListener('loadedmetadata', onLoaded);
-          resolve(audio.duration || 0); // Fallback to 0 if duration is NaN/Infinity
-        };
-        audio.addEventListener('loadedmetadata', onLoaded);
-        
-        // Fallback in case loadedmetadata never fires
-        setTimeout(() => {
-          audio.removeEventListener('loadedmetadata', onLoaded);
-          resolve(0);
-        }, 1000);
-      });
-  
-      URL.revokeObjectURL(audioUrl);
+      // Calculate actual duration in seconds
+      const duration = audioBuffer.duration;
       
       const transcript = await speech2text(audioBlob);
-      const newAudioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = URL.createObjectURL(audioBlob);
       
       const userMessage: ChatMessage = {
         text: transcript,
         sender: 'user',
-        audioUrl: newAudioUrl,
-        duration: Math.min(duration, 30) // Cap at 30 seconds to prevent Infinity
+        audioUrl: audioUrl,
+        duration: duration
       };
       
       setMessages(prev => [...prev, userMessage]);
@@ -258,7 +245,7 @@ const VoiceInterviewPage: React.FC = () => {
       message.warning('No active interview session');
       return;
     }
-
+  
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
@@ -271,7 +258,7 @@ const VoiceInterviewPage: React.FC = () => {
           config_id: config_id,
         }),
       });
-
+  
       if (!res.ok) throw new Error('Network response not ok');
       
       const data = await res.json();
@@ -280,7 +267,7 @@ const VoiceInterviewPage: React.FC = () => {
       const aiMessage: ChatMessage = {
         text: data.response || "I'm thinking about my response...",
         sender: 'ai',
-        duration
+        duration: duration // Use actual duration from TTS
       };
       
       setMessages(prev => [...prev, aiMessage]);
