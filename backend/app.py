@@ -5,6 +5,7 @@ from llm.interview_agent import LLMInterviewAgent
 from flask import Flask, request, jsonify, redirect, send_file
 from flask_cors import CORS
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 import os
 import secrets
@@ -920,96 +921,91 @@ def delete_chat_history_by_id(id):
         print(f"Error deleting interview log: {str(e)}")
         return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
 
-# @app.route('/api/text2speech', methods=['POST'])
-# def api_text2speech():
-#     """
-#     Convert text to speech, upload the resulting MP3 file to Supabase storage,
-#     and return its public URL.
-#     """
-#     try:
-#         data = request.get_json()
-#         text = data.get('text', '')
-#         if not text:
-#             return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
-
-#         # Generate the audio file.
-#         audio_file_path = text_to_speech(text)
-
-#         # Create a unique filename for storage.
-#         unique_filename = f"{uuid.uuid4()}.mp3"
-#         # Set the bucket name to "audios" as it exists in your Supabase project.
-#         bucket_name = "audios"
-#         # Use the unique filename directly as the storage path.
-#         storage_path = unique_filename
-
-#         app.logger.info(f"Uploading to bucket: {bucket_name}, storage_path: {storage_path}")
-
-#         # Read the generated audio file.
-#         with open(audio_file_path, "rb") as audio_file:
-#             audio_data = audio_file.read()
-
-#         # Upload the audio file with the correct MIME type.
-#         storage_service.upload_file(bucket_name, storage_path, audio_data, 'audio/mpeg')
-
-#         # Retrieve the public URL.
-#         audio_url = storage_service.get_public_url(bucket_name, storage_path)
-
-#         # Clean up the temporary file.
-#         os.remove(audio_file_path)
-
-#         return jsonify({"audioUrl": audio_url}), 200
-
-#     except Exception as e:
-#         app.logger.error(f"Failed to convert text to speech: {e}")
-#         return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
-
 @app.route('/api/text2speech', methods=['POST'])
 def api_text2speech():
     """
-    Convert text to speech using OpenAI's TTS API and return the generated audio data.
+    Convert text to speech with duration estimation
     """
     try:
         data = request.get_json()
-        text = data.get('text', '')
-        if not text:
-            return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
+        if not data or 'text' not in data:
+            return jsonify({
+                "error": "Invalid request",
+                "message": "Text field is required"
+            }), 400
 
-        # Generate the audio using our OpenAI TTS utility.
-        audio_io = text_to_speech(text)
-        # Optionally, generate a unique filename for the response.
-        filename = f"{uuid.uuid4()}.mp3"
-
-        # Return the audio file directly.
-        return send_file(
+        text = data['text']
+        voice = data.get('voice', 'alloy')
+        speed = float(data.get('speed', 1.0))
+        
+        audio_io, duration = text_to_speech(
+            text=text,
+            voice=voice,
+            speed=speed
+        )
+        
+        filename = f"tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
+        
+        response = send_file(
             audio_io,
             mimetype="audio/mpeg",
             as_attachment=False,
             download_name=filename
         )
+        
+        # Add duration to headers
+        response.headers['X-Audio-Duration'] = str(duration)
+        return response
 
+    except ValueError as e:
+        return jsonify({
+            "error": "Invalid input",
+            "message": str(e)
+        }), 400
     except Exception as e:
-        app.logger.error(f"Failed to convert text to speech: {e}")
-        return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
-
+        return jsonify({
+            "error": "Conversion failed",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/speech2text', methods=['POST'])
 def api_speech2text():
+    """
+    Convert speech to text with enhanced error handling
+    """
     try:
         if 'audio' not in request.files:
-            return jsonify({"error": "Audio file is required", "message": "Please upload an audio file."}), 400
+            return jsonify({
+                "error": "Missing file",
+                "message": "Audio file is required"
+            }), 400
 
         audio_file = request.files['audio']
+        if audio_file.filename == '':
+            return jsonify({
+                "error": "Empty file",
+                "message": "No audio file selected"
+            }), 400
+
+        # Limit file size (10MB)
+        max_size = 10 * 1024 * 1024
+        if request.content_length > max_size:
+            return jsonify({
+                "error": "File too large",
+                "message": "Maximum size is 10MB"
+            }), 400
+
         transcript = speech_to_text(audio_file.read())
-        return jsonify({"transcript": transcript}), 200
+        return jsonify({
+            "transcript": transcript,
+            "status": "success"
+        }), 200
 
     except Exception as e:
-        app.logger.error(f"Speech-to-text error: {e}")
-        return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
-    
-
-
-
-
+        return jsonify({
+            "error": "Conversion failed",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/generate_good_response', methods=['POST'])
 def generate_good_response():

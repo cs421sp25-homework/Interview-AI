@@ -1,36 +1,51 @@
-# project/backend/openai_tts.py
-
 import os
 from io import BytesIO
+import logging
+from typing import Tuple
 import openai
 
-# Ensure you have your API key set in an environment variable, for example:
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def text_to_speech(text: str, voice: str = "coral", instructions: str = "Speak in a cheerful and positive tone.", response_format: str = "mp3") -> BytesIO:
+def text_to_speech(
+    text: str, 
+    voice: str = "alloy",
+    response_format: str = "mp3",
+    speed: float = 1.0
+) -> Tuple[BytesIO, float]:
     """
-    Generate spoken audio from input text using OpenAI's TTS API.
+    Generate speech from text using OpenAI's TTS API.
     
-    Parameters:
-        text (str): The input text to be spoken.
-        voice (str): The voice to be used. (E.g., "coral")
-        instructions (str): Additional instructions for the voice tone.
-        response_format (str): The desired output format (e.g., "mp3", "wav").
-    
+    Args:
+        text: Input text to convert
+        voice: Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+        response_format: Output format (mp3, opus, aac, flac)
+        speed: Speaking speed (0.25 to 4.0)
+        
     Returns:
-        BytesIO: A stream containing the audio data.
+        Tuple of (audio_bytes: BytesIO, duration: float)
+        
+    Raises:
+        Exception: For API or processing errors
     """
-
-    # Call the OpenAI Audio API's speech endpoint
-    # Note: This example uses the synchronous version.
-    response = openai.audio.speech.create(
-        model="gpt-4o-mini-tts",
-        voice=voice,
-        input=text,
-        # instructions=instructions,
-        response_format=response_format
-    )
-    
-    # Convert the response to raw bytes.
-    audio_bytes = response.content
-    return BytesIO(audio_bytes)
+    try:
+        if not text.strip():
+            raise ValueError("Empty text input")
+            
+        response = openai.audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=text,
+            response_format=response_format,
+            speed=speed
+        )
+        
+        # Estimate duration (approximate)
+        duration = len(text.split()) / 3  # 3 words per second average
+        
+        return BytesIO(response.content), duration
+        
+    except Exception as e:
+        logger.error(f"Text-to-speech conversion failed: {str(e)}")
+        raise

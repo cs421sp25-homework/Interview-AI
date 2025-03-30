@@ -1,3 +1,38 @@
+/* Voice Bubble Styles */
+/* Update InterviewPage.module.css */
+.voiceBubbleContainer {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.voiceBubble {
+  min-width: 60px;
+  max-width: 200px; /* Fixed maximum width */
+  width: auto;
+  padding: 0 15px;
+}
+
+.messageText {
+  max-width: 100%;
+  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.chatContainer {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure messages don't overflow */
+.messageWrapper {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .container {
   height: 100vh;
   display: flex;
