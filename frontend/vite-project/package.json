@@ -40,6 +40,9 @@
     "vite": "^6.1.0"
   },
   "compilerOptions": {
-    "types": ["node", "jest"]
+    "types": [
+      "node",
+      "jest"
+    ]
   }
 }

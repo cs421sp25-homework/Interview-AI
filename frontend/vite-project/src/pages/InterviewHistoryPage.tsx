@@ -5,6 +5,7 @@ import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewHistoryPage.module.css';
+import { exportToPDF } from '../utils/pdfExport';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -321,51 +322,118 @@ const InterviewHistoryPage: React.FC = () => {
   
   const handleExportInterview = async (log: InterviewLog) => {
     try {
-      console.log("export clicked");
-  
-      // Get log content as text
-      const textLog = typeof log.log === 'string'
-        ? log.log
-        : JSON.stringify(log.log, null, 2);
-  
-      console.log("Text to copy:", textLog);
-  
-      if (!textLog) {
-        message.warning("No interview log found to export.");
+      console.log("Export button clicked", log);
+      
+      // 检查是否有对话数据
+      if (!log.log || (Array.isArray(log.log) && log.log.length === 0)) {
+        message.warning('No conversation data found for export');
         return;
       }
-  
-      // Attempt to copy to clipboard
-      await navigator.clipboard.writeText(textLog);
-      console.log("Clipboard write successful");
-  
-      // Check and show Notification
-      if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification('Interview log copied to clipboard!');
-          console.log("Notification shown: permission already granted");
-        } else if (Notification.permission !== 'denied') {
-          const permission = await Notification.requestPermission();
-          console.log("Notification permission:", permission);
-          if (permission === 'granted') {
-            new Notification('Interview log copied to clipboard!');
-            console.log("Notification shown after requesting permission");
-          } else {
-            message.success('Interview log copied to clipboard!');
+      
+      // 确保conversation是数组
+      const conversationData = Array.isArray(log.log) ? log.log : 
+                              typeof log.log === 'string' ? JSON.parse(log.log) : [];
+      
+      console.log("Conversation data:", conversationData);
+
+      // 显示加载消息
+      message.loading('Preparing export...', 0.5);
+
+      // 获取完整的详细数据（与Details页面相同）
+      let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
+      let improvementAreas = ["Consider providing more specific examples", "Work on structuring responses"];
+      let specificFeedback = "Performance data available for this interview.";
+      let performanceScores = null;
+      
+      try {
+        console.log("Fetching complete details for ID:", log.id);
+        
+        // 获取分数数据
+        const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
+        if (scoresResponse.ok) {
+          const scoresData = await scoresResponse.json();
+          console.log("Performance scores data:", scoresData);
+          
+          if (scoresData.scores) {
+            performanceScores = {
+              confidence: scoresData.scores.confidence || 0,
+              communication: scoresData.scores.communication || 0,
+              technical: scoresData.scores.technical || 0,
+              problem_solving: scoresData.scores.problem_solving || 0,
+              resume_strength: scoresData.scores["resume strength"] || 0,
+              leadership: scoresData.scores.leadership || 0
+            };
           }
-        } else {
-          message.success('Interview log copied to clipboard!');
         }
-      } else {
-        message.success('Interview log copied to clipboard!');
+        
+        // 获取优势数据
+        const strengthsResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_strengths/${log.id}`);
+        if (strengthsResponse.ok) {
+          const strengthsData = await strengthsResponse.json();
+          if (strengthsData.strengths && Array.isArray(JSON.parse(strengthsData.strengths))) {
+            strengths = JSON.parse(strengthsData.strengths);
+          }
+        }
+        
+        // 获取改进领域数据
+        const improvementResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_improvement_areas/${log.id}`);
+        if (improvementResponse.ok) {
+          const improvementData = await improvementResponse.json();
+          if (improvementData.improvement_areas && Array.isArray(JSON.parse(improvementData.improvement_areas))) {
+            improvementAreas = JSON.parse(improvementData.improvement_areas);
+          }
+        }
+        
+        // 获取具体反馈数据
+        const feedbackResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_specific_feedback/${log.id}`);
+        if (feedbackResponse.ok) {
+          const feedbackData = await feedbackResponse.json();
+          if (feedbackData.specific_feedback) {
+            specificFeedback = feedbackData.specific_feedback;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch complete details for export:', err);
+        // 继续导出，但使用默认值
+      }
+
+      // 创建导出数据对象
+      const exportData = {
+        interview: {
+          title: log.title || 'Unnamed Interview',
+          company: log.company_name || 'N/A',
+          date: log.updated_at || log.date || new Date().toISOString(),
+          type: log.interview_type || 'N/A',
+          questionType: log.question_type || 'N/A',
+          interviewName: log.interview_name || 'N/A',
+          threadId: log.thread_id || 'N/A',
+          job_description: log.job_description || ''
+        },
+        conversation: conversationData,
+        performance: performanceScores ? {
+          scores: performanceScores
+        } : null,
+        feedback: {
+          key_strengths: strengths,
+          improvement_areas: improvementAreas,
+          overall_feedback: specificFeedback
+        }
+      };
+
+      // 直接导出为PDF
+      try {
+        console.log("Starting PDF export with complete data");
+        exportToPDF(exportData);
+        message.success('Export prepared. Use browser print dialog to save as PDF.');
+      } catch (error) {
+        console.error('Error exporting as PDF:', error);
+        message.error('Failed to prepare export. Please check if pop-ups are blocked.');
       }
     } catch (err) {
-      console.error('Error copying log:', err);
-      message.error('Failed to copy interview log to clipboard.');
+      console.error('Error preparing export:', err);
+      message.error(`Failed to prepare interview export: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
-  
-  
   
   const handleViewDetails = async (log: InterviewLog) => {
     setSelectedLog(log);
@@ -582,7 +650,10 @@ const InterviewHistoryPage: React.FC = () => {
           <Button 
             type="link" 
             className={`${styles.actionButtonWithLabel} ${styles.exportButton}`}
-            onClick={() => handleExportInterview(record)}
+            onClick={(e) => {
+              e.stopPropagation(); // 阻止事件冒泡
+              handleExportInterview(record);
+            }}
           >
             <ExportOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Export</span>
