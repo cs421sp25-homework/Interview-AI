@@ -248,6 +248,18 @@
   transition: all 0.2s;
 }
 
+/* 添加select元素的特殊样式 */
+select.formInput {
+  padding-right: 2.5rem; /* 增加右侧padding，让箭头向左移 */
+  background-position: calc(100% - 15px) center; /* 将背景箭头位置调整得更靠左 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-size: 1rem;
+}
+
 .formInput:focus {
   outline: none;
   border-color: #ec4899;

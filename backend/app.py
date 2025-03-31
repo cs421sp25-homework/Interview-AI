@@ -2,9 +2,10 @@ import uuid
 from models.config_model import Interview
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, send_file
 from flask_cors import CORS
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 import os
 import secrets
@@ -28,6 +29,7 @@ from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
+import json
 from llm.llm_interface import LLMInterface
 from datetime import datetime
 
@@ -646,7 +648,6 @@ def chat():
     else:
         return jsonify({"response": next_ai_response, "ended": False})
 
-
 @app.route("/api/chat_history", methods=["POST"])
 def save_chat_history():
     data = request.get_json()
@@ -879,66 +880,88 @@ def delete_chat_history_by_id(id):
 @app.route('/api/text2speech', methods=['POST'])
 def api_text2speech():
     """
-    Convert text to speech, upload the resulting MP3 file to Supabase storage,
-    and return its public URL.
+    Convert text to speech with duration estimation
     """
     try:
         data = request.get_json()
-        text = data.get('text', '')
-        if not text:
-            return jsonify({"error": "Text is required", "message": "Please provide text to convert."}), 400
+        if not data or 'text' not in data:
+            return jsonify({
+                "error": "Invalid request",
+                "message": "Text field is required"
+            }), 400
 
-        # Generate the audio file.
-        audio_file_path = text_to_speech(text)
+        text = data['text']
+        voice = data.get('voice', 'alloy')
+        speed = float(data.get('speed', 1.0))
+        
+        audio_io, duration = text_to_speech(
+            text=text,
+            voice=voice,
+            speed=speed
+        )
+        
+        filename = f"tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
+        
+        response = send_file(
+            audio_io,
+            mimetype="audio/mpeg",
+            as_attachment=False,
+            download_name=filename
+        )
+        
+        # Add duration to headers
+        response.headers['X-Audio-Duration'] = str(duration)
+        return response
 
-        # Create a unique filename for storage.
-        unique_filename = f"{uuid.uuid4()}.mp3"
-        # Set the bucket name to "audios" as it exists in your Supabase project.
-        bucket_name = "audios"
-        # Use the unique filename directly as the storage path.
-        storage_path = unique_filename
-
-        app.logger.info(f"Uploading to bucket: {bucket_name}, storage_path: {storage_path}")
-
-        # Read the generated audio file.
-        with open(audio_file_path, "rb") as audio_file:
-            audio_data = audio_file.read()
-
-        # Upload the audio file with the correct MIME type.
-        storage_service.upload_file(bucket_name, storage_path, audio_data, 'audio/mpeg')
-
-        # Retrieve the public URL.
-        audio_url = storage_service.get_public_url(bucket_name, storage_path)
-
-        # Clean up the temporary file.
-        os.remove(audio_file_path)
-
-        return jsonify({"audioUrl": audio_url}), 200
-
+    except ValueError as e:
+        return jsonify({
+            "error": "Invalid input",
+            "message": str(e)
+        }), 400
     except Exception as e:
-        app.logger.error(f"Failed to convert text to speech: {e}")
-        return jsonify({"error": "Failed to convert text to speech", "message": str(e)}), 500
-
-
+        return jsonify({
+            "error": "Conversion failed",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/speech2text', methods=['POST'])
 def api_speech2text():
+    """
+    Convert speech to text with enhanced error handling
+    """
     try:
         if 'audio' not in request.files:
-            return jsonify({"error": "Audio file is required", "message": "Please upload an audio file."}), 400
+            return jsonify({
+                "error": "Missing file",
+                "message": "Audio file is required"
+            }), 400
 
         audio_file = request.files['audio']
+        if audio_file.filename == '':
+            return jsonify({
+                "error": "Empty file",
+                "message": "No audio file selected"
+            }), 400
+
+        # Limit file size (10MB)
+        max_size = 10 * 1024 * 1024
+        if request.content_length > max_size:
+            return jsonify({
+                "error": "File too large",
+                "message": "Maximum size is 10MB"
+            }), 400
+
         transcript = speech_to_text(audio_file.read())
-        return jsonify({"transcript": transcript}), 200
+        return jsonify({
+            "transcript": transcript,
+            "status": "success"
+        }), 200
 
     except Exception as e:
-        app.logger.error(f"Speech-to-text error: {e}")
-        return jsonify({"error": "Speech-to-text failed", "message": str(e)}), 500
-    
-
-
-
-
+        return jsonify({
+            "error": "Conversion failed",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/generate_good_response', methods=['POST'])
 def generate_good_response():
@@ -967,28 +990,69 @@ def generate_good_response():
 @app.route('/api/overall_scores/email/<email>', methods=['GET'])
 def get_overall_scores(id=None, email=None):
     print(f"Getting overall scores for id: {id}, email: {email}")
-    # return the scores of the interview in a json such as
-    # {
-    #     "scores": {
-    #          "confidence": 0.95,
-    #          "communication": 0.95,
-    #          "technical": 0.90,
-    #          "problem_solving": 0.85,
-    #          "resume strength": 0.90,
-    #          "leadership": 0.90,
-    #     }
-    # }
+
     try:
-        # In a real implementation, you would look up scores by id or email
-        return jsonify({"scores": {
-            "confidence": 0.95,
-            "communication": 0.95,
-            "technical": 0.90,
-            "problem_solving": 0.85,
-            "resume strength": 0.90,
-            "leadership": 0.90,
-        }})
+        result = supabase.table('interview_performance').select('*').eq('user_email', email).execute()
+            
+        if not result.data or len(result.data) == 0:
+                # Return default data if no interviews found
+            return jsonify({
+                "scores": {
+                    "confidence": 0,
+                    "communication": 0,
+                    "technical": 0,
+                    "problem_solving": 0,
+                    "resume strength": 0,
+                    "leadership": 0
+                }
+            })
+            
+        # Calculate average scores across all interviews
+        total_interviews = len(result.data)
+        total_confidence = 0
+        total_communication = 0
+        total_technical = 0
+        total_problem_solving = 0
+        total_resume_strength = 0
+        total_leadership = 0
+            
+        # Collect all strengths and improvement areas
+        all_strengths = []
+        all_improvements = []
+            
+        for interview in result.data:
+            total_confidence += interview.get('confidence_score', 0)
+            total_communication += interview.get('communication_score', 0)
+            total_technical += interview.get('technical_accuracy_score', 0)
+            total_problem_solving += interview.get('problem_solving_score', 0)
+            total_resume_strength += interview.get('resume_strength_score', 0)
+            total_leadership += interview.get('leadership_score', 0)
+            
+        # Calculate averages
+        avg_confidence = total_confidence / total_interviews
+        avg_communication = total_communication / total_interviews
+        avg_technical = total_technical / total_interviews
+        avg_problem_solving = total_problem_solving / total_interviews
+        avg_resume_strength = total_resume_strength / total_interviews
+        avg_leadership = total_leadership / total_interviews
+            
+            
+        return jsonify({
+            "scores": {
+                "confidence": avg_confidence,
+                "communication": avg_communication,
+                "technical": avg_technical,
+                "problem_solving": avg_problem_solving,
+                "resume strength": avg_resume_strength,
+                "leadership": avg_leadership
+            }
+        })
+        
+
     except Exception as e:
+        print(f"Error getting overall scores: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
 
 

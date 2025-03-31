@@ -1,36 +1,66 @@
-// project/frontend/vite-project/src/utils/voiceUtils.ts
-
+// voiceUtils.ts
 import API_BASE_URL from '../config/api';
 
-export function text2speech(text: string) {
-  // Cancel any ongoing utterances to prevent duplicate speech.
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  // Optional: set language or voice here if needed.
-  // utterance.lang = 'en-US';
-  speechSynthesis.speak(utterance);
+export async function text2speech(
+  text: string,
+  audioRefs?: React.MutableRefObject<HTMLAudioElement[]>
+): Promise<number> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/text2speech`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS failed: ${response.status}`);
+    }
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+
+    // Track the audio element if provided
+    if (audioRefs) {
+      audioRefs.current.push(audio);
+      audio.onended = () => {
+        audioRefs.current = audioRefs.current.filter(a => a !== audio);
+      };
+    }
+
+    return new Promise<number>((resolve) => {
+      audio.onloadedmetadata = () => {
+        resolve(audio.duration || 0);
+        audio.play().catch((err) => {
+          console.warn('Audio play was interrupted:', err);
+        });
+      };
+      audio.onerror = () => resolve(0);
+    });
+  } catch (error) {
+    console.error('Text-to-speech error:', error);
+    return 0;
+  }
 }
 
-
-
-/**
- * Calls the speech2text API to convert recorded audio into text.
- * This function sends the audio blob as form data.
- *
- * @param audioBlob - The audio Blob recorded from the user.
- * @returns A Promise that resolves with the transcribed text.
- */
 export async function speech2text(audioBlob: Blob): Promise<string> {
-  const formData = new FormData();
-  formData.append('audio', audioBlob, 'recording.wav');
-  
-  const res = await fetch(`${API_BASE_URL}/api/speech2text`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) {
-    throw new Error("Speech-to-Text conversion failed");
+  try {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+
+    const response = await fetch(`${API_BASE_URL}/api/speech2text`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`STT failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.transcript;
+  } catch (error) {
+    console.error('Speech-to-text error:', error);
+    throw error;
   }
-  const data = await res.json();
-  return data.transcript;
 }
