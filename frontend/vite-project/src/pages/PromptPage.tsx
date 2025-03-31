@@ -3,21 +3,22 @@ import { Bot, Plus, X, MoreVertical, Edit, Trash, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './PromptPage.module.css';
 import axios from 'axios';
-import API_BASE_URL from '../config/api'
+import API_BASE_URL from '../config/api';
 import { message } from 'antd';
 
-const PromptPage = () => {
-  interface InterviewConfig {
-    id: number;
-    interview_name: string;
-    company_name: string;
-    job_description: string;
-    question_type: string;
-    interview_type: string;
-  }
+// Moved the interface outside the component for clarity.
+interface InterviewConfig {
+  id: number;
+  interview_name: string;
+  company_name: string;
+  job_description: string;
+  question_type: string;
+  interview_type: string;
+}
 
+const PromptPage = () => {
   const navigate = useNavigate();
-  const [id, setInterviewId] = useState<number|null>(null);
+  const [id, setInterviewId] = useState<number | null>(null);
   const [interview_name, setInterviewName] = useState('');
   const [company_name, setCompanyName] = useState('');
   const [job_description, setJobDescription] = useState('');
@@ -74,13 +75,13 @@ const PromptPage = () => {
     } else {
       message.error('Please select a configuration first');
     }
-  };  
-  
+  };
+
   const startInterviewWithConfig = async (config: InterviewConfig) => {
     try {
       localStorage.setItem('current_config', config.interview_name);
       localStorage.setItem('current_config_id', config.id.toString());
-      
+
       try {
         const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
         if (response.data && response.data.data && response.data.data.photo_url) {
@@ -89,9 +90,9 @@ const PromptPage = () => {
       } catch (error) {
         console.error('Error fetching user profile for photo URL:', error);
       }
-      
+
       localStorage.removeItem('current_thread_id');
-      
+
       if (config.interview_type === 'voice') {
         navigate(`/interview/voice`);
       } else {
@@ -112,40 +113,40 @@ const PromptPage = () => {
       interview_type,
       email
     };
-  
+
     if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.question_type || !interviewConfig.interview_type) {
       message.error("Please fill in all required fields marked with *");
       return;
     }
-  
+
     try {
-      if (isEditing && id) { 
+      if (isEditing && id) {
         await axios.put(`${API_BASE_URL}/api/update_interview_config/${id}`, interviewConfig);
         console.log("Interview configuration updated successfully.");
         message.success("Interview configuration updated successfully!");
-        
-        const updatedConfigs = savedInterviewConfigs.map(config => 
-          config.id === id ? {...interviewConfig, id: config.id} as InterviewConfig : config
+
+        const updatedConfigs = savedInterviewConfigs.map(config =>
+          config.id === id ? { ...interviewConfig, id: config.id } as InterviewConfig : config
         );
         setSavedInterviewConfigs(updatedConfigs);
-        
-        setSelectedConfig({...interviewConfig, id} as InterviewConfig);
-      } else { 
+
+        setSelectedConfig({ ...interviewConfig, id } as InterviewConfig);
+      } else {
         const response = await axios.post(`${API_BASE_URL}/api/create_interview_config`, interviewConfig);
         console.log("New interview configuration saved successfully.");
         message.success("New interview configuration saved successfully!");
-        
+
         if (response.data && response.data.id) {
           const newConfig = {
             ...interviewConfig,
             id: response.data.id
           } as InterviewConfig;
-          
+
           setSavedInterviewConfigs([...savedInterviewConfigs, newConfig]);
           setSelectedConfig(newConfig);
         }
       }
-  
+
       setIsModalOpen(false);
       setIsEditing(false);
       setInterviewId(null);
@@ -169,9 +170,9 @@ const PromptPage = () => {
     setQuestionType(selected.question_type);
     setInterviewType(selected.interview_type);
     setIsEditing(true);
-    setIsModalOpen(true); 
+    setIsModalOpen(true);
   };
-  
+
   const handleDelete = (index: number, id: number) => {
     if (window.confirm("Are you sure you want to delete this configuration?")) {
       axios
@@ -181,7 +182,7 @@ const PromptPage = () => {
             const updatedConfigs = savedInterviewConfigs.filter((_, i) => i !== index);
             setSavedInterviewConfigs(updatedConfigs);
             message.success('Interview configuration deleted successfully!');
-            
+
             if (selectedConfig && selectedConfig.id === id) {
               setSelectedConfig(null);
             }
@@ -193,7 +194,7 @@ const PromptPage = () => {
         });
     }
   };
-  
+
   const openCreateModal = () => {
     setIsEditing(false);
     setInterviewId(null);
@@ -209,12 +210,12 @@ const PromptPage = () => {
     <div className={styles.pageContainer} ref={pageRef}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
-          <div className={styles.logo} onClick={() => navigate('/')}>  
+          <div className={styles.logo} onClick={() => navigate('/')}>
             <Bot className={styles.logoIcon} />
             <span className={styles.logoText}>InterviewAI</span>
           </div>
-          <button 
-            className={styles.backButton} 
+          <button
+            className={styles.backButton}
             onClick={() => navigate('/dashboard')}
           >
             Back to Dashboard
@@ -228,8 +229,8 @@ const PromptPage = () => {
           <p>Select a configuration and click "Start Interview"</p>
         </div>
 
-        <button 
-          className={styles.buttonPrimary} 
+        <button
+          className={styles.buttonPrimary}
           onClick={openCreateModal}
         >
           <Plus size={20} /> Create Custom Interview Configuration
@@ -253,18 +254,18 @@ const PromptPage = () => {
                 </div>
 
                 <div className={styles.menuContainer}>
-                  <MoreVertical 
-                    className={styles.menuIcon} 
+                  <MoreVertical
+                    className={styles.menuIcon}
                     data-testid="config-menu-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(menuOpen === index ? null : index);
-                    }} 
+                    }}
                   />
 
                   {menuOpen === index && (
                     <div className={styles.menuDropdown}>
-                      <button 
+                      <button
                         data-testid="edit-config-button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -274,7 +275,7 @@ const PromptPage = () => {
                       >
                         <Edit size={16} /> Edit
                       </button>
-                      <button 
+                      <button
                         data-testid="delete-config-button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -292,15 +293,14 @@ const PromptPage = () => {
           ))}
         </div>
 
-        <button 
-          type="button" 
-          className={`${styles.buttonPrimary} ${!selectedConfig ? styles.buttonDisabled : ''}`} 
+        <button
+          type="button"
+          className={`${styles.buttonPrimary} ${!selectedConfig ? styles.buttonDisabled : ''}`}
           onClick={handleStartInterview}
           disabled={!selectedConfig}
         >
           <Play size={20} /> Start Interview with Selected Configuration
         </button>
-        
       </main>
 
       {isModalOpen && (
@@ -340,7 +340,7 @@ const PromptPage = () => {
                   required
                 />
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
                   Job Description <span className={styles.optional}>(optional)</span>
@@ -352,46 +352,57 @@ const PromptPage = () => {
                   placeholder="Enter the job description (optional)"
                 />
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
                   Question Type <span className={styles.required}>*</span>
                 </label>
-                <select className={styles.formInput} value={question_type} onChange={(e) => setQuestionType(e.target.value)} required>
+                <select
+                  className={styles.formInput}
+                  value={question_type}
+                  onChange={(e) => setQuestionType(e.target.value)}
+                  required
+                >
                   <option value="behavioral">Behavioral</option>
                   <option value="technical">Technical</option>
                 </select>
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
                   Interview Type <span className={styles.required}>*</span>
                 </label>
-                <select className={styles.formInput} value={interview_type} onChange={(e) => setInterviewType(e.target.value)} required>
+                {/* The interview type select is disabled when editing */}
+                <select
+                  className={styles.formInput}
+                  value={interview_type}
+                  onChange={(e) => setInterviewType(e.target.value)}
+                  required
+                  disabled={isEditing}
+                >
                   <option value="text">Text</option>
                   <option value="voice">Voice</option>
                 </select>
               </div>
 
               <div className={styles.modalActions}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.buttonSecondary}
                   data-testid="cancel-button"
                   onClick={() => setIsModalOpen(false)}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="button" 
-                  className={styles.buttonPrimary} 
+                <button
+                  type="button"
+                  className={styles.buttonPrimary}
                   data-testid="save-update-button"
                   onClick={handleSaveConfig}
                 >
                   {isEditing ? 'Update' : 'Save'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
