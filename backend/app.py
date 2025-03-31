@@ -955,7 +955,7 @@ def generate_good_response():
          return jsonify({"error": "Missing message"}), 400
 
     # Build a prompt instructing the LLM to improve the candidate's answer.
-    prompt = f"Please provide an improved version of the following interview answer:\n\n{user_message}"
+    prompt = f"As the person being interviewed, Please provide an improved version of the following interview answer:\n\n{user_message}"
 
     # Initialize the LLM interface and call the model.
     llm_interface = LLMInterface()
