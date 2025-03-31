@@ -48,6 +48,7 @@ Goal: Feedback, scoring, session review capabilities, and response mechanism.
 
 -   As a user, I want to add some interview questions to "Favorites", so that I can easily revisit questions I believe are likely to appear in actual interviews.
 
+
 #### Nice-to-Have Features:
 
 -   As a user, I want to see an AI-generated ideal answer after answering a question, so that I can compare my response and learn how to improve it.
