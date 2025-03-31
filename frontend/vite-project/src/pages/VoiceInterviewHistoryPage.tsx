@@ -131,14 +131,6 @@ const InterviewHistoryPage: React.FC = () => {
           
           if (log.updated_at) {
             const testDate = new Date(log.updated_at);
-            // console.log(`UTC Time: ${testDate.toISOString()}`);
-            // console.log(`Local Time: ${testDate.toString()}`);
-            // console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
-            //   timeZone: 'America/New_York',
-            //   year: 'numeric',
-            //   month: 'numeric',
-            //   day: 'numeric',
-            // }).format(testDate)}`);
           }
           
           return {
