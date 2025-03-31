@@ -1,6 +1,10 @@
+// voiceUtils.ts
 import API_BASE_URL from '../config/api';
 
-export async function text2speech(text: string, audioRefs?: React.MutableRefObject<HTMLAudioElement[]>): Promise<number> {
+export async function text2speech(
+  text: string,
+  audioRefs?: React.MutableRefObject<HTMLAudioElement[]>
+): Promise<number> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/text2speech`, {
       method: 'POST',
@@ -8,13 +12,15 @@ export async function text2speech(text: string, audioRefs?: React.MutableRefObje
       body: JSON.stringify({ text })
     });
 
-    if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`TTS failed: ${response.status}`);
+    }
 
     const audioBlob = await response.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
-    
-    // Add to audio refs if provided
+
+    // Track the audio element if provided
     if (audioRefs) {
       audioRefs.current.push(audio);
       audio.onended = () => {
@@ -25,7 +31,9 @@ export async function text2speech(text: string, audioRefs?: React.MutableRefObje
     return new Promise<number>((resolve) => {
       audio.onloadedmetadata = () => {
         resolve(audio.duration || 0);
-        audio.play();
+        audio.play().catch((err) => {
+          console.warn('Audio play was interrupted:', err);
+        });
       };
       audio.onerror = () => resolve(0);
     });
@@ -36,23 +44,23 @@ export async function text2speech(text: string, audioRefs?: React.MutableRefObje
 }
 
 export async function speech2text(audioBlob: Blob): Promise<string> {
-    try {
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
+  try {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
 
-        const response = await fetch(`${API_BASE_URL}/api/speech2text`, {
-            method: 'POST',
-            body: formData
-        });
+    const response = await fetch(`${API_BASE_URL}/api/speech2text`, {
+      method: 'POST',
+      body: formData
+    });
 
-        if (!response.ok) {
-            throw new Error(`STT failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.transcript;
-    } catch (error) {
-        console.error('Speech-to-text error:', error);
-        throw error;
+    if (!response.ok) {
+      throw new Error(`STT failed: ${response.status}`);
     }
+
+    const data = await response.json();
+    return data.transcript;
+  } catch (error) {
+    console.error('Speech-to-text error:', error);
+    throw error;
+  }
 }

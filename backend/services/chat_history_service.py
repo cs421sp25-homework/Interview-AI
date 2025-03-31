@@ -23,7 +23,7 @@ class ChatHistoryService:
         Args:
             thread_id: Session ID
             user_email: User email
-            messages: List of messages (each can have an 'audioUrl' key)
+            messages: List of messages
             config_name: Configuration name
             config_id: Configuration ID
             
@@ -38,14 +38,11 @@ class ChatHistoryService:
                 self.logger.info(f"Skip saving chat history with only welcome message for thread_id: {thread_id}")
                 return {"success": True, "skipped": True}
                 
-            # Extract audio URLs from messages
-            audio_urls = [msg.get("audioUrl") for msg in messages if msg.get("audioUrl")]
-            audio_urls_json = json.dumps(audio_urls)
-            
             # Check existing record's message count to avoid overwriting with fewer messages
             interview_id = None
             try:
                 existing = self.supabase.table(self.table_name).select('id,log').eq('thread_id', thread_id).execute()
+                
                 if existing.data and len(existing.data) > 0:
                     interview_id = existing.data[0].get('id')
                     existing_log = existing.data[0].get('log')
@@ -53,6 +50,8 @@ class ChatHistoryService:
                         # Ensure we have parsed JSON
                         if isinstance(existing_log, str):
                             existing_log = json.loads(existing_log)
+                            
+                        # If existing record has more messages than new messages, skip update
                         if len(existing_log) > len(messages):
                             self.logger.info(f"Existing log has more messages ({len(existing_log)}) than new log ({len(messages)}), skipping update")
                             return {"success": True, "skipped": True, "interview_id": interview_id}
@@ -64,36 +63,38 @@ class ChatHistoryService:
                 existing = self.supabase.table(self.table_name).select('id').eq('thread_id', thread_id).execute()
                 if existing.data and len(existing.data) > 0:
                     interview_id = existing.data[0].get('id')
-                    
+                
             current_time = datetime.datetime.now().isoformat()
             
             # Prepare message data
             messages_json = json.dumps(messages)
             
             if interview_id:
-                # Update existing record; include audio_urls
+                # Update existing record
                 update_data = {
                     'log': messages_json,
-                    'audio_urls': audio_urls_json,
                     'updated_at': current_time
                 }
+                
                 if config_id:
                     update_data['config_id'] = config_id
+                
                 self.supabase.table(self.table_name).update(update_data).eq('id', interview_id).execute()
                 self.logger.info(f"Updated chat history for thread_id {thread_id}, interview_id {interview_id}")
             else:
-                # Create new record; include audio_urls
+                # Create new record
                 insert_data = {
                     'thread_id': thread_id,
                     'email': user_email,
                     'config_name': config_name,
                     'log': messages_json,
-                    'audio_urls': audio_urls_json,
                     'created_at': current_time,
                     'updated_at': current_time
                 }
+                
                 if config_id:
                     insert_data['config_id'] = config_id
+                
                 result = self.supabase.table(self.table_name).insert(insert_data).execute()
                 if result.data and len(result.data) > 0:
                     interview_id = result.data[0].get('id')

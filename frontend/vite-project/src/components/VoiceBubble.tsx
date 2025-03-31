@@ -26,7 +26,7 @@ const VoiceBubble: React.FC<VoiceBubbleProps> = ({
       <div className={styles.voiceBubbleContainer}>
         <div className={styles.voiceBubbleWrapper}>
           <div 
-            className={`${styles.voiceBubble} ${isPlaying ? styles.playing : ''}`}
+            className={`${styles.voiceBubble} ${isPlaying ? styles.voiceBubble : ''}`}
             onClick={onPlay}
           >
             <div className={styles.voiceIcon}>
