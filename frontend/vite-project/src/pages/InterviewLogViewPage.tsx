@@ -14,13 +14,17 @@ interface Message {
 const InterviewLogViewPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
+  const [loadingResponses, setLoadingResponses] = useState<{ [key: number]: boolean }>({});
+
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>(); // log id from route
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
 
   const handleGenerateResponse = async (messageText: string, index: number) => {
+    // Set loading for this index
+    setLoadingResponses(prev => ({ ...prev, [index]: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/api/generate_good_response`, {
         method: 'POST',
@@ -36,6 +40,9 @@ const InterviewLogViewPage: React.FC = () => {
     } catch (error) {
       console.error(error);
       message.error('Failed to generate response');
+    } finally {
+      // Reset loading state for this index
+      setLoadingResponses(prev => ({ ...prev, [index]: false }));
     }
   };
 
@@ -85,7 +92,7 @@ const InterviewLogViewPage: React.FC = () => {
     navigate('/interview/history');
   };
 
-  const antIcon = <LoadingOutlined style={{ fontSize: 40, color: '#ec4899' }} spin />;
+  const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#1890ff' }} spin />;
 
   return (
     <div className={styles.container}>
@@ -108,10 +115,7 @@ const InterviewLogViewPage: React.FC = () => {
             <div className={styles.loadingText}>Loading interview logs...</div>
           </div>
         ) : (
-          <div 
-            ref={chatContainerRef}
-            className={styles.chatContainer}
-          >
+          <div ref={chatContainerRef} className={styles.chatContainer}>
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -144,6 +148,8 @@ const InterviewLogViewPage: React.FC = () => {
                     <div className={styles.generatedContainer}>
                       {generatedResponses[index] ? (
                         <div className={styles.generatedResponse}>{generatedResponses[index]}</div>
+                      ) : loadingResponses[index] ? (
+                        <Spin indicator={antIcon} />
                       ) : (
                         <Button onClick={() => handleGenerateResponse(msg.text, index)}>
                           Generate AI Response
