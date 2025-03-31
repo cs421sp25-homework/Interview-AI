@@ -149,12 +149,18 @@ const InterviewHistoryPage: React.FC = () => {
             updated_at: log.updated_at || log.created_at || new Date().toISOString(),
             company_name: log.config_company_name || log.company_name || 'Unknown Company',
             form: log.form || 'text',
+            log: typeof log.log === 'string' ? JSON.parse(log.log) : log.log,
+
+
+
+
+
+
             
             question_type: log.question_type || 'Unknown',
             job_description: log.job_description || '',
             interview_name: log.interview_name || '',
             interview_type: log.interview_type || 'Unknown',
-            
             question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
           };
         });
@@ -313,15 +319,53 @@ const InterviewHistoryPage: React.FC = () => {
     navigate('/dashboard');
   };
   
-  const handleExportInterview = (log: InterviewLog) => {
-    // 在实际应用中，这里应该调用API导出面试记录
-    message.info('Exporting interview transcript...');
-    
-    // 模拟导出过程
-    setTimeout(() => {
-      message.success('Interview transcript exported successfully');
-    }, 1500);
+  const handleExportInterview = async (log: InterviewLog) => {
+    try {
+      console.log("export clicked");
+  
+      // Get log content as text
+      const textLog = typeof log.log === 'string'
+        ? log.log
+        : JSON.stringify(log.log, null, 2);
+  
+      console.log("Text to copy:", textLog);
+  
+      if (!textLog) {
+        message.warning("No interview log found to export.");
+        return;
+      }
+  
+      // Attempt to copy to clipboard
+      await navigator.clipboard.writeText(textLog);
+      console.log("Clipboard write successful");
+  
+      // Check and show Notification
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification('Interview log copied to clipboard!');
+          console.log("Notification shown: permission already granted");
+        } else if (Notification.permission !== 'denied') {
+          const permission = await Notification.requestPermission();
+          console.log("Notification permission:", permission);
+          if (permission === 'granted') {
+            new Notification('Interview log copied to clipboard!');
+            console.log("Notification shown after requesting permission");
+          } else {
+            message.success('Interview log copied to clipboard!');
+          }
+        } else {
+          message.success('Interview log copied to clipboard!');
+        }
+      } else {
+        message.success('Interview log copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error copying log:', err);
+      message.error('Failed to copy interview log to clipboard.');
+    }
   };
+  
+  
   
   const handleViewDetails = async (log: InterviewLog) => {
     setSelectedLog(log);
