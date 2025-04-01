@@ -351,6 +351,19 @@
   border-color: #a5ffc6;
 }
 
+.exportButton .actionIcon {
+  color: #8B5CF6;
+}
+
+.exportButton .actionText {
+  color: #8B5CF6;
+}
+
+.exportButton:hover {
+  background-color: #f9f0ff;
+  border-color: #c9b3ff;
+}
+
 .favoritesButton .actionIcon {
   color: #ff69b4;
 }

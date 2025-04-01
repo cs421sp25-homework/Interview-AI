@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty } from 'antd';
-import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined, DownloadOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -675,7 +675,7 @@ const InterviewHistoryPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: '30%',
+      width: '35%',
       render: (_: unknown, record: InterviewLog) => (
         <Space size="middle" className={styles.actionButtonsContainer}>
           <Button 
@@ -693,6 +693,14 @@ const InterviewHistoryPage: React.FC = () => {
           >
             <BarChartOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Details</span>
+          </Button>
+          <Button
+            type="link"
+            className={`${styles.actionButtonWithLabel} ${styles.exportButton}`}
+            onClick={() => handleExportInterview(record)}
+          >
+            <ExportOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Export</span>
           </Button>
           <Button 
             type="link" 

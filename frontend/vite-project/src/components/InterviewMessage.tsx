@@ -8,6 +8,7 @@ interface InterviewMessageProps {
   message: {
     text: string;
     sender: string;
+    question_type?: string;
   };
   messageId: string;
   threadId: string;
@@ -56,6 +57,52 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
     }
   };
 
+  const handleFavorite = async () => {
+    try {
+      const userEmail = localStorage.getItem('user_email');
+      if (!userEmail) {
+        antMessage.error('Please log in to favorite questions');
+        return;
+      }
+
+      const favoriteData = {
+        question_text: message.text,
+        email: userEmail,
+        session_id: threadId,
+        is_favorite: true,
+        created_at: new Date().toISOString()
+      };
+
+      console.log('Sending favorite data:', favoriteData);
+
+      const response = await fetch(`${API_BASE_URL}/api/favorite_questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(favoriteData),
+      });
+
+      const responseData = await response.json();
+      console.log('Server response:', responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to favorite question');
+      }
+
+      if (responseData.data && responseData.data.id) {
+        setFavoriteId(responseData.data.id);
+        setIsFavorite(true);
+        antMessage.success('Question added to favorites');
+      } else {
+        throw new Error('Invalid response format from server');
+      }
+    } catch (error) {
+      console.error('Error favoriting question:', error);
+      antMessage.error(error instanceof Error ? error.message : 'Failed to favorite question');
+    }
+  };
+
   const toggleFavorite = async () => {
     if (isLoading) return;
     setIsLoading(true);
@@ -82,30 +129,7 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
         setFavoriteId(null);
       } else {
         // Add to favorites
-        const response = await fetch(`${API_BASE_URL}/api/favorite_questions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            question_text: message.text,
-            session_id: threadId,
-            email: email,
-            is_favorite: true,
-            created_at: new Date().toISOString()
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to add to favorites');
-        }
-
-        if (data.data && data.data.id) {
-          setFavoriteId(data.data.id);
-        }
-        antMessage.success('Question added to favorites');
+        await handleFavorite();
       }
 
       setIsFavorite(!isFavorite);

@@ -14,6 +14,7 @@ interface FavoriteQuestion {
   session_id: string;
   email: string;
   question_type?: string;
+  log: string;
 }
 
 const FavoritesPage: React.FC = () => {
@@ -95,7 +96,8 @@ const FavoritesPage: React.FC = () => {
           created_at: favorite.created_at,
           session_id: favorite.session_id,
           email: favorite.email,
-          question_type: favorite.question_type || 'Unknown'
+          question_type: favorite.question_type || 'Unknown',
+          log: favorite.log
         }));
         
         setFavorites(transformedFavorites);
@@ -208,7 +210,39 @@ const FavoritesPage: React.FC = () => {
           <Button
             type="link"
             className={`${styles.actionButtonWithLabel} ${styles.viewButton}`}
-            onClick={() => navigate(`/interview/history?session=${record.session_id}`)}
+            onClick={async () => {
+              try {
+                const userEmail = localStorage.getItem('user_email');
+                if (!userEmail) {
+                  throw new Error('User not logged in');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
+                if (!response.ok) {
+                  throw new Error('Failed to fetch interview log');
+                }
+                const data = await response.json();
+                console.log('Fetched interview logs:', data);
+                
+                if (!data || !Array.isArray(data.data)) {
+                  throw new Error('Invalid interview log data');
+                }
+
+                // Find the log with matching session_id
+                const matchingLog = data.data.find((log: any) => log.thread_id === record.session_id);
+                if (!matchingLog || !matchingLog.log) {
+                  throw new Error('Interview log not found');
+                }
+
+                const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
+                navigate(`/interview/view/${record.session_id}`, { 
+                  state: { conversation } 
+                });
+              } catch (error) {
+                console.error('Error loading interview session:', error);
+                message.error('Failed to load interview session');
+              }
+            }}
           >
             <SearchOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>View Session</span>
