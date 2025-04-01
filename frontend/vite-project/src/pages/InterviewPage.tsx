@@ -5,6 +5,8 @@ import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
 import InterviewMessage from '../components/InterviewMessage';
+import { Button } from 'antd';
+import { HeartOutlined } from '@ant-design/icons';
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
@@ -312,6 +314,34 @@ const InterviewPage: React.FC = () => {
     handleEndInterview();
   };
 
+  const renderQuestion = (question: string, index: number) => {
+    const isFirstQuestion = index === 0;
+    return (
+      <div key={index} className={styles.questionContainer}>
+        <div className={styles.questionHeader}>
+          <h3 className={styles.questionText}>{question}</h3>
+          {!isFirstQuestion && (
+            <Button
+              type="text"
+              icon={<HeartOutlined />}
+              onClick={() => handleAddToFavorites(question)}
+              className={styles.favoriteButton}
+            />
+          )}
+        </div>
+        <div className={styles.answerSection}>
+          <TextArea
+            value={answers[index]}
+            onChange={(e) => handleAnswerChange(index, e.target.value)}
+            placeholder="Type your answer here..."
+            autoSize={{ minRows: 3, maxRows: 8 }}
+            className={styles.answerInput}
+          />
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -344,10 +374,7 @@ const InterviewPage: React.FC = () => {
       </div>
 
       <div className={styles.chatInterface}>
-        <div 
-          ref={chatContainerRef}
-          className={styles.chatContainer}
-        >
+        <div className={styles.chatContainer} ref={chatContainerRef}>
           {messages.map((message, index) => (
             <div
               key={index}
@@ -375,6 +402,7 @@ const InterviewPage: React.FC = () => {
                   message={message}
                   messageId={`${threadId}-${index}`}
                   threadId={threadId || ''}
+                  isFirstMessage={index === 0}
                 />
               ) : (
                 <div className={`${styles.message} ${styles.userMessage}`}>
@@ -383,24 +411,12 @@ const InterviewPage: React.FC = () => {
               )}
             </div>
           ))}
-        </div>
-        <div className={styles.inputContainer}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your response..."
-            className={styles.input}
-            disabled={!isChatReady}
-          />
-          <button 
-            className={styles.sendButton} 
-            onClick={handleSend}
-            disabled={!input.trim() || !isChatReady}
-          >
-            <Send size={20} />
-          </button>
+          {isLoading && (
+            <div className={styles.loadingContainer}>
+              <Loader className={styles.loadingIcon} />
+              <span>Loading...</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

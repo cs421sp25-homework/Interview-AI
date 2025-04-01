@@ -74,6 +74,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 2rem;
     width: 100%;
+    min-width: 1200px; /* Ensure minimum width */
   }
   
   .historyContainer {
@@ -81,6 +82,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
+    min-width: 1200px; /* Match historyContent min-width */
   }
   
   .historyHeader {
@@ -137,6 +139,7 @@
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-width: 1200px; /* Ensure table doesn't shrink */
   }
   
   .interviewTitle {
@@ -445,6 +448,18 @@
   }
   
   @media (max-width: 768px) {
+    .historyContent {
+      padding: 1rem;
+    }
+    
+    .historyContainer {
+      padding: 0.5rem;
+    }
+    
+    .historyTable {
+      min-width: 1200px;
+    }
+    
     .detailGrid {
       grid-template-columns: 1fr;
     }
@@ -474,6 +489,18 @@
   }
   
   @media (max-width: 576px) {
+    .historyContent {
+      padding: 0.5rem;
+    }
+    
+    .historyContainer {
+      padding: 0.25rem;
+    }
+    
+    .historyTable {
+      min-width: 1200px;
+    }
+    
     /* 在很小的屏幕上进一步压缩 */
     .actionButtonWithLabel {
       padding: 3px 6px;

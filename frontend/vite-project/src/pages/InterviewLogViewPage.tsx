@@ -154,6 +154,7 @@ const InterviewLogViewPage: React.FC = () => {
                     message={msg}
                     messageId={`${id}-${index}`}
                     threadId={threadId || ''}
+                    isFirstMessage={index === 0}
                   />
                 ) : (
                   <div className={styles.userMessage}>

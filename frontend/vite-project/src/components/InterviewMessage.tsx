@@ -11,6 +11,7 @@ interface InterviewMessageProps {
   };
   messageId: string;
   threadId: string;
+  isFirstMessage?: boolean;
 }
 
 interface FavoriteQuestion {
@@ -21,7 +22,7 @@ interface FavoriteQuestion {
   created_at: string;
 }
 
-const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId, threadId }) => {
+const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId, threadId, isFirstMessage = false }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [favoriteId, setFavoriteId] = useState<number | null>(null);
@@ -118,7 +119,7 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
 
   return (
     <div className={`${styles.messageContainer} ${message.sender === 'ai' ? styles.aiMessage : styles.userMessage}`}>
-      {message.sender === 'ai' && (
+      {message.sender === 'ai' && !isFirstMessage && (
         <Button
           type="text"
           icon={isFavorite ? <HeartFilled /> : <HeartOutlined />}
