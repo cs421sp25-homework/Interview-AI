@@ -17,6 +17,8 @@ const InterviewPage: React.FC = () => {
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [isChatReady, setIsChatReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnding, setIsEnding] = useState(false);
+
   
   // Record whether the interview has ended and if there is actual conversation
   const hasEndedInterviewRef = useRef(false);
@@ -279,36 +281,44 @@ const InterviewPage: React.FC = () => {
   const handleEndInterview = async () => {
     if (!threadId) {
       message.warning('No active interview session.');
-      navigate('/dashboard');
       return;
     }
-
-    try {
-      // Mark interview as ended
-      hasEndedInterviewRef.current = true;
-      
-      message.loading('Saving your interview responses...', 1);
-      
-      if (messages.length > 0) {
-        const saveResult = await saveChatHistory(threadId, messages);
-        console.log("Final save chat history result:", saveResult);
-        
+    
+    // Prevent multiple clicks
+    if (isEnding) return;
+    setIsEnding(true);
+  
+    // Show a loading message (but do not block navigation)
+    message.loading('Saving your interview responses...', 0);
+    
+    // Fire off the save operation without waiting for it to finish
+    saveChatHistory(threadId, messages)
+      .then((saveResult) => {
         if (saveResult) {
-          message.success('Interview ended successfully. Your responses have been saved.');
+          message.success('Interview responses saved.');
         } else {
           message.warning('Interview ended, but there might be issues saving your responses.');
         }
-      }
-      
+      })
+      .catch((error) => {
+        console.error('Error saving chat history:', error);
+        message.error('Failed to save your responses.');
+      });
+    
+    // Option A: Remove config keys after a short delay, so the view page can still access them if needed
+    setTimeout(() => {
       localStorage.removeItem('current_config');
       localStorage.removeItem('current_config_id');
-      
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error ending interview:', error);
-      message.error('Failed to end interview properly. Your responses may not have been saved.');
-    }
+    }, 500);
+  
+    // Navigate immediately to the interview view page with the conversation data
+    navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
+    
+    setIsEnding(false);
   };
+  
+  
+  
 
   const handleBackToDashboard = () => {
     handleEndInterview();
@@ -368,9 +378,19 @@ const InterviewPage: React.FC = () => {
         <button 
           className={styles.endButton} 
           onClick={handleEndInterview}
+          disabled={isEnding}  // Disable the button while loading
         >
-          <X size={20} /> End Interview
+          {isEnding ? (
+            <>
+              <Loader size={20} /> Ending Interview...
+            </>
+          ) : (
+            <>
+              <X size={20} /> End Interview
+            </>
+          )}
         </button>
+
       </div>
 
       <div className={styles.chatInterface}>
