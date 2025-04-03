@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home } from 'lucide-react';
+import { Home, Sparkles, Check, Brain, Lightbulb, PenTool } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { message, Button, Spin } from 'antd';
+import { message, Button, Spin, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewLogViewPage.module.css';
@@ -16,6 +16,13 @@ const InterviewLogViewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
   const [loadingResponses, setLoadingResponses] = useState<{ [key: number]: boolean }>({});
+  const [loadingSteps, setLoadingSteps] = useState<{ [key: number]: number }>({});
+  const [loadingTexts, setLoadingTexts] = useState<string[]>([
+    "Analyzing response...",
+    "Generating improvements...",
+    "Polishing answer...",
+    "Finalizing response..."
+  ]);
 
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>(); // log id from route
@@ -25,24 +32,66 @@ const InterviewLogViewPage: React.FC = () => {
   const handleGenerateResponse = async (messageText: string, index: number) => {
     // Set loading for this index
     setLoadingResponses(prev => ({ ...prev, [index]: true }));
+    setLoadingSteps(prev => ({ ...prev, [index]: 0 }));
+    
+    // Start the loading animation
+    const loadingInterval = setInterval(() => {
+      setLoadingSteps(prev => {
+        // If we're already at step 3 (final step), keep it there
+        if (prev[index] >= 3) return prev;
+        return { ...prev, [index]: prev[index] + 1 };
+      });
+    }, 1500); // Change steps every 1.5 seconds
+    
     try {
+      // Find the AI question that the user was responding to
+      let aiQuestion = '';
+      
+      // Look for the most recent AI message before this user message
+      for (let i = index - 1; i >= 0; i--) {
+        if (messages[i] && messages[i].sender === 'ai') {
+          aiQuestion = messages[i].text;
+          break;
+        }
+      }
+      
+      // Debug logging
+      console.log("Sending request to generate_good_response with data:", {
+        message: messageText,
+        ai_question: aiQuestion
+      });
+      
       const res = await fetch(`${API_BASE_URL}/api/generate_good_response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ 
+          message: messageText,
+          ai_question: aiQuestion
+        }),
       });
+      
       const data = await res.json();
       if (data.response) {
-        setGeneratedResponse(prev => ({ ...prev, [index]: data.response }));
+        // Set step to completed before clearing interval
+        setLoadingSteps(prev => ({ ...prev, [index]: 4 })); // 4 is completed
+        
+        // Short delay to show completion state
+        setTimeout(() => {
+          setGeneratedResponse(prev => ({ ...prev, [index]: data.response }));
+          message.success('AI response generated successfully');
+          setLoadingResponses(prev => ({ ...prev, [index]: false }));
+          clearInterval(loadingInterval);
+        }, 500);
       } else {
         message.error('Failed to generate response');
+        setLoadingResponses(prev => ({ ...prev, [index]: false }));
+        clearInterval(loadingInterval);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error generating response:", error);
       message.error('Failed to generate response');
-    } finally {
-      // Reset loading state for this index
       setLoadingResponses(prev => ({ ...prev, [index]: false }));
+      clearInterval(loadingInterval);
     }
   };
 
@@ -92,7 +141,46 @@ const InterviewLogViewPage: React.FC = () => {
     navigate('/interview/history');
   };
 
-  const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#1890ff' }} spin />;
+  const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#ec4899' }} spin />;
+
+  // Helper function to render loading steps
+  const renderLoadingSteps = (index: number) => {
+    const currentStep = loadingSteps[index] || 0;
+    
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingMessage}>
+          {loadingTexts[currentStep] || "Generating improved response..."}
+        </div>
+        
+        <div className={styles.loadingSteps}>
+          <div className={styles.loadingStep}>
+            <div className={`${styles.loadingStepDot} ${currentStep >= 0 ? styles.active : ''} ${currentStep > 0 ? styles.completed : ''}`}></div>
+            <div className={`${styles.loadingStepText} ${currentStep >= 0 ? styles.active : ''} ${currentStep > 0 ? styles.completed : ''}`}>Analyze</div>
+          </div>
+          
+          <div className={styles.loadingStep}>
+            <div className={`${styles.loadingStepDot} ${currentStep >= 1 ? styles.active : ''} ${currentStep > 1 ? styles.completed : ''}`}></div>
+            <div className={`${styles.loadingStepText} ${currentStep >= 1 ? styles.active : ''} ${currentStep > 1 ? styles.completed : ''}`}>Improve</div>
+          </div>
+          
+          <div className={styles.loadingStep}>
+            <div className={`${styles.loadingStepDot} ${currentStep >= 2 ? styles.active : ''} ${currentStep > 2 ? styles.completed : ''}`}></div>
+            <div className={`${styles.loadingStepText} ${currentStep >= 2 ? styles.active : ''} ${currentStep > 2 ? styles.completed : ''}`}>Refine</div>
+          </div>
+          
+          <div className={styles.loadingStep}>
+            <div className={`${styles.loadingStepDot} ${currentStep >= 3 ? styles.active : ''} ${currentStep > 3 ? styles.completed : ''}`}></div>
+            <div className={`${styles.loadingStepText} ${currentStep >= 3 ? styles.active : ''} ${currentStep > 3 ? styles.completed : ''}`}>Finalize</div>
+          </div>
+        </div>
+        
+        <div className={styles.loadingProgress}>
+          <div className={styles.loadingProgressBar}></div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={styles.container}>
@@ -147,13 +235,21 @@ const InterviewLogViewPage: React.FC = () => {
                   {msg.sender === 'user' && (
                     <div className={styles.generatedContainer}>
                       {generatedResponses[index] ? (
-                        <div className={styles.generatedResponse}>{generatedResponses[index]}</div>
+                        <div className={styles.generatedResponse}>
+                          {generatedResponses[index]}
+                          <Tooltip title="This is an AI-recommended response for your reference">
+                            <span className={styles.infoIcon}><Check size={16} /></span>
+                          </Tooltip>
+                        </div>
                       ) : loadingResponses[index] ? (
-                        <Spin indicator={antIcon} />
+                        renderLoadingSteps(index)
                       ) : (
-                        <Button onClick={() => handleGenerateResponse(msg.text, index)}>
-                          Generate AI Response
-                        </Button>
+                        <Tooltip title="Generate an AI-suggested response to improve your answer quality">
+                          <Button onClick={() => handleGenerateResponse(msg.text, index)}>
+                            <Sparkles size={16} />
+                            <span>Generate AI Response</span>
+                          </Button>
+                        </Tooltip>
                       )}
                     </div>
                   )}
