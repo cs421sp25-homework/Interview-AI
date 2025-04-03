@@ -383,9 +383,6 @@ class ChatHistoryService:
                 )
                 specific_feedback_text = specific_feedback_response.choices[0].message.content
                 
-                # Limit to 200 characters if needed
-                if len(specific_feedback_text) > 200:
-                    specific_feedback_text = specific_feedback_text[:197] + "..."
             except Exception as e:
                 self.logger.error(f"Error getting specific feedback: {str(e)}")
                 specific_feedback_text = "Overall satisfactory performance with room for improvement in specific areas."
