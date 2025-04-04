@@ -13,7 +13,7 @@ interface FavoriteQuestion {
   created_at: string;
   session_id: string;
   email: string;
-  question_type?: string;
+  question_type: string;
   log: string;
 }
 
@@ -182,11 +182,14 @@ const FavoritesPage: React.FC = () => {
       dataIndex: 'question_type',
       key: 'question_type',
       width: '15%',
-      render: (type: string) => (
-        <Tag color={type === 'Technical' ? 'blue' : 'green'}>
-          {type}
-        </Tag>
-      ),
+      render: (type: string) => {
+        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+        return (
+          <Tag color={capitalizedType === 'Technical' ? 'blue' : 'green'}>
+            {capitalizedType}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Date Added',

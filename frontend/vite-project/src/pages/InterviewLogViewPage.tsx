@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Sparkles, Check, Brain, Lightbulb, PenTool } from 'lucide-react';
+import { Home, Sparkles, Check} from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { message, Button, Spin, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -10,17 +10,20 @@ import InterviewMessage from '../components/InterviewMessage';
 interface Message {
   text: string;
   sender: 'user' | 'ai';
+  question_type: string;
 }
 
 interface InterviewLog {
   id: number;
   thread_id: string;
   log: Message[];
+  question_type: string;
 }
 
 interface LocationState {
   conversation: Message[];
   thread_id: string;
+  question_type: string;
 }
 
 const InterviewLogViewPage: React.FC = () => {
@@ -41,6 +44,7 @@ const InterviewLogViewPage: React.FC = () => {
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [threadId, setThreadId] = useState<string>("");
+  const [questionType, setQuestionType] = useState<string>("");
 
   const handleGenerateResponse = async (messageText: string, index: number) => {
     // Set loading for this index
@@ -119,6 +123,7 @@ const InterviewLogViewPage: React.FC = () => {
     if (location.state && (location.state as LocationState).conversation) {
       setMessages((location.state as LocationState).conversation);
       setThreadId((location.state as LocationState).thread_id);
+      setQuestionType((location.state as LocationState).question_type);
       setTimeout(() => setLoading(false), 300);
       console.log('Thread ID:', (location.state as LocationState).thread_id);
     } else {
@@ -132,6 +137,7 @@ const InterviewLogViewPage: React.FC = () => {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
             setMessages(conversation);
             setThreadId(log.thread_id);
+            setQuestionType((location.state as LocationState).question_type);
           } else {
             message.error('Interview log not found.');
           }
@@ -249,6 +255,7 @@ const InterviewLogViewPage: React.FC = () => {
                     message={msg}
                     messageId={`${id}-${index}`}
                     threadId={threadId}
+                    questionType={questionType}
                     isFirstMessage={index === 0}
                   />
                 ) : (

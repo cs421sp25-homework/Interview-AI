@@ -1268,6 +1268,8 @@ def add_favorite_question():
         # Add thread_id to the data if provided
         if 'thread_id' in data:
             data['thread_id'] = data['thread_id']
+
+        data['question_type'] = data['question_type']
         
         print("Attempting to insert data into Supabase:", data)
         
@@ -1280,7 +1282,8 @@ def add_favorite_question():
                 'is_favorite': data['is_favorite'],
                 'updated_at': datetime.utcnow().isoformat(),
                 'thread_id': data.get('thread_id'),  # Update thread_id if it exists
-                'session_id': data['session_id']  # Ensure session_id is updated
+                'session_id': data['session_id'],  # Ensure session_id is updated
+                'question_type': data['question_type']
             }).eq('id', existing.data[0]['id']).execute()
         else:
             # Insert new record

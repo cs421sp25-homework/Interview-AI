@@ -13,6 +13,7 @@ interface InterviewMessageProps {
   messageId: string;
   threadId: string;
   isFirstMessage?: boolean;
+  questionType?: string;
 }
 
 interface FavoriteQuestion {
@@ -21,9 +22,10 @@ interface FavoriteQuestion {
   session_id: string;
   is_favorite: boolean;
   created_at: string;
+  question_type: string;
 }
 
-const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId, threadId, isFirstMessage = false }) => {
+const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId, threadId, isFirstMessage = false, questionType }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [favoriteId, setFavoriteId] = useState<number | null>(null);
@@ -65,12 +67,16 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
         return;
       }
 
+      // Get question type from props or message, using the questionType prop from component parameters
+      const currentQuestionType = message.question_type || questionType || 'Unknown';
+
       const favoriteData = {
         question_text: message.text,
         email: userEmail,
         session_id: threadId,
         is_favorite: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        question_type: currentQuestionType
       };
 
       console.log('Sending favorite data:', favoriteData);
@@ -87,7 +93,9 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
       console.log('Server response:', responseData);
 
       if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to favorite question');
+        const errorMessage = responseData.error || responseData.message || 'Failed to favorite question';
+        console.error('Server error:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       if (responseData.data && responseData.data.id) {
@@ -95,6 +103,7 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
         setIsFavorite(true);
         antMessage.success('Question added to favorites');
       } else {
+        console.error('Invalid response format:', responseData);
         throw new Error('Invalid response format from server');
       }
     } catch (error) {

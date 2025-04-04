@@ -262,7 +262,8 @@ const InterviewHistoryPage: React.FC = () => {
     navigate(`/interview/view/${log.id}`, { 
         state: { 
             conversation: log.log, 
-            thread_id: log.thread_id // Include thread_id in the state
+            thread_id: log.thread_id,
+            question_type: log.question_type
         } 
     });
   };
@@ -520,18 +521,23 @@ const InterviewHistoryPage: React.FC = () => {
     // Split the text into sentences
     const sentences = text.split(/[.!?]+/);
     
-    // Find the last sentence that ends with a question mark
-    for (let i = sentences.length - 1; i >= 0; i--) {
-      const sentence = sentences[i].trim();
-      // Check if this sentence was followed by a question mark in the original text
-      const textAfterSentence = text.substring(text.indexOf(sentence) + sentence.length);
-      if (textAfterSentence.startsWith('?')) {
-        return sentence + '?';
-      }
+    // Find all sentences that are followed by a question mark
+    const questions = sentences.filter((sentence) => {
+      const trimmedSentence = sentence.trim();
+      if (!trimmedSentence) return false;
+      
+      // Get the text after this sentence
+      const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
+      return textAfterSentence.startsWith('?');
+    });
+    
+    // If no questions found, return the last sentence with a question mark
+    if (questions.length === 0) {
+      return sentences[sentences.length - 1].trim() + '?';
     }
     
-    // If no question mark sentence is found, return the last sentence with a question mark
-    return sentences[sentences.length - 1].trim() + '?';
+    // Return all questions joined with line breaks
+    return questions.map(q => q.trim() + '?').join('\n');
   };
 
   const handleViewFavorites = async (log: InterviewLog) => {
