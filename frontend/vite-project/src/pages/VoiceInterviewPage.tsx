@@ -1,6 +1,6 @@
 // VoiceInterviewPage.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, X, Home, Bot, Loader } from 'lucide-react';
+import { Mic, MicOff, X, Home, Bot, Loader, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
@@ -17,6 +17,23 @@ interface ChatMessage {
   realText?: string;
 }
 
+// 添加保存过渡动画组件
+const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div className={styles.savingOverlay}>
+      <div className={styles.savingContent}>
+        <Save size={60} className={styles.savingIcon} />
+        <h2 className={styles.savingText}>Saving Interview</h2>
+        <p className={styles.savingSubtext}>
+          Please wait while we save your voice interview data...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const VoiceInterviewPage: React.FC = () => {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
@@ -26,6 +43,10 @@ const VoiceInterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
   const [showTextForMessage, setShowTextForMessage] = useState<Record<number, boolean>>({});
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [showSavingOverlay, setShowSavingOverlay] = useState(false);
 
   const navigate = useNavigate();
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +54,7 @@ const VoiceInterviewPage: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRefs = useRef<HTMLAudioElement[]>([]);
   const hasAutoPlayedInitial = useRef(false);
+  const pendingAudioQueue = useRef<{url: string, index: number}[]>([]);
 
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
@@ -40,23 +62,43 @@ const VoiceInterviewPage: React.FC = () => {
 
   // Stop all audios
   const stopAllAudios = useCallback(() => {
-    audioRefs.current.forEach((audio) => {
-      try {
-        audio.pause();
-        audio.currentTime = 0;
-        // Clean up both blob URLs and Supabase audio URLs
-        if (audio.src.startsWith('blob:') || audio.src.startsWith(`${API_BASE_URL}/audio`)) {
-          URL.revokeObjectURL(audio.src);
+    try {
+      // 立即重置当前播放状态
+      setCurrentlyPlaying(null);
+      setIsAISpeaking && setIsAISpeaking(false);
+      
+      // 遍历并停止所有音频
+      audioRefs.current.forEach((audio) => {
+        try {
+          // 暂停音频播放
+          audio.pause();
+          // 重置播放位置
+          audio.currentTime = 0;
+          // 移除所有事件监听器
+          audio.onended = null;
+          audio.onplay = null;
+          audio.onpause = null;
+          audio.onerror = null;
+          
+          // 释放 blob URL
+          if (audio.src) {
+            if (audio.src.startsWith('blob:') || audio.src.startsWith(`${API_BASE_URL}/audio`)) {
+              URL.revokeObjectURL(audio.src);
+            }
+            // 清空音频源
+            audio.src = '';
+            audio.load();
+          }
+        } catch (audioError) {
+          console.warn('Error cleaning up individual audio:', audioError);
         }
-        // Remove any event listeners
-        audio.onended = null;
-        audio.onerror = null;
-      } catch (error) {
-        console.warn('Error cleaning up audio:', error);
-      }
-    });
-    audioRefs.current = [];
-    setCurrentlyPlaying(null);
+      });
+      
+      // 清空音频引用数组
+      audioRefs.current = [];
+    } catch (error) {
+      console.error('Error stopping all audios:', error);
+    }
   }, []);
 
   // Play a given message
@@ -71,9 +113,16 @@ const VoiceInterviewPage: React.FC = () => {
         const audio = new Audio(msg.audioUrl);
         audioRefs.current.push(audio);
         
+        if (msg.sender === 'ai') {
+          setIsAISpeaking(true);
+        }
+        
         audio.onended = () => {
           setCurrentlyPlaying(null);
           audioRefs.current = audioRefs.current.filter((a) => a !== audio);
+          if (msg.sender === 'ai') {
+            setIsAISpeaking(false);
+          }
         };
         
         await audio.play();
@@ -81,6 +130,7 @@ const VoiceInterviewPage: React.FC = () => {
       } catch (error) {
         console.error('Error playing message:', error);
         setCurrentlyPlaying(null);
+        setIsAISpeaking(false);
         message.error('Failed to play audio message');
       }
     },
@@ -214,7 +264,11 @@ const VoiceInterviewPage: React.FC = () => {
             // Create audio element for playback
             const audio = new Audio(ttsData.audio_url);
             audioRefs.current.push(audio);
+            
+            setIsAISpeaking(true);
+            
             audio.onended = () => {
+              setIsAISpeaking(false);
               audioRefs.current = audioRefs.current.filter(a => a !== audio);
             };
     
@@ -229,7 +283,7 @@ const VoiceInterviewPage: React.FC = () => {
             }]);
     
             // Auto-play welcome message
-            await audio.play().catch(e => console.warn('Autoplay prevented:', e));
+            await playAudio(ttsData.audio_url);
             
           } catch (error) {
             console.error('Error generating welcome message audio:', error);
@@ -239,6 +293,7 @@ const VoiceInterviewPage: React.FC = () => {
               sender: 'ai',
               isReady: true
             }]);
+            setIsAISpeaking(false);
           }
         } else {
           const realAiText = data.response || "I'm thinking about my response...";
@@ -394,34 +449,45 @@ const VoiceInterviewPage: React.FC = () => {
       
       const ttsData = await ttsResponse.json();
   
-      // Update with final audio data
+      // 更新消息对象
+      const updatedAiMessage = { 
+        ...aiMessage, 
+        text: realAiText,
+        audioUrl: ttsData.audio_url,
+        storagePath: ttsData.storage_path,
+        duration: ttsData.duration,
+        isReady: true 
+      };
+      
+      // 更新消息状态
       setMessages(prev =>
         prev.map(msg =>
-          msg === aiMessage
-            ? { 
-                ...msg, 
-                text: realAiText,
-                audioUrl: ttsData.audio_url,
-                storagePath: ttsData.storage_path,
-                duration: ttsData.duration,
-                isReady: true 
-              }
-            : msg
+          msg === aiMessage ? updatedAiMessage : msg
         )
       );
       
-      // Auto-play response
-      const audio = new Audio(ttsData.audio_url);
-      await audio.play();
+      // 使用新的播放函数
+      await playAudio(ttsData.audio_url);
 
     } catch (error) {
       console.error('Chat error:', error);
+      setIsAISpeaking(false);
       message.error('Failed to send message. Please try again.');
     }
   };
 
   // End interview
   const handleEndInterview = async () => {
+    // 防止多次点击触发多次请求
+    if (isSaving) return;
+    
+    // 设置保存状态
+    setIsSaving(true);
+    
+    // 显示保存动画
+    setShowSavingOverlay(true);
+    
+    // 首先停止所有音频播放
     stopAllAudios();
     
     try {
@@ -439,15 +505,196 @@ const VoiceInterviewPage: React.FC = () => {
   
       await saveChatHistory(threadId!, finalMessages);
       message.success('Interview saved successfully');
-      navigate('/dashboard');
+      
+      // 短暂延迟以显示保存动画
+      setTimeout(() => {
+        // 隐藏保存动画
+        setShowSavingOverlay(false);
+        // 保存后导航到查看页面
+        navigate(`/interview/log/view/${threadId}`);
+      }, 800);
     } catch (error) {
       console.error('Error ending interview:', error);
       message.error('Failed to save interview');
+      // 如果出错，重置保存状态，让用户可以重试
+      setIsSaving(false);
+      setShowSavingOverlay(false);
     }
   };
 
   const handleBackToDashboard = () => {
+    // 直接调用 handleEndInterview 函数，确保音频停止和保存逻辑执行
     handleEndInterview();
+  };
+
+  // 在组件卸载时确保所有音频都被停止并保存数据
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // 如果有未保存的数据，显示确认提示
+      if (messages.length > 1 && !isSaving) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的面试数据，确定要离开吗？';
+        return e.returnValue;
+      }
+    };
+
+    // 添加页面关闭前的事件监听
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      // 移除事件监听
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // 确保所有音频停止播放
+      stopAllAudios();
+      
+      // 停止媒体录音（如果正在录制）
+      if (mediaRecorderRef.current?.state !== 'inactive') {
+        mediaRecorderRef.current?.stop();
+        mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+      }
+      
+      // 如果有面试数据且没有正在保存中，尝试保存
+      if (threadId && messages.length > 1 && !isSaving) {
+        // 尝试同步保存（注意：这可能不会完全执行，因为页面可能已经在卸载）
+        try {
+          const finalMessages = messages.map(msg => ({
+            ...msg,
+            ...(msg.audioUrl ? { 
+              audioUrl: msg.audioUrl,
+              storagePath: msg.storagePath,
+              duration: msg.duration 
+            } : {})
+          }));
+          
+          // 使用 sendBeacon API 尝试在页面关闭时发送保存请求
+          const data = {
+            thread_id: threadId,
+            email: userEmail,
+            messages: finalMessages,
+            config_name,
+            config_id
+          };
+          
+          const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+          navigator.sendBeacon(`${API_BASE_URL}/api/chat_history`, blob);
+        } catch (error) {
+          console.error('Error in cleanup save:', error);
+        }
+      }
+    };
+  }, [threadId, messages, stopAllAudios, userEmail, config_name, config_id, isSaving]);
+
+  // 修改初始化音频上下文的逻辑 - 自动初始化
+  const initializeAudio = useCallback(() => {
+    if (audioInitialized) return;
+    
+    try {
+      // 创建一个静音的音频上下文来初始化
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const silenceBuffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = silenceBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      
+      setAudioInitialized(true);
+      console.log('Audio context initialized successfully');
+      
+      // 播放队列中等待的音频
+      if (pendingAudioQueue.current.length > 0) {
+        const next = pendingAudioQueue.current.shift();
+        if (next) {
+          handlePlayMessage(messages[next.index], next.index);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize audio context:', error);
+    }
+  }, [audioInitialized, handlePlayMessage, messages]);
+
+  // 组件挂载时自动尝试初始化
+  useEffect(() => {
+    // 第一次尝试自动初始化
+    initializeAudio();
+    
+    // 仍然保留用户交互事件作为备用初始化机制
+    const handleUserInteraction = () => {
+      if (!audioInitialized) {
+        initializeAudio();
+      }
+    };
+    
+    // 添加用户交互事件监听作为备用
+    ['click', 'touchstart', 'keydown'].forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { once: true });
+    });
+    
+    return () => {
+      ['click', 'touchstart', 'keydown'].forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+    };
+  }, [initializeAudio, audioInitialized]);
+
+  // 修改播放音频的函数
+  const playAudio = async (audioUrl: string) => {
+    try {
+      // 如果音频还未初始化，先将音频加入等待队列
+      if (!audioInitialized) {
+        const index = messages.length - 1;
+        pendingAudioQueue.current.push({ url: audioUrl, index });
+        console.log('Audio playback queued - waiting for initialization');
+        return null;
+      }
+      
+      // 创建音频元素
+      const audio = new Audio(audioUrl);
+      audioRefs.current.push(audio);
+      
+      // 设置 AI 正在说话
+      setIsAISpeaking(true);
+      
+      // 添加结束事件处理
+      audio.onended = () => {
+        setIsAISpeaking(false);
+        setCurrentlyPlaying(null);
+        audioRefs.current = audioRefs.current.filter(a => a !== audio);
+      };
+      
+      // 添加错误处理
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsAISpeaking(false);
+        setCurrentlyPlaying(null);
+        audioRefs.current = audioRefs.current.filter(a => a !== audio);
+        message.error('Failed to play AI response');
+      };
+      
+      // 尝试播放
+      try {
+        const index = messages.length - 1;
+        setCurrentlyPlaying(index);
+        
+        // play() 返回一个 Promise
+        await audio.play();
+        console.log('Audio playback started successfully');
+      } catch (playError) {
+        console.warn('Autoplay prevented by browser:', playError);
+        
+        // 如果自动播放失败，提供静默反馈
+        console.log('Click on AI message to play the response');
+        setIsAISpeaking(false);
+        setCurrentlyPlaying(null);
+      }
+      
+      return audio;
+    } catch (error) {
+      console.error('Error setting up audio playback:', error);
+      setIsAISpeaking(false);
+      setCurrentlyPlaying(null);
+      return null;
+    }
   };
 
   if (isLoading) {
@@ -464,20 +711,39 @@ const VoiceInterviewPage: React.FC = () => {
 
   return (
     <div className={styles.interviewContainer}>
+      {/* 保存动画覆盖层 */}
+      <SavingOverlay isVisible={showSavingOverlay} />
+      
       <div className={styles.interviewHeader}>
-        <button className={styles.backButton} onClick={handleBackToDashboard}>
+        <button 
+          className={`${styles.backButton} ${isSaving ? styles.saving : ''}`}
+          onClick={handleBackToDashboard}
+          disabled={isSaving}
+        >
           <Home size={18} />
-          Back to Dashboard
+          {isSaving ? 'Saving...' : 'Back to Dashboard'}
         </button>
         <h1>Voice Interview: {config_name}</h1>
-        <button className={styles.endButton} onClick={handleEndInterview}>
-          <X size={20} /> End Interview
+        <button 
+          className={`${styles.endButton} ${isSaving ? styles.saving : ''}`}
+          onClick={handleEndInterview}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <>
+              <Loader size={20} className={styles.loadingSpinner} /> Saving...
+            </>
+          ) : (
+            <>
+              <X size={20} /> End Interview
+            </>
+          )}
         </button>
       </div>
       <div className={styles.chatInterface}>
         <div ref={chatContainerRef} className={styles.chatContainer}>
           {messages.map((msg, index) => {
-            // If it's an AI message that isn't ready, show the placeholder
+            // 如果是AI消息且尚未准备好，显示增强的加载UI
             if (msg.sender === 'ai' && !msg.isReady) {
               return (
                 <div
@@ -489,8 +755,11 @@ const VoiceInterviewPage: React.FC = () => {
                       <Bot size={24} />
                     </div>
                   </div>
-                  <div className={styles.placeholderBubble}>
-                    ...
+                  <div className={styles.aiGeneratingBubble}>
+                    <div className={styles.waveDot}></div>
+                    <div className={styles.waveDot}></div>
+                    <div className={styles.waveDot}></div>
+                    <span className={styles.aiGeneratingText}>Generating message</span>
                   </div>
                 </div>
               );
@@ -534,13 +803,19 @@ const VoiceInterviewPage: React.FC = () => {
         </div>
         <div className={styles.micContainer}>
           <button
-            className={`${styles.largeMic} ${isRecording ? styles.recording : ''}`}
+            className={`${styles.largeMic} ${isRecording ? styles.recording : ''} ${isAISpeaking ? styles.disabled : ''}`}
             onClick={toggleRecording}
-            disabled={!isChatReady}
+            disabled={!isChatReady || isAISpeaking}
           >
             {isRecording ? <MicOff size={48} /> : <Mic size={48} />}
           </button>
-          <p>{isRecording ? 'Recording... Click to stop' : 'Click to start recording'}</p>
+          <p>
+            {isAISpeaking 
+              ? 'AI is speaking... Please wait' 
+              : isRecording 
+                ? 'Recording... Click to stop' 
+                : 'Click to start recording'}
+          </p>
         </div>
       </div>
     </div>
