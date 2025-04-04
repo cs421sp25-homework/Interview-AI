@@ -38,7 +38,7 @@ import time
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
+CORS(app, resources={r"/api/*": {"origins": [os.getenv('FRONTEND_URL', 'http://127.0.0.1:5173'), "http://localhost:5173"]}})
 
 app.register_error_handler(400, handle_bad_request)
 
