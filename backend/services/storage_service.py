@@ -7,6 +7,7 @@ class StorageService:
         self.supabase = create_client(supabase_url, supabase_key)
 
     def upload_file(self, bucket_name: str, file_path: str, file_content: bytes, content_type: str):
+        print(self.supabase.storage.list_buckets())
         return self.supabase.storage.from_(bucket_name).upload(
             path=file_path,
             file=file_content,
