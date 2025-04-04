@@ -77,14 +77,14 @@ const MultiStepForm = () => {
     setFormData(prev => {
       const newFormData = { ...prev, [field]: value };
 
-      if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
-        if (newFormData.password.length < 8) {
-          newFormData.confirmPasswordError = 'Password must be at least 8 characters long';
-        } else {
-          newFormData.confirmPasswordError =
-            newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
-        }
-      }
+      // if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
+      //   if (newFormData.password.length < 8) {
+      //     newFormData.confirmPasswordError = 'Password must be at least 8 characters long';
+      //   } else {
+      //     newFormData.confirmPasswordError =
+      //       newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
+      //   }
+      // }
 
       return newFormData;
     });
@@ -121,22 +121,22 @@ const MultiStepForm = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: {
-        if (
-          !formData.username.trim() ||
-          !formData.password.trim() ||
-          !formData.confirmPassword.trim()
-        ) {
-          alert('Please fill in all required fields.');
-          return false;
-        }
-        if (formData.password.length < 8) {
-          alert('Password must be at least 8 characters long.');
-          return false;
-        }
-        if (formData.password !== formData.confirmPassword) {
-          alert('Passwords do not match.');
-          return false;
-        }
+        // if (
+        //   !formData.username.trim() ||
+        //   !formData.password.trim() ||
+        //   !formData.confirmPassword.trim()
+        // ) {
+        //   alert('Please fill in all required fields.');
+        //   return false;
+        // }
+        // if (formData.password.length < 8) {
+        //   alert('Password must be at least 8 characters long.');
+        //   return false;
+        // }
+        // if (formData.password !== formData.confirmPassword) {
+        //   alert('Passwords do not match.');
+        //   return false;
+        // }
         return true;
       }
       case 2: {
@@ -240,7 +240,7 @@ const MultiStepForm = () => {
                 placeholder="Enter your username"
               />
             </div>
-            <div className={styles.formGroup}>
+            {/* <div className={styles.formGroup}>
               <label className={styles.formLabel}>Password</label>
               <input
                 type="password"
@@ -262,7 +262,7 @@ const MultiStepForm = () => {
               {formData.confirmPasswordError && (
                 <p className={styles.errorText}>{formData.confirmPasswordError}</p>
               )}
-            </div>
+            </div> */}
           </>
         );
       case 2:
@@ -299,7 +299,7 @@ const MultiStepForm = () => {
                 disabled
                 style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
               />
-              <p className={styles.helperText}>Email provided by OAuth authentication</p>
+              <p className={styles.helperText}>Email provided by Authentication</p>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Phone</label>
@@ -601,9 +601,9 @@ const OAuthSignUpForm = () => {
         </div>
       </nav>
 
-      <main className={styles.main}>
+      <main className={styles.main}>  
         <div className={styles.header}>
-          <h1>Complete Your OAuth Profile</h1>
+          <h1>Complete Your Authentication Profile</h1>
           <p>We've already got your email - just fill in the rest to personalize your interview experience</p>
         </div>
         <MultiStepForm />

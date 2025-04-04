@@ -107,12 +107,9 @@ const Home = () => {
           Practice interviews with our intelligent AI assistant and get real-time feedback
           to improve your performance.
         </p>
-        <Button 
-          className={styles.heroButton}
-          onClick={handleStartPracticing}
-        >
-          Start Practicing Now
-        </Button>
+        <SignUpButton mode="modal">
+          <Button className={styles.heroButton}>Start Practicing Now</Button>
+        </SignUpButton>
       </div>
 
       <div className={styles.features}>
