@@ -5,10 +5,13 @@ import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
 
+interface ChatMessage {
+  text: string;
+  sender: 'user' | 'ai';
+}
+
 const InterviewPage: React.FC = () => {
-  const [messages, setMessages] = useState<
-    Array<{ text: string; sender: 'user' | 'ai' }>
-  >([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [threadId, setThreadId] = useState<string | null>(null);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
@@ -16,77 +19,80 @@ const InterviewPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnding, setIsEnding] = useState(false);
 
-  
-  // Record whether the interview has ended and if there is actual conversation
+  // Refs to track interview status
   const hasEndedInterviewRef = useRef(false);
   const hasRealConversationRef = useRef(false);
   const initialLoadRef = useRef(true);
-  
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const userEmail = localStorage.getItem('user_email') || '';
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
   const navigate = useNavigate();
-  
+
+  // Auto-scroll to bottom when messages update
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
-  
-  // Update hasRealConversationRef when there are user messages indicating a real conversation
+
+  // Track if the conversation is “real”
   useEffect(() => {
+    // If there's at least one user message or more than one message total
     if (messages.length > 1 || (messages.length === 1 && messages[0].sender === 'user')) {
       hasRealConversationRef.current = true;
     }
   }, [messages]);
-  
-  const saveChatHistory = useCallback(async (currentThreadId: string, chatMessages: Array<{ text: string; sender: 'user' | 'ai' }>) => {
-    try {
-      // If there's only one AI message, it's just the welcome message, skip saving
-      if (chatMessages.length === 1 && chatMessages[0].sender === 'ai') {
-        console.log("Only welcome message exists, skipping save");
+
+  // -----------------------------------
+  // Helper: Save chat history
+  // -----------------------------------
+  const saveChatHistory = useCallback(
+    async (currentThreadId: string, chatMessages: ChatMessage[]) => {
+      try {
+        // If there's only one AI message, it's just the welcome message
+        if (chatMessages.length === 1 && chatMessages[0].sender === 'ai') {
+          console.log("Only welcome message exists, skipping save");
+          return true;
+        }
+
+        console.log("Saving chat history to API for thread_id:", currentThreadId);
+        const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            thread_id: currentThreadId,
+            email: userEmail,
+            messages: chatMessages,
+            config_name: config_name,
+            config_id: config_id
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save chat history: ${response.status} ${response.statusText}`);
+        }
+
+        console.log("Chat history saved successfully");
         return true;
+      } catch (error) {
+        console.error("Error saving chat history:", error);
+        return false;
       }
-      
-      console.log("Saving chat history to API for thread_id:", currentThreadId);
-      
-      const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          thread_id: currentThreadId,
-          email: userEmail,
-          messages: chatMessages,
-          config_name: config_name,
-          config_id: config_id
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to save chat history: ${response.status} ${response.statusText}`);
-      }
-      
-      console.log("Chat history saved successfully");
-      return true;
-    } catch (error) {
-      console.error("Error saving chat history:", error);
-      return false;
-    }
-  }, [userEmail, config_name, config_id]);
-  
+    },
+    [userEmail, config_name, config_id]
+  );
+
+  // -----------------------------------
+  // On Unmount: attempt to save chat
+  // -----------------------------------
   useEffect(() => {
     return () => {
-      // Only save chat history when all conditions are met:
-      // 1. Thread ID exists
-      // 2. Messages exist
-      // 3. Interview has not been explicitly ended
-      // 4. There is real conversation (not just welcome message)
-      // 5. Not in initial loading phase
       if (
-        threadId && 
-        messages.length > 0 && 
-        !hasEndedInterviewRef.current && 
+        threadId &&
+        messages.length > 0 &&
+        !hasEndedInterviewRef.current &&
         hasRealConversationRef.current &&
         !initialLoadRef.current
       ) {
@@ -99,210 +105,191 @@ const InterviewPage: React.FC = () => {
       }
     };
   }, [threadId, messages, saveChatHistory]);
-  
-  useEffect(() => {
-    try {
-      // Check if user is logged in
-      const email = localStorage.getItem('user_email');
-      if (!email) {
-        console.log("User not logged in, redirecting to login page");
-        navigate('/login');
-        return;
-      }
 
-      setIsLoading(true);
-      
-      const storedUserPhoto = localStorage.getItem('user_photo_url');
-      if (storedUserPhoto) {
-        setUserPhotoUrl(storedUserPhoto);
-      }
-      
-      if (!config_name || !config_id) {
-        message.error('Please select a configuration to start an interview');
-        navigate('/prompts');
-        return;
-      }
-      
-      const createSession = async () => {
-        try {
-          console.log("Creating new interview session...");
-          
-          // Fetch user profile data
-          let userProfile = null;
-          try {
-            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
-            if (profileResponse.ok) {
-              const profileData = await profileResponse.json();
-              if (profileData.data) {
-                userProfile = profileData.data;
-              }
-            }
-          } catch (profileError) {
-            console.error('Error fetching user profile:', profileError);
-            // Continue even if profile fetch fails
-          }
-          console.log("User profile:", userProfile);
-          
-          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              email: userEmail, 
-              name: config_name,
-              new_session: true,
-              // Include user profile information for the LLM
-              userProfile: userProfile || {
-                first_name: localStorage.getItem('user_first_name') || '',
-                last_name: localStorage.getItem('user_last_name') || '',
-                job_title: localStorage.getItem('user_job_title') || '',
-                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
-                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
-                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
-              }
-            }), 
-          });
-    
-          if (!res.ok) {
-            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
-          }
-    
-          const data = await res.json();
-          console.log("Received session data:", data);
-          
-          if (!data.thread_id) {
-            throw new Error("No thread_id received from server");
-          }
-          
-          setThreadId(data.thread_id);
-          
-          const welcomeMessage = data.response || 
-            `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
-          
-          setMessages([{ 
-            text: welcomeMessage, 
-            sender: 'ai' as const 
-          }]);
-          
-          setIsChatReady(true);
-          setIsLoading(false);
-          
-          // Set initial load flag to false after a short delay
-          setTimeout(() => {
-            initialLoadRef.current = false;
-            console.log("Initial load phase completed");
-          }, 1000);
-          
-          return data.thread_id;
-        } catch (error) {
-          console.error('Error creating new chat session:', error);
-          message.error('Failed to start interview. Please try again.');
-          setIsLoading(false);
-          return null;
+  // -----------------------------------
+  // Initialize interview session
+  // -----------------------------------
+  useEffect(() => {
+    const initInterview = async () => {
+      try {
+        // Check if user is logged in
+        if (!userEmail) {
+          message.warning("You must be logged in to start an interview.");
+          navigate('/login');
+          return;
         }
-      };
-      
-      createSession();
-    } catch (error) {
-      console.error('Error in InterviewPage:', error);
-      navigate('/login');
-    }
+
+        setIsLoading(true);
+
+        // Fetch user photo if available
+        const storedUserPhoto = localStorage.getItem('user_photo_url');
+        if (storedUserPhoto) {
+          setUserPhotoUrl(storedUserPhoto);
+        }
+
+        // Check if there's a config
+        if (!config_name || !config_id) {
+          message.error('No interview configuration. Please select a configuration first.');
+          navigate('/prompts');
+          return;
+        }
+
+        console.log("Creating new interview session...");
+        let userProfile = null;
+        try {
+          const profileRes = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            userProfile = profileData.data || null;
+          }
+        } catch (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        }
+
+        const startRes = await fetch(`${API_BASE_URL}/api/new_chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userEmail,
+            name: config_name,
+            new_session: true,
+            userProfile: userProfile || {
+              first_name: localStorage.getItem('user_first_name') || '',
+              last_name: localStorage.getItem('user_last_name') || '',
+              job_title: localStorage.getItem('user_job_title') || '',
+              key_skills: localStorage.getItem('user_skills')
+                ? localStorage.getItem('user_skills')!.split(',')
+                : [],
+              education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+              resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+            }
+          }),
+        });
+
+        if (!startRes.ok) {
+          throw new Error(`Failed to start interview: ${startRes.status} ${startRes.statusText}`);
+        }
+
+        const data = await startRes.json();
+        if (!data.thread_id) {
+          throw new Error("No thread_id returned from server");
+        }
+
+        setThreadId(data.thread_id);
+        const welcomeMessage = data.response ||
+          `Welcome to your interview session for "${config_name}". Please start by introducing yourself.`;
+
+        setMessages([{ text: welcomeMessage, sender: 'ai' }]);
+        setIsChatReady(true);
+        setIsLoading(false);
+
+        // End initial load after a short delay
+        setTimeout(() => {
+          initialLoadRef.current = false;
+          console.log("Initial load phase completed");
+        }, 1000);
+      } catch (err) {
+        console.error("Error in InterviewPage initialization:", err);
+        message.error('Failed to start interview. Please try again.');
+        setIsLoading(false);
+      }
+    };
+
+    initInterview();
   }, [navigate, userEmail, config_name, config_id]);
-  
+
+  // -----------------------------------
+  // Handle sending user message
+  // -----------------------------------
   const handleSend = async () => {
     if (!threadId) {
       message.warning('No active interview session. Please start a new interview.');
       return;
     }
-    
     if (!input.trim()) return;
-    
-    const userMessage = { text: input, sender: 'user' as const };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    
-    const userInput = input;
+
+    const userMessage: ChatMessage = { text: input.trim(), sender: 'user' };
+    const updated = [...messages, userMessage];
+    setMessages(updated);
     setInput('');
-    
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: userInput, 
+        body: JSON.stringify({
+          message: userMessage.text,
           thread_id: threadId,
           email: userEmail,
-          config_name: config_name,
-          config_id: config_id
+          config_name,
+          config_id
         }),
       });
-      
+
       if (!res.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error(`Chat response not ok: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
-      console.log(`Received AI response: "${data.response.substring(0, 30)}..."`);
-      
-      const aiMessage = { 
-        text: data.response || "I'm thinking about my response...", 
-        sender: 'ai' as const 
-      };
-      
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
-      
+      const aiText = data.response || "I'm thinking about my response...";
+      const aiMessage: ChatMessage = { text: aiText, sender: 'ai' };
+
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error processing chat:', error);
       message.error('Failed to send message. Please try again.');
     }
   };
 
+  // -----------------------------------
+  // End Interview
+  // -----------------------------------
   const handleEndInterview = async () => {
     if (!threadId) {
-      message.warning('No active interview session.');
+      message.warning("No active interview session to end.");
+      navigate('/dashboard');
       return;
     }
-    
-    // Prevent multiple clicks
-    if (isEnding) return;
+
+    if (isEnding) return; // Prevent multiple clicks
     setIsEnding(true);
-  
-    // Show a loading message (but do not block navigation)
+
+    hasEndedInterviewRef.current = true;
     message.loading('Saving your interview responses...', 0);
-    
-    // Fire off the save operation without waiting for it to finish
+
+    // Attempt to save
     saveChatHistory(threadId, messages)
       .then((saveResult) => {
         if (saveResult) {
           message.success('Interview responses saved.');
         } else {
-          message.warning('Interview ended, but there might be issues saving your responses.');
+          message.warning('Interview ended, but there was an issue saving your responses.');
         }
       })
-      .catch((error) => {
-        console.error('Error saving chat history:', error);
+      .catch((err) => {
+        console.error('Error saving chat history on end:', err);
         message.error('Failed to save your responses.');
       });
-    
-    // Option A: Remove config keys after a short delay, so the view page can still access them if needed
+
     setTimeout(() => {
       localStorage.removeItem('current_config');
       localStorage.removeItem('current_config_id');
     }, 500);
-  
-    // Navigate immediately to the interview view page with the conversation data
+
     navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
-    
     setIsEnding(false);
   };
-  
-  
-  
 
+  // -----------------------------------
+  // Go back to Dashboard
+  // -----------------------------------
   const handleBackToDashboard = () => {
     handleEndInterview();
   };
 
+  // -----------------------------------
+  // Render loading if needed
+  // -----------------------------------
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -315,21 +302,25 @@ const InterviewPage: React.FC = () => {
     );
   }
 
+  // -----------------------------------
+  // Render main interview UI
+  // -----------------------------------
   return (
     <div className={styles.interviewContainer}>
       <div className={styles.interviewHeader}>
-        <button 
+        <button
           className={styles.backButton}
           onClick={handleBackToDashboard}
+          disabled={isEnding}
         >
           <Home size={18} />
           Back to Dashboard
         </button>
         <h1>Interview: {config_name}</h1>
-        <button 
-          className={styles.endButton} 
+        <button
+          className={styles.endButton}
           onClick={handleEndInterview}
-          disabled={isEnding}  // Disable the button while loading
+          disabled={isEnding}
         >
           {isEnding ? (
             <>
@@ -341,23 +332,20 @@ const InterviewPage: React.FC = () => {
             </>
           )}
         </button>
-
       </div>
 
       <div className={styles.chatInterface}>
-        <div 
-          ref={chatContainerRef}
-          className={styles.chatContainer}
-        >
-          {messages.map((message, index) => (
+        <div ref={chatContainerRef} className={styles.chatContainer}>
+          {messages.map((msg, idx) => (
             <div
-              key={index}
-              className={`${styles.messageWrapper} ${
-                message.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
-              }`}
+              key={idx}
+              className={`
+                ${styles.messageWrapper}
+                ${msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper}
+              `}
             >
               <div className={styles.avatarContainer}>
-                {message.sender === 'ai' ? (
+                {msg.sender === 'ai' ? (
                   <div className={styles.botAvatar}>
                     <Bot size={24} />
                   </div>
@@ -366,38 +354,46 @@ const InterviewPage: React.FC = () => {
                     {userPhotoUrl ? (
                       <img src={userPhotoUrl} alt="User" />
                     ) : (
-                      <div className={styles.defaultUserAvatar}>{userEmail.charAt(0).toUpperCase()}</div>
+                      <div className={styles.defaultUserAvatar}>
+                        {userEmail.charAt(0).toUpperCase()}
+                      </div>
                     )}
                   </div>
                 )}
               </div>
               <div
                 className={`${styles.message} ${
-                  message.sender === 'ai' ? styles.aiMessage : styles.userMessage
+                  msg.sender === 'ai' ? styles.aiMessage : styles.userMessage
                 }`}
               >
-                {message.text || <span>&nbsp;</span>}
+                {msg.text || <span>&nbsp;</span>}
               </div>
             </div>
           ))}
         </div>
+
         <div className={styles.inputContainer}>
           <textarea
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
-              // Auto-adjust height based on content
+              // Auto-expand
               e.target.style.height = "auto";
               e.target.style.height = `${e.target.scrollHeight}px`;
             }}
-            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder="Type your response..."
             className={styles.input}
             disabled={!isChatReady}
             rows={1}
           />
-          <button 
-            className={styles.sendButton} 
+          <button
+            className={styles.sendButton}
             onClick={handleSend}
             disabled={!input.trim() || !isChatReady}
           >

@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
-import { Bot, FileText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Bot, 
+  FileText, 
+  ChevronLeft, 
+  ChevronRight, 
+  CheckCircle 
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './OAuthSignUpForm.module.css';
 import axios from 'axios';
@@ -34,15 +40,16 @@ const MultiStepForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  
-  // First try to get email from query params, then from localStorage
+
+  // -----------------------------------------------------
+  // Retrieve email from OAuth or localStorage
+  // -----------------------------------------------------
   const emailFromQuery = queryParams.get('email');
   const emailFromStorage = localStorage.getItem('user_email');
-  const email = emailFromQuery || emailFromStorage || '';
-  console.log(email);
-  
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // If no email from either source, default to an empty string
   const [formData, setFormData] = useState<FormData>({
     username: '',
     password: '',
@@ -50,8 +57,8 @@ const MultiStepForm = () => {
     confirmPasswordError: '',
     firstName: '',
     lastName: '',
-    email: email, // Prefilled from OAuth or localStorage
-    phone: '',
+    email: emailFromQuery || emailFromStorage || '',
+    phone: '',  // phone is optional
     jobTitle: '',
     experience: '',
     industry: '',
@@ -68,15 +75,35 @@ const MultiStepForm = () => {
     expectations: ''
   });
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // -----------------------------------------------------
+  // Check if the OAuth-provided email is valid
+  // (We can't update it if invalid, but at least we warn the user.)
+  // -----------------------------------------------------
+  useEffect(() => {
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        console.error('Invalid email from OAuth:', formData.email);
+        alert('We detected an invalid email from your OAuth provider. Please try again or contact support.');
+      }
+    } else {
+      console.warn('No email found from OAuth or local storage.');
+    }
+  }, [formData.email]);
+
+  // -----------------------------------------------------
+  // Functions to update form data
+  // -----------------------------------------------------
   const updateFormData = (field: keyof FormData, value: string | File | null) => {
-    // Don't allow email to be updated
+    // Disallow editing the OAuth email
     if (field === 'email') return;
-    
+
     setFormData(prev => {
       const newFormData = { ...prev, [field]: value };
 
+      // Validate password when either field changes
       if ((field === 'password' || field === 'confirmPassword') && newFormData.confirmPassword) {
         if (newFormData.password.length < 8) {
           newFormData.confirmPasswordError = 'Password must be at least 8 characters long';
@@ -85,11 +112,13 @@ const MultiStepForm = () => {
             newFormData.password === newFormData.confirmPassword ? '' : 'Passwords do not match';
         }
       }
-
       return newFormData;
     });
   };
 
+  // -----------------------------------------------------
+  // Handle file changes (Resume upload)
+  // -----------------------------------------------------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -105,10 +134,11 @@ const MultiStepForm = () => {
 
     const validTypes = [
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'
     ];
     if (!validTypes.includes(file.type)) {
-      alert('Invalid file format. Please upload a PDF or DOCX file.');
+      alert('Invalid file format. Please upload a PDF or DOC/DOCX file.');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -118,6 +148,9 @@ const MultiStepForm = () => {
     updateFormData('resume', file);
   };
 
+  // -----------------------------------------------------
+  // Validate each step's required fields
+  // -----------------------------------------------------
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: {
@@ -126,7 +159,7 @@ const MultiStepForm = () => {
           !formData.password.trim() ||
           !formData.confirmPassword.trim()
         ) {
-          alert('Please fill in all required fields.');
+          alert('Please fill in all required fields (username, password, confirm password).');
           return false;
         }
         if (formData.password.length < 8) {
@@ -140,17 +173,15 @@ const MultiStepForm = () => {
         return true;
       }
       case 2: {
-        if (
-          !formData.firstName.trim() ||
-          !formData.lastName.trim() ||
-          !formData.phone.trim()
-        ) {
-          alert('Please fill in all required fields.');
+        // phone is optional now, so remove phone from required checks
+        if (!formData.firstName.trim() || !formData.lastName.trim()) {
+          alert('Please fill in all required fields (first and last name).');
           return false;
         }
         return true;
       }
       case 3: {
+        // Step 3 requires a resume
         if (!formData.resume) {
           alert('Please upload your resume.');
           return false;
@@ -161,23 +192,25 @@ const MultiStepForm = () => {
       case 5:
       case 6:
       default:
+        // Steps 4, 5, 6 are optional fields, so no validation required
         return true;
     }
   };
 
+  // -----------------------------------------------------
+  // Navigation among steps
+  // -----------------------------------------------------
   const handleNext = (e?: React.MouseEvent | React.KeyboardEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    
     if (!validateStep(currentStep)) {
       return;
     }
 
-    // If we're about to move to step 6, add extra protection
+    // If about to move to step 6, do a slight delay to prevent accidental double-submission
     if (currentStep === 5) {
-      // Delay the step change to prevent accidental submission
       setTimeout(() => {
         setCurrentStep(prev => Math.min(prev + 1, 6));
       }, 100);
@@ -190,20 +223,28 @@ const MultiStepForm = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  // -----------------------------------------------------
+  // Final form submission
+  // -----------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentStep !== 6) return;
-    
+    if (currentStep !== 6) return; // Prevent submit if not on last step
+
     try {
       setIsSubmitting(true);
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null) {
-          formDataToSend.append(key, value);
+          // Convert everything to strings except for the 'resume' File
+          if (key === 'resume') {
+            formDataToSend.append(key, value as File);
+          } else {
+            formDataToSend.append(key, value as string);
+          }
         }
       });
 
-      // Add OAuth flag to indicate this is an OAuth signup
+      // Indicate this is an OAuth-based signup
       formDataToSend.append('isOAuth', 'true');
 
       const response = await axios.post(`${API_BASE_URL}/api/oauth/signup`, formDataToSend, {
@@ -212,18 +253,43 @@ const MultiStepForm = () => {
         }
       });
 
+      // If submission is successful
       if (response.status === 200) {
-        console.log('Form submitted successfully');
+        console.log('Form submitted successfully:', response.data);
         navigate('/dashboard');
+      } else {
+        // Handle unexpected status codes
+        console.error('Unexpected response status:', response.status);
+        alert('An unexpected error occurred. Please try again later.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting form:', error);
-      alert('Failed to submit form. Please try again.');
+
+      // Distinguish server error vs. network error
+      if (error.response) {
+        // Server responded with a status
+        const { status, data } = error.response;
+        if (status === 400) {
+          alert(data.error || 'Invalid submission data. Please check your details.');
+        } else if (status === 401) {
+          alert('You are not authorized. Please log in again.');
+        } else if (status === 500) {
+          alert('Server error while processing your form. Please try again later.');
+        } else {
+          alert(data.error || 'An error occurred. Please try again.');
+        }
+      } else {
+        // No response => Possibly a network issue
+        alert('Network error. Please check your connection and try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // -----------------------------------------------------
+  // Render the form content for each step
+  // -----------------------------------------------------
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -247,7 +313,7 @@ const MultiStepForm = () => {
                 className={styles.formInput}
                 value={formData.password}
                 onChange={(e) => updateFormData('password', e.target.value)}
-                placeholder="Enter your password" 
+                placeholder="Enter your password"
               />
             </div>
             <div className={styles.formGroup}>
@@ -302,7 +368,7 @@ const MultiStepForm = () => {
               <p className={styles.helperText}>Email provided by OAuth authentication</p>
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Phone</label>
+              <label className={styles.formLabel}>Phone (optional)</label>
               <input
                 type="tel"
                 className={styles.formInput}
@@ -315,68 +381,68 @@ const MultiStepForm = () => {
         );
       case 3:
         return (
-            <>
-              <h2 className={styles.stepTitle}>Upload Documents</h2>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Resume/CV</label>
-                <div
-                    className={styles.fileInputContainer}
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                  <FileText size={48} color="#ec4899"/>
-                  <p>Click to upload your resume (PDF, DOC, DOCX)</p>
-                  <input
-                      ref={fileInputRef}
-                      type="file"
-                      className={styles.fileInput}
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileChange}
-                      style={{display: 'none'}}
-                  />
-                  {formData.resume && (
-                      <p className={styles.fileName}>Selected: {formData.resume.name}</p>
-                  )}
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>LinkedIn Profile URL (optional)</label>
+          <>
+            <h2 className={styles.stepTitle}>Upload Documents</h2>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Resume/CV</label>
+              <div
+                className={styles.fileInputContainer}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileText size={48} color="#ec4899" />
+                <p>Click to upload your resume (PDF, DOC, DOCX)</p>
                 <input
-                    type="url"
-                    className={styles.formInput}
-                    value={formData.linkedinUrl}
-                    onChange={(e) => updateFormData('linkedinUrl', e.target.value)}
+                  ref={fileInputRef}
+                  type="file"
+                  className={styles.fileInput}
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
                 />
+                {formData.resume && (
+                  <p className={styles.fileName}>Selected: {formData.resume.name}</p>
+                )}
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Portfolio URL (optional)</label>
-                <input
-                    type="url"
-                    className={styles.formInput}
-                    value={formData.portfolioUrl}
-                    onChange={(e) => updateFormData('portfolioUrl', e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Github URL (optional)</label>
-                <input
-                    type="url"
-                    className={styles.formInput}
-                    value={formData.githubUrl}
-                    onChange={(e) => updateFormData('githubUrl', e.target.value)}
-                />
-              </div>
-            </>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>LinkedIn Profile URL (optional)</label>
+              <input
+                type="url"
+                className={styles.formInput}
+                value={formData.linkedinUrl}
+                onChange={(e) => updateFormData('linkedinUrl', e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Portfolio URL (optional)</label>
+              <input
+                type="url"
+                className={styles.formInput}
+                value={formData.portfolioUrl}
+                onChange={(e) => updateFormData('portfolioUrl', e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Github URL (optional)</label>
+              <input
+                type="url"
+                className={styles.formInput}
+                value={formData.githubUrl}
+                onChange={(e) => updateFormData('githubUrl', e.target.value)}
+              />
+            </div>
+          </>
         );
       case 4:
         return (
-            <>
-              <h2 className={styles.stepTitle}>Professional Information (Optional)</h2>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Current Job Title</label>
-                <input
-                    type="text"
-                    className={styles.formInput}
-                    value={formData.jobTitle}
+          <>
+            <h2 className={styles.stepTitle}>Professional Information (Optional)</h2>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Current Job Title</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={formData.jobTitle}
                 onChange={(e) => updateFormData('jobTitle', e.target.value)}
                 placeholder="Enter your current job title"
               />
@@ -511,6 +577,9 @@ const MultiStepForm = () => {
     }
   };
 
+  // -----------------------------------------------------
+  // JSX return
+  // -----------------------------------------------------
   return (
     <div className={styles.formContainer}>
       <div className={styles.progressBar}>
@@ -525,17 +594,18 @@ const MultiStepForm = () => {
       </div>
 
       <form
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.stopPropagation();
-              if (currentStep !== 6) {
-                handleNext(e);
-              }
+        onKeyDown={(e) => {
+          // Only intercept 'Enter'; let spaces work normally in all fields
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (currentStep !== 6) {
+              handleNext(e);
             }
-          }}
-          onSubmit={handleSubmit}
-          className={styles.formCard}
+          }
+        }}
+        onSubmit={handleSubmit}
+        className={styles.formCard}
       >
         <div className={styles.formContent}>
           {renderStep()}
@@ -543,43 +613,43 @@ const MultiStepForm = () => {
 
         <div className={styles.formNavigation}>
           {currentStep > 1 && (
-              <button
-                  type="button"
-                  className={styles.buttonSecondary}
-                  onClick={handlePrev}
-              >
-                <ChevronLeft size={20}/>
-                Previous
-              </button>
+            <button
+              type="button"
+              className={styles.buttonSecondary}
+              onClick={handlePrev}
+            >
+              <ChevronLeft size={20} />
+              Previous
+            </button>
           )}
 
           {currentStep < 6 ? (
-              <button
-                  type="button"
-                  className={styles.buttonPrimary}
-                  onClick={(e) => handleNext(e)}
-              >
-                Next
-                <ChevronRight size={20}/>
-              </button>
+            <button
+              type="button"
+              className={styles.buttonPrimary}
+              onClick={(e) => handleNext(e)}
+            >
+              Next
+              <ChevronRight size={20} />
+            </button>
           ) : (
-              <button 
-                  type="submit" 
-                  className={`${styles.buttonPrimary} ${isSubmitting ? styles.submitting : ''}`}
-                  disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className={styles.loadingMessage}>
-                    <div className={styles.spinner}></div>
-                    <p>Processing your resume, please wait a moment...</p>
-                  </div>
-                ) : (
-                  <>
-                    Submit
-                    <CheckCircle size={20}/>
-                  </>
-                )}
-              </button>
+            <button
+              type="submit"
+              className={`${styles.buttonPrimary} ${isSubmitting ? styles.submitting : ''}`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className={styles.loadingMessage}>
+                  <div className={styles.spinner}></div>
+                  <p>Processing your resume, please wait a moment...</p>
+                </div>
+              ) : (
+                <>
+                  Submit
+                  <CheckCircle size={20} />
+                </>
+              )}
+            </button>
           )}
         </div>
       </form>
@@ -587,11 +657,13 @@ const MultiStepForm = () => {
   );
 };
 
+// --------------------------------------------------------------------
+
 const OAuthSignUpForm = () => {
   const navigate = useNavigate();
 
   return (
-      <div className={styles.pageContainer}>
+    <div className={styles.pageContainer}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
           <div className={styles.logo} onClick={() => navigate('/')}>
@@ -604,7 +676,9 @@ const OAuthSignUpForm = () => {
       <main className={styles.main}>
         <div className={styles.header}>
           <h1>Complete Your OAuth Profile</h1>
-          <p>We've already got your email - just fill in the rest to personalize your interview experience</p>
+          <p>
+            We&apos;ve already got your email - just fill in the rest to personalize your interview experience.
+          </p>
         </div>
         <MultiStepForm />
       </main>
@@ -616,4 +690,4 @@ const OAuthSignUpForm = () => {
   );
 };
 
-export default OAuthSignUpForm; 
+export default OAuthSignUpForm;

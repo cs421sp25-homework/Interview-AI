@@ -9,7 +9,7 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { 
+import {
   RadarChart, 
   PolarGrid, 
   PolarAngleAxis, 
@@ -19,14 +19,16 @@ import {
   Tooltip
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import styles from './UserDashboard.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../config/api';
+import styles from './UserDashboard.module.css';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { userEmail, logout } = useAuth();
+
+  // Store user profile data
   const [userData, setUserData] = useState({
     name: '',
     title: '',
@@ -36,8 +38,8 @@ const UserDashboard = () => {
     joined: '',
     photoUrl: null as string | null
   });
-  
-  // Add state for skill stats
+
+  // Radar chart data
   const [skillStats, setSkillStats] = useState([
     { subject: 'Technical Skills', A: 0 },
     { subject: 'Communication', A: 0 },
@@ -47,26 +49,37 @@ const UserDashboard = () => {
     { subject: 'Confidence', A: 0 }
   ]);
 
+  // Error state for display if any API call fails
+  const [error, setError] = useState('');
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        console.log("Fetching profile for email:", userEmail);
-        const email = localStorage.getItem('user_email') || 'test@example.com';
+        setError(''); // reset error before each fetch
 
-        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
-        
+        // If we have userEmail from context, otherwise fallback to localStorage
+        const currentEmail = userEmail || localStorage.getItem('user_email');
+        if (!currentEmail) {
+          // If absolutely no email is found, force login
+          navigate('/login');
+          return;
+        }
+
+        console.log('Fetching profile for email:', currentEmail);
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${currentEmail}`);
+
         if (response.data.data) {
           const profile = response.data.data;
-          
+
+          // Save photo in local storage if desired
           if (profile.photo_url) {
             localStorage.setItem('user_photo_url', profile.photo_url);
           }
-          
+
           let joinedDate = '';
           try {
             if (profile.created_at) {
               const createdAtUTC = new Date(profile.created_at);
-              
               if (!isNaN(createdAtUTC.getTime())) {
                 const options: Intl.DateTimeFormatOptions = { 
                   timeZone: 'America/New_York',
@@ -75,21 +88,20 @@ const UserDashboard = () => {
                   day: 'numeric',
                   hour12: true
                 };
-                
-                joinedDate = `${createdAtUTC.toLocaleString('en-US', options)} `;
+                joinedDate = createdAtUTC.toLocaleString('en-US', options);
               } else {
                 joinedDate = 'Invalid date';
               }
             } else {
               joinedDate = 'Not available';
             }
-          } catch (error) {
-            console.error("Error parsing date:", error);
+          } catch (dateError) {
+            console.error('Error parsing date:', dateError);
             joinedDate = 'Date error';
           }
-          
+
           setUserData({
-            name: `${profile.first_name} ${profile.last_name}`,
+            name: `${profile.first_name} ${profile.last_name}`.trim(),
             title: profile.job_title || '',
             email: profile.email,
             interviews: profile.interviews_completed || 0,
@@ -97,47 +109,69 @@ const UserDashboard = () => {
             joined: joinedDate,
             photoUrl: profile.photo_url || null
           });
-          
-          // Fetch user's interview scores
-          fetchUserScores(profile.id || email);
+
+          // Fetch user's interview scores after we have an ID or email
+          const userId = profile.id || profile.email;
+          fetchUserScores(userId);
+        } else {
+          // If data is null or missing, show an error
+          setError('Profile data not found. Please complete your profile or contact support.');
+        }
+      } catch (err: any) {
+        console.error('Error fetching user profile:', err);
+        if (err.response) {
+          const { status, data } = err.response;
+          if (status === 401) {
+            // Unauthorized -> force re-login
+            logout();
+            navigate('/login');
+          } else if (status === 404) {
+            setError('Profile not found. Please ensure your account exists.');
+          } else if (status === 500) {
+            setError('Server error fetching profile. Please try again later.');
+          } else {
+            setError(data.error || 'An error occurred fetching profile data.');
+          }
+        } else {
+          // Possibly a network error
+          setError('Network error. Please check your connection or try again later.');
+        }
+      }
+    };
+
+    // Helper function to fetch user scores
+    const fetchUserScores = async (userId: string) => {
+      try {
+        console.log('Fetching scores for user:', userId);
+        const endpoint = userId.includes('@')
+          ? `${API_BASE_URL}/api/overall_scores/email/${userId}`
+          : `${API_BASE_URL}/api/overall_scores/${userId}`;
+        
+        const response = await axios.get(endpoint);
+        
+        if (response.data && response.data.scores) {
+          const scores = response.data.scores;
+          setSkillStats([
+            { subject: 'Technical Skills', A: Math.round(scores.technical * 100) },
+            { subject: 'Communication', A: Math.round(scores.communication * 100) },
+            { subject: 'Problem Solving', A: Math.round(scores.problem_solving * 100) },
+            { subject: 'Leadership', A: Math.round(scores.leadership * 100) },
+            { subject: 'Resume Strength', A: Math.round(scores['resume strength'] * 100) },
+            { subject: 'Confidence', A: Math.round(scores.confidence * 100) }
+          ]);
+        } else {
+          // If user has no scores yet, they remain at 0
+          console.log('No scores found for user.');
         }
       } catch (error) {
-        navigate('/login');
+        console.error('Error fetching user scores:', error);
+        // We choose not to set an overarching error or redirect here, 
+        // since it's not critical and the user can still see the rest of the page.
       }
     };
 
     fetchUserProfile();
-  }, [userEmail, navigate]);
-  
-  // Add function to fetch user scores
-  const fetchUserScores = async (userId: string) => {
-    try {
-      console.log("Fetching scores for user:", userId);
-      // Use the email-specific endpoint if the userId looks like an email
-      const endpoint = userId.includes('@') 
-        ? `${API_BASE_URL}/api/overall_scores/email/${userId}`
-        : `${API_BASE_URL}/api/overall_scores/${userId}`;
-      
-      const response = await axios.get(endpoint);
-      
-      if (response.data && response.data.scores) {
-        const scores = response.data.scores;
-        
-        // Update skill stats with actual scores
-        setSkillStats([
-          { subject: 'Technical Skills', A: Math.round(scores.technical * 100) },
-          { subject: 'Communication', A: Math.round(scores.communication * 100) },
-          { subject: 'Problem Solving', A: Math.round(scores.problem_solving * 100) },
-          { subject: 'Leadership', A: Math.round(scores.leadership * 100) },
-          { subject: 'Resume Strength', A: Math.round(scores['resume strength'] * 100) },
-          { subject: 'Confidence', A: Math.round(scores.confidence * 100) }
-        ]);
-      }
-    } catch (error) {
-      console.error("Error fetching user scores:", error);
-      // Keep default values if there's an error
-    }
-  };
+  }, [userEmail, navigate, logout]);
 
   const achievements = [
     'Technical Expert',
@@ -155,7 +189,7 @@ const UserDashboard = () => {
       <div>
         {/* Navigation */}
         <nav className={styles.nav}>
-          <div className={styles.container + ' ' + styles.navContent}>
+          <div className={`${styles.container} ${styles.navContent}`}>
             <div className={styles.logo}>
               <Bot size={32} color="#ec4899" />
               <span>InterviewAI</span>
@@ -181,6 +215,13 @@ const UserDashboard = () => {
           </div>
         </nav>
 
+        {/* If there's an error fetching data, show a banner or message */}
+        {error && (
+          <div className={styles.errorBanner}>
+            <p>{error}</p>
+          </div>
+        )}
+
         <div className={styles.container}>
           <div className={styles.profileGrid}>
             {/* Left Column - Profile Info */}
@@ -197,8 +238,8 @@ const UserDashboard = () => {
                     <User size={48} color="#ec4899" />
                   )}
                 </div>
-                <h2>{userData.name}</h2>
-                <p style={{ color: 'var(--text-light)' }}>{userData.title}</p>
+                <h2>{userData.name || 'Anonymous User'}</h2>
+                <p style={{ color: 'var(--text-light)' }}>{userData.title || 'Your Role'}</p>
               </div>
 
               <div className={styles.profileStats}>
@@ -240,7 +281,10 @@ const UserDashboard = () => {
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
                     Start With Customized Configuration
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/prompts')}>
+                  <button 
+                    className={`${styles.button} ${styles.buttonPrimary}`} 
+                    onClick={() => navigate('/prompts')}
+                  >
                     Start Now
                   </button>
                 </div>
@@ -253,7 +297,10 @@ const UserDashboard = () => {
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
                     View your past interview sessions
                   </p>
-                  <button className={styles.button + ' ' + styles.buttonPrimary} onClick={() => navigate('/interview/history')}>
+                  <button 
+                    className={`${styles.button} ${styles.buttonPrimary}`} 
+                    onClick={() => navigate('/interview/history')}
+                  >
                     View
                   </button>
                 </div>
