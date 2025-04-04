@@ -4,9 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { message, Button } from 'antd';
 import { Bot, Home, Loader } from 'lucide-react';
 import API_BASE_URL from '../config/api';
-import styles from './InterviewPage.module.css';  // reuse the same CSS from InterviewPage
+// import styles from './InterviewPage.module.css';  // reuse the same CSS from InterviewPage
 import VoiceBubble from '../components/VoiceBubble';
-
+import styles from './VoiceInterviewLogPage.module.css';
 interface ChatMessage {
   text: string;
   sender: 'user' | 'ai';
@@ -170,6 +170,7 @@ const VoiceInterviewLogPage: React.FC = () => {
     );
   }
 
+
   return (
     <div className={styles.interviewContainer}>
       <div className={styles.interviewHeader}>
@@ -177,8 +178,11 @@ const VoiceInterviewLogPage: React.FC = () => {
           <Home size={18} />
           Back to Dashboard
         </button>
-        <h1>Voice Interview Log</h1>
-        {/* Optional: additional buttons (Export, etc.) */}
+
+        {/* Centered title */}
+        <div className={styles.titleContainer}>
+          <h1 className={styles.title}>Voice Interview Log</h1>
+        </div>
       </div>
 
       <div className={styles.chatInterface}>
@@ -206,6 +210,7 @@ const VoiceInterviewLogPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
                 <VoiceBubble
                   message={msg}
                   isPlaying={currentlyPlaying === index}
