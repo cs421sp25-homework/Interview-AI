@@ -49,6 +49,14 @@
   color: #111827;
 }
 
+.backButton .anticon {
+  color: #ff69b4;
+}
+
+.backButton span {
+  color: #ff69b4;
+}
+
 .spacer {
   width: 120px; /* 与backButton宽度大致相同，保持平衡 */
 }
@@ -331,29 +339,42 @@
 }
 
 .detailsButton .actionIcon {
-  color: #722ed1;
+  color: #22c55e;
 }
 
 .detailsButton .actionText {
-  color: #722ed1;
+  color: #22c55e;
 }
 
 .detailsButton:hover {
   background-color: #f9f0ff;
-  border-color: #d3adf7;
+  border-color: #a5ffc6;
 }
 
 .exportButton .actionIcon {
-  color: #52c41a;
+  color: #8B5CF6;
 }
 
 .exportButton .actionText {
-  color: #52c41a;
+  color: #8B5CF6;
 }
 
 .exportButton:hover {
+  background-color: #f9f0ff;
+  border-color: #c9b3ff;
+}
+
+.favoritesButton .actionIcon {
+  color: #ff69b4;
+}
+
+.favoritesButton .actionText {
+  color: #ff69b4;
+}
+
+.favoritesButton:hover {
   background-color: #f6ffed;
-  border-color: #b7eb8f;
+  border-color: #ffaad4;
 }
 
 .deleteButton .actionIcon {
@@ -484,12 +505,12 @@
 
 .detailsButton:hover .actionIcon,
 .detailsButton:hover .actionText {
-  color: #531dab;  /* 稍深的紫色 */
+  color: #22c55e;  /* 稍深的紫色 */
 }
 
-.exportButton:hover .actionIcon,
-.exportButton:hover .actionText {
-  color: #389e0d;  /* 稍深的绿色 */
+.favoritesButton:hover .actionIcon,
+.favoritesButton:hover .actionText {
+  color: #ff69b4;  /* 稍深的绿色 */
 }
 
 .deleteButton:hover .actionIcon,
@@ -510,4 +531,4 @@
   color: #6b7280;
   margin-top: 4px;
   font-style: italic;
-} 
+}

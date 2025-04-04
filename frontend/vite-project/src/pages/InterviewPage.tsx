@@ -4,6 +4,9 @@ import styles from './InterviewPage.module.css';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
+import InterviewMessage from '../components/InterviewMessage';
+import { Button } from 'antd';
+import { HeartOutlined } from '@ant-design/icons';
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
@@ -142,6 +145,24 @@ const InterviewPage: React.FC = () => {
             // Continue even if profile fetch fails
           }
           console.log("User profile:", userProfile);
+
+          // Fetch config details to get company name and type
+          try {
+            const configResponse = await fetch(`${API_BASE_URL}/api/interview_config/${config_id}`);
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              if (configData.data) {
+                const config = configData.data;
+                // Store these values in localStorage for persistence
+                localStorage.setItem('current_company_name', config.company_name || '');
+                localStorage.setItem('current_interview_type', config.interview_type || '');
+                localStorage.setItem('current_question_type', config.question_type || '');
+              }
+            }
+          } catch (configError) {
+            console.error('Error fetching config details:', configError);
+            // Continue even if config fetch fails
+          }
           
           const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
             method: 'POST',
@@ -303,6 +324,34 @@ const InterviewPage: React.FC = () => {
     handleEndInterview();
   };
 
+  const renderQuestion = (question: string, index: number) => {
+    const isFirstQuestion = index === 0;
+    return (
+      <div key={index} className={styles.questionContainer}>
+        <div className={styles.questionHeader}>
+          <h3 className={styles.questionText}>{question}</h3>
+          {!isFirstQuestion && (
+            <Button
+              type="text"
+              icon={<HeartOutlined />}
+              onClick={() => handleAddToFavorites(question)}
+              className={styles.favoriteButton}
+            />
+          )}
+        </div>
+        <div className={styles.answerSection}>
+          <TextArea
+            value={answers[index]}
+            onChange={(e) => handleAnswerChange(index, e.target.value)}
+            placeholder="Type your answer here..."
+            autoSize={{ minRows: 3, maxRows: 8 }}
+            className={styles.answerInput}
+          />
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -345,10 +394,7 @@ const InterviewPage: React.FC = () => {
       </div>
 
       <div className={styles.chatInterface}>
-        <div 
-          ref={chatContainerRef}
-          className={styles.chatContainer}
-        >
+        <div className={styles.chatContainer} ref={chatContainerRef}>
           {messages.map((message, index) => (
             <div
               key={index}
@@ -371,13 +417,18 @@ const InterviewPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div
-                className={`${styles.message} ${
-                  message.sender === 'ai' ? styles.aiMessage : styles.userMessage
-                }`}
-              >
-                {message.text || <span>&nbsp;</span>}
-              </div>
+              {message.sender === 'ai' ? (
+                <InterviewMessage
+                  message={message}
+                  messageId={`${threadId}-${index}`}
+                  threadId={threadId || ''}
+                  isFirstMessage={index === 0}
+                />
+              ) : (
+                <div className={`${styles.message} ${styles.userMessage}`}>
+                  {message.text || <span>&nbsp;</span>}
+                </div>
+              )}
             </div>
           ))}
         </div>

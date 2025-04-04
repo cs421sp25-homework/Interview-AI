@@ -1,14 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Sparkles, Check, Brain, Lightbulb, PenTool } from 'lucide-react';
+import { Home, Sparkles, Check} from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { message, Button, Spin, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewLogViewPage.module.css';
+import InterviewMessage from '../components/InterviewMessage';
 
 interface Message {
   text: string;
   sender: 'user' | 'ai';
+  question_type: string;
+}
+
+interface InterviewLog {
+  id: number;
+  thread_id: string;
+  log: Message[];
+  question_type: string;
+}
+
+interface LocationState {
+  conversation: Message[];
+  thread_id: string;
+  question_type: string;
 }
 
 const InterviewLogViewPage: React.FC = () => {
@@ -25,9 +40,11 @@ const InterviewLogViewPage: React.FC = () => {
   ]);
 
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // log id from route
+  const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [threadId, setThreadId] = useState<string>("");
+  const [questionType, setQuestionType] = useState<string>("");
 
   const handleGenerateResponse = async (messageText: string, index: number) => {
     // Set loading for this index
@@ -103,19 +120,24 @@ const InterviewLogViewPage: React.FC = () => {
     }
     
     setLoading(true);
-    if (location.state && (location.state as any).conversation) {
-      setMessages((location.state as any).conversation);
+    if (location.state && (location.state as LocationState).conversation) {
+      setMessages((location.state as LocationState).conversation);
+      setThreadId((location.state as LocationState).thread_id);
+      setQuestionType((location.state as LocationState).question_type);
       setTimeout(() => setLoading(false), 300);
+      console.log('Thread ID:', (location.state as LocationState).thread_id);
     } else {
       const fetchLog = async () => {
         try {
           const userEmail = localStorage.getItem('user_email') || '';
           const res = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
           const data = await res.json();
-          const log = data.data.find((l: any) => String(l.id) === id);
+          const log = data.data.find((l: InterviewLog) => String(l.id) === id);
           if (log && log.log) {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
             setMessages(conversation);
+            setThreadId(log.thread_id);
+            setQuestionType((location.state as LocationState).question_type);
           } else {
             message.error('Interview log not found.');
           }
@@ -228,11 +250,19 @@ const InterviewLogViewPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className={msg.sender === 'ai' ? styles.aiMessage : styles.userMessage}>
-                  <div className={styles.messageContent}>
-                    {msg.text}
-                  </div>
-                  {msg.sender === 'user' && (
+                {msg.sender === 'ai' ? (
+                  <InterviewMessage
+                    message={msg}
+                    messageId={`${id}-${index}`}
+                    threadId={threadId}
+                    questionType={questionType}
+                    isFirstMessage={index === 0}
+                  />
+                ) : (
+                  <div className={styles.userMessage}>
+                    <div className={styles.messageContent}>
+                      {msg.text}
+                    </div>
                     <div className={styles.generatedContainer}>
                       {generatedResponses[index] ? (
                         <div className={styles.generatedResponse}>
@@ -252,8 +282,8 @@ const InterviewLogViewPage: React.FC = () => {
                         </Tooltip>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

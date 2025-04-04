@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography } from 'antd';
-import { SearchOutlined, DeleteOutlined, ExportOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty } from 'antd';
+import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -45,12 +45,10 @@ interface InterviewLog {
   updated_at?: string;
   form: 'text' | 'voice';
   thread_id: string;
-  
-  question_count?: number; 
-  company_name?: string; 
+  question_count?: number;
+  company_name?: string;
   interview_type?: string;
-  log?: any; // Add log property for conversation data
-  
+  log?: Message[];
   question_type?: string;
   job_description?: string;
   config_company_name?: string;
@@ -73,6 +71,10 @@ const InterviewHistoryPage: React.FC = () => {
   
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
+  
+  const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
+  const [favoriteQuestions, setFavoriteQuestions] = useState<any[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
   
   useEffect(() => {
     try {
@@ -130,18 +132,6 @@ const InterviewHistoryPage: React.FC = () => {
         const transformedLogs = data.data.map((log: any) => {
           console.log(`Log ID: ${log.id}, updated_at: ${log.updated_at}, created_at: ${log.created_at}`);
           
-          if (log.updated_at) {
-            const testDate = new Date(log.updated_at);
-            // console.log(`UTC Time: ${testDate.toISOString()}`);
-            // console.log(`Local Time: ${testDate.toString()}`);
-            // console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
-            //   timeZone: 'America/New_York',
-            //   year: 'numeric',
-            //   month: 'numeric',
-            //   day: 'numeric',
-            // }).format(testDate)}`);
-          }
-          
           return {
             id: log.id,
             thread_id: log.thread_id,
@@ -151,13 +141,6 @@ const InterviewHistoryPage: React.FC = () => {
             company_name: log.config_company_name || log.company_name || 'Unknown Company',
             form: log.form || 'text',
             log: typeof log.log === 'string' ? JSON.parse(log.log) : log.log,
-
-
-
-
-
-
-            
             question_type: log.question_type || 'Unknown',
             job_description: log.job_description || '',
             interview_name: log.interview_name || '',
@@ -176,7 +159,6 @@ const InterviewHistoryPage: React.FC = () => {
           
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
-            
             
             question_count: log.conversation ? countQuestionsInConversation(log.conversation) : 0,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
@@ -203,13 +185,11 @@ const InterviewHistoryPage: React.FC = () => {
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
             
-            
             question_count: Math.floor(Math.random() * 20) + 5,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
             question_type: Math.random() > 0.5 ? 'Technical' : 'Behavioral',
             interview_type: Math.random() > 0.8 ? 'Voice' : 'Text',
             updated_at: log.updated_at || log.date || new Date().toISOString(),
-            
           }));
           
           setLogs(enhancedLogs);
@@ -279,23 +259,26 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewInterviewLog = (log: InterviewLog) => {
-    navigate(`/interview/view/${log.id}`, { state: { conversation: log.log } });
+    navigate(`/interview/view/${log.id}`, { 
+        state: { 
+            conversation: log.log, 
+            thread_id: log.thread_id,
+            question_type: log.question_type
+        } 
+    });
   };
   
-  const { confirm } = Modal;
-
   const handleDeleteInterview = (log: InterviewLog) => {
-    console.log("delete clicked");
-  
     modal.confirm({
       title: 'Are you sure you want to delete this interview?',
       icon: <ExclamationCircleOutlined />,
-      content: 'This action cannot be undone.',
+      content: 'This action cannot be undone. The interview session will be deleted, but your favorite questions will be preserved.',
       okText: 'Yes, Delete',
       cancelText: 'Cancel',
       okType: 'danger',
       onOk: async () => {
         try {
+          // Delete only the interview log
           const response = await fetch(`${API_BASE_URL}/api/chat_history/${log.id}`, {
             method: 'DELETE',
           });
@@ -534,11 +517,70 @@ const InterviewHistoryPage: React.FC = () => {
     }
   };
   
+  const parseQuestion = (text: string): string => {
+    // Split the text into sentences
+    const sentences = text.split(/[.!?]+/);
+    
+    // Find all sentences that are followed by a question mark
+    const questions = sentences.filter((sentence) => {
+      const trimmedSentence = sentence.trim();
+      if (!trimmedSentence) return false;
+      
+      // Get the text after this sentence
+      const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
+      return textAfterSentence.startsWith('?');
+    });
+    
+    // If no questions found, return the last sentence with a question mark
+    if (questions.length === 0) {
+      return sentences[sentences.length - 1].trim() + '?';
+    }
+    
+    // Return all questions joined with line breaks
+    return questions.map(q => q.trim() + '?').join('\n');
+  };
+
+  const handleViewFavorites = async (log: InterviewLog) => {
+    setSelectedLog(log);
+    setFavoritesModalVisible(true);
+    setLoadingFavorites(true);
+
+    try {
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        message.error('Please log in to view favorites');
+        return;
+      }
+
+      console.log('Fetching favorites for:', {
+        email,
+        thread_id: log.thread_id,
+        log: log
+      });
+
+      // Use the full thread_id
+      const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}?session_id=${log.thread_id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch favorite questions: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched favorite questions response:', data);
+      setFavoriteQuestions(Array.isArray(data.data) ? data.data : []);
+    } catch (error) {
+      console.error('Error fetching favorite questions:', error);
+      message.error('Failed to load favorite questions');
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+  
   const columns = [
     {
       title: 'Interview Config',
       key: 'interview',
-      width: '28%',
+      width: '20%',
       render: (text: string, record: InterviewLog) => (
         <div>
           <div className={styles.interviewTitle}>{record.title}</div>
@@ -572,22 +614,17 @@ const InterviewHistoryPage: React.FC = () => {
         try {
           const dateA = new Date(a.updated_at || a.date).getTime();
           const dateB = new Date(b.updated_at || b.date).getTime();
-          
-          // 如果日期无效或是可疑的未来日期，使用当前时间
           const now = Date.now();
-          
-          // 使用一周为阈值，判断可疑的未来日期
           const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
           const validDateA = isNaN(dateA) || (dateA > now && dateA - now > oneWeekMs) ? now : dateA;
           const validDateB = isNaN(dateB) || (dateB > now && dateB - now > oneWeekMs) ? now : dateB;
-          
-          return validDateB - validDateA; // 默认最新的排在前面
+          return validDateB - validDateA;
         } catch (error) {
           console.error("Error sorting dates:", error);
           return 0;
         }
       },
-      sortDirections: ['ascend', 'descend', null] as any,
+      sortDirections: ['ascend', 'descend', null] as SortOrder[],
       defaultSortOrder: 'descend' as const,
       render: (date: string) => {
         try {
@@ -628,8 +665,8 @@ const InterviewHistoryPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: '25%',
-      render: (_: any, record: InterviewLog) => (
+      width: '35%',
+      render: (_: unknown, record: InterviewLog) => (
         <Space size="middle" className={styles.actionButtonsContainer}>
           <Button 
             type="link" 
@@ -647,16 +684,24 @@ const InterviewHistoryPage: React.FC = () => {
             <BarChartOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Details</span>
           </Button>
-          <Button 
-            type="link" 
+          <Button
+            type="link"
             className={`${styles.actionButtonWithLabel} ${styles.exportButton}`}
-            onClick={(e) => {
-              e.stopPropagation(); // 阻止事件冒泡
-              handleExportInterview(record);
-            }}
+            onClick={() => handleExportInterview(record)}
           >
             <ExportOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Export</span>
+          </Button>
+          <Button 
+            type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.favoritesButton}`}
+            onClick={(e) => {
+              e.stopPropagation(); // 阻止事件冒泡
+              handleViewFavorites(record);
+            }}
+          >
+            <HeartOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Favorites</span>
           </Button>
           <Button 
             type="link" 
@@ -687,7 +732,12 @@ const InterviewHistoryPage: React.FC = () => {
           Back to Dashboard
         </button>
         <h1>Interview History</h1>
-        <div className={styles.spacer}></div>
+        <button 
+          className={styles.backButton}
+          onClick={() => navigate('/favorites')}
+        >
+          <HeartOutlined /> View All Favorite Questions
+        </button>
       </div>
 
       <div className={styles.historyContent}>
@@ -920,6 +970,52 @@ const InterviewHistoryPage: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
+        )}
+      </Modal>
+      
+      <Modal
+        title="Favorite Questions"
+        open={favoritesModalVisible}
+        onCancel={() => {
+          setFavoritesModalVisible(false);
+          setFavoriteQuestions([]);
+        }}
+        footer={[
+          <Button key="back" onClick={() => setFavoritesModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+        width={800}
+        className={styles.favoritesModal}
+      >
+        {selectedLog && (
+          <div className={styles.favoritesContent}>
+            <div className={styles.favoritesList}>
+              {loadingFavorites ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.spinner}></div>
+                  <Text>Loading favorite questions...</Text>
+                </div>
+              ) : favoriteQuestions.length > 0 ? (
+                <ul className={styles.questionsList}>
+                  {favoriteQuestions.map((question, index) => (
+                    <li key={index} className={styles.questionItem}>
+                      <Title level={5}>Question {index + 1}</Title>
+                      <Text>{parseQuestion(question.question_text)}</Text>
+                      {question.answer && (
+                        <div className={styles.answerSection}>
+                          <Text type="secondary" strong>Answer:</Text>
+                          <Text>{question.answer}</Text>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty description="No favorite questions found for this interview" />
+              )}
+            </div>
           </div>
         )}
       </Modal>
