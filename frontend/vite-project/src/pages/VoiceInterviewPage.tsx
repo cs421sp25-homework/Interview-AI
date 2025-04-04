@@ -1,6 +1,6 @@
 // VoiceInterviewPage.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, X, Home, Bot, Loader } from 'lucide-react';
+import { Mic, MicOff, X, Home, Bot, Loader, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
@@ -17,6 +17,23 @@ interface ChatMessage {
   realText?: string;
 }
 
+// 添加保存过渡动画组件
+const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div className={styles.savingOverlay}>
+      <div className={styles.savingContent}>
+        <Save size={60} className={styles.savingIcon} />
+        <h2 className={styles.savingText}>Saving Interview</h2>
+        <p className={styles.savingSubtext}>
+          Please wait while we save your voice interview data...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const VoiceInterviewPage: React.FC = () => {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
@@ -29,6 +46,7 @@ const VoiceInterviewPage: React.FC = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const [showSavingOverlay, setShowSavingOverlay] = useState(false);
 
   const navigate = useNavigate();
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -466,6 +484,9 @@ const VoiceInterviewPage: React.FC = () => {
     // 设置保存状态
     setIsSaving(true);
     
+    // 显示保存动画
+    setShowSavingOverlay(true);
+    
     // 首先停止所有音频播放
     stopAllAudios();
     
@@ -484,12 +505,20 @@ const VoiceInterviewPage: React.FC = () => {
   
       await saveChatHistory(threadId!, finalMessages);
       message.success('Interview saved successfully');
-      navigate('/dashboard');
+      
+      // 短暂延迟以显示保存动画
+      setTimeout(() => {
+        // 隐藏保存动画
+        setShowSavingOverlay(false);
+        // 保存后导航到查看页面
+        navigate(`/interview/log/view/${threadId}`);
+      }, 800);
     } catch (error) {
       console.error('Error ending interview:', error);
       message.error('Failed to save interview');
       // 如果出错，重置保存状态，让用户可以重试
       setIsSaving(false);
+      setShowSavingOverlay(false);
     }
   };
 
@@ -682,9 +711,12 @@ const VoiceInterviewPage: React.FC = () => {
 
   return (
     <div className={styles.interviewContainer}>
+      {/* 保存动画覆盖层 */}
+      <SavingOverlay isVisible={showSavingOverlay} />
+      
       <div className={styles.interviewHeader}>
         <button 
-          className={styles.backButton} 
+          className={`${styles.backButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleBackToDashboard}
           disabled={isSaving}
         >
@@ -693,7 +725,7 @@ const VoiceInterviewPage: React.FC = () => {
         </button>
         <h1>Voice Interview: {config_name}</h1>
         <button 
-          className={styles.endButton} 
+          className={`${styles.endButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleEndInterview}
           disabled={isSaving}
         >

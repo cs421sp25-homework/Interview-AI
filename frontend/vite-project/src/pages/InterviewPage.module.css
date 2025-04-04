@@ -365,9 +365,8 @@
 
 .loadingSpinner {
   animation: spin 1.5s linear infinite;
-  color: #ec4899;
-  margin: 0 auto;
-  font-size: 2rem;
+  color: #ffffff;
+  margin-right: 8px;
 }
 
 @keyframes spin {
@@ -1288,4 +1287,99 @@
 /* 移除不需要的audioInitButton样式 */
 .audioInitButton {
   display: none;
+}
+
+/* 保存动画效果 */
+.savingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  transition: all 0.3s ease;
+}
+
+.savingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(236, 72, 153, 0.2);
+  border-top: 3px solid #ec4899;
+  max-width: 90%;
+  width: 400px;
+}
+
+.savingIcon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1rem;
+  animation: savingPulse 1.5s infinite ease-in-out;
+  color: #ec4899;
+}
+
+.savingText {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.savingSubtext {
+  color: #6b7280;
+  text-align: center;
+}
+
+@keyframes savingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 按钮保存状态样式 */
+.endButton.saving, .backButton.saving {
+  position: relative;
+  overflow: hidden;
+}
+
+.endButton.saving::after, .backButton.saving::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent
+  );
+  animation: shimmerSaving 1.5s infinite;
+}
+
+@keyframes shimmerSaving {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }

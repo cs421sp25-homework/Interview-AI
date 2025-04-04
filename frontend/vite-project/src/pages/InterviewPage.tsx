@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Bot, Home, Loader } from 'lucide-react';
+import { Send, X, Bot, Home, Loader, Save } from 'lucide-react';
 import styles from './InterviewPage.module.css';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
@@ -7,6 +7,23 @@ import { useNavigate } from 'react-router-dom';
 import InterviewMessage from '../components/InterviewMessage';
 import { Button } from 'antd';
 import { HeartOutlined } from '@ant-design/icons';
+
+// 添加保存过渡动画组件
+const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div className={styles.savingOverlay}>
+      <div className={styles.savingContent}>
+        <Save size={60} className={styles.savingIcon} />
+        <h2 className={styles.savingText}>Saving Interview</h2>
+        <p className={styles.savingSubtext}>
+          Please wait while we save your interview data...
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<
@@ -18,6 +35,7 @@ const InterviewPage: React.FC = () => {
   const [isChatReady, setIsChatReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnding, setIsEnding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   
   // Record whether the interview has ended and if there is actual conversation
@@ -30,6 +48,9 @@ const InterviewPage: React.FC = () => {
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
   const navigate = useNavigate();
+  
+  // 添加保存动画状态
+  const [showSavingOverlay, setShowSavingOverlay] = useState(false);
   
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -284,72 +305,50 @@ const InterviewPage: React.FC = () => {
       return;
     }
     
-    // Prevent multiple clicks
-    if (isEnding) return;
-    setIsEnding(true);
-  
-    // Show a loading message (but do not block navigation)
-    message.loading('Saving your interview responses...', 0);
+    // 防止多次点击触发多次请求
+    if (isSaving) return;
     
-    // Fire off the save operation without waiting for it to finish
-    saveChatHistory(threadId, messages)
-      .then((saveResult) => {
-        if (saveResult) {
-          message.success('Interview responses saved.');
-        } else {
-          message.warning('Interview ended, but there might be issues saving your responses.');
-        }
-      })
-      .catch((error) => {
-        console.error('Error saving chat history:', error);
-        message.error('Failed to save your responses.');
-      });
+    // 设置保存状态
+    setIsSaving(true);
     
-    // Option A: Remove config keys after a short delay, so the view page can still access them if needed
-    setTimeout(() => {
-      localStorage.removeItem('current_config');
-      localStorage.removeItem('current_config_id');
-    }, 500);
-  
-    // Navigate immediately to the interview view page with the conversation data
-    navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
+    // 显示保存动画
+    setShowSavingOverlay(true);
     
-    setIsEnding(false);
+    // 显示加载消息
+    message.loading('Saving your interview...', 1);
+    
+    try {
+      // 执行保存操作
+      const saveResult = await saveChatHistory(threadId, messages);
+      
+      if (saveResult) {
+        message.success('Interview saved successfully');
+      } else {
+        message.warning('There might be issues saving your responses');
+      }
+      
+      // 短暂延迟以显示保存动画
+      setTimeout(() => {
+        // 隐藏保存动画
+        setShowSavingOverlay(false);
+        // 保存后导航到查看页面
+        navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
+      }, 800);
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+      message.error('Failed to save your responses');
+      // 如果出错，重置保存状态，让用户可以重试
+      setIsSaving(false);
+      setShowSavingOverlay(false);
+    }
   };
   
   
   
 
   const handleBackToDashboard = () => {
+    // 直接调用 handleEndInterview 函数，确保保存逻辑执行
     handleEndInterview();
-  };
-
-  const renderQuestion = (question: string, index: number) => {
-    const isFirstQuestion = index === 0;
-    return (
-      <div key={index} className={styles.questionContainer}>
-        <div className={styles.questionHeader}>
-          <h3 className={styles.questionText}>{question}</h3>
-          {!isFirstQuestion && (
-            <Button
-              type="text"
-              icon={<HeartOutlined />}
-              onClick={() => handleAddToFavorites(question)}
-              className={styles.favoriteButton}
-            />
-          )}
-        </div>
-        <div className={styles.answerSection}>
-          <TextArea
-            value={answers[index]}
-            onChange={(e) => handleAnswerChange(index, e.target.value)}
-            placeholder="Type your answer here..."
-            autoSize={{ minRows: 3, maxRows: 8 }}
-            className={styles.answerInput}
-          />
-        </div>
-      </div>
-    );
   };
 
   if (isLoading) {
@@ -366,23 +365,27 @@ const InterviewPage: React.FC = () => {
 
   return (
     <div className={styles.interviewContainer}>
+      {/* 保存动画覆盖层 */}
+      <SavingOverlay isVisible={showSavingOverlay} />
+      
       <div className={styles.interviewHeader}>
         <button 
-          className={styles.backButton}
+          className={`${styles.backButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleBackToDashboard}
+          disabled={isSaving}
         >
           <Home size={18} />
-          Back to Dashboard
+          {isSaving ? 'Saving...' : 'Back to Dashboard'}
         </button>
         <h1>Interview: {config_name}</h1>
         <button 
-          className={styles.endButton} 
+          className={`${styles.endButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleEndInterview}
-          disabled={isEnding}  // Disable the button while loading
+          disabled={isSaving}
         >
-          {isEnding ? (
+          {isSaving ? (
             <>
-              <Loader size={20} /> Ending Interview...
+              <Loader size={20} className={styles.loadingSpinner} /> Saving...
             </>
           ) : (
             <>
