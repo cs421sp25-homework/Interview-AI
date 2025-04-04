@@ -20,6 +20,7 @@ interface InterviewLog {
 
 interface LocationState {
   conversation: Message[];
+  thread_id: string;
 }
 
 const InterviewLogViewPage: React.FC = () => {
@@ -32,8 +33,7 @@ const InterviewLogViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
-  const [threadId, setThreadId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string>("");
 
   const handleGenerateResponse = async (messageText: string, index: number) => {
     // Set loading for this index
@@ -69,7 +69,9 @@ const InterviewLogViewPage: React.FC = () => {
     setLoading(true);
     if (location.state && (location.state as LocationState).conversation) {
       setMessages((location.state as LocationState).conversation);
+      setThreadId((location.state as LocationState).thread_id);
       setTimeout(() => setLoading(false), 300);
+      console.log('Thread ID:', (location.state as LocationState).thread_id);
     } else {
       const fetchLog = async () => {
         try {
@@ -158,7 +160,7 @@ const InterviewLogViewPage: React.FC = () => {
                   <InterviewMessage
                     message={msg}
                     messageId={`${id}-${index}`}
-                    threadId={threadId || ''}
+                    threadId={threadId}
                     isFirstMessage={index === 0}
                   />
                 ) : (

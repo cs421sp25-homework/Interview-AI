@@ -236,7 +236,7 @@ const FavoritesPage: React.FC = () => {
 
                 const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
                 navigate(`/interview/view/${record.session_id}`, { 
-                  state: { conversation } 
+                  state: { conversation, thread_id: matchingLog.thread_id } 
                 });
               } catch (error) {
                 console.error('Error loading interview session:', error);

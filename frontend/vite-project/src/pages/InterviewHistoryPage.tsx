@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty } from 'antd';
-import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined, DownloadOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -132,18 +132,6 @@ const InterviewHistoryPage: React.FC = () => {
         const transformedLogs = data.data.map((log: any) => {
           console.log(`Log ID: ${log.id}, updated_at: ${log.updated_at}, created_at: ${log.created_at}`);
           
-          if (log.updated_at) {
-            const testDate = new Date(log.updated_at);
-            // console.log(`UTC Time: ${testDate.toISOString()}`);
-            // console.log(`Local Time: ${testDate.toString()}`);
-            // console.log(`ET Display Date: ${new Intl.DateTimeFormat('en-US', {
-            //   timeZone: 'America/New_York',
-            //   year: 'numeric',
-            //   month: 'numeric',
-            //   day: 'numeric',
-            // }).format(testDate)}`);
-          }
-          
           return {
             id: log.id,
             thread_id: log.thread_id,
@@ -153,13 +141,6 @@ const InterviewHistoryPage: React.FC = () => {
             company_name: log.config_company_name || log.company_name || 'Unknown Company',
             form: log.form || 'text',
             log: typeof log.log === 'string' ? JSON.parse(log.log) : log.log,
-
-
-
-
-
-
-            
             question_type: log.question_type || 'Unknown',
             job_description: log.job_description || '',
             interview_name: log.interview_name || '',
@@ -178,7 +159,6 @@ const InterviewHistoryPage: React.FC = () => {
           
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
-            
             
             question_count: log.conversation ? countQuestionsInConversation(log.conversation) : 0,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
@@ -204,7 +184,6 @@ const InterviewHistoryPage: React.FC = () => {
           
           const enhancedLogs = parsedLogs.map((log: any) => ({
             ...log,
-            
             
             question_count: Math.floor(Math.random() * 20) + 5,
             company_name: log.title.includes('-') ? log.title.split('-')[1].trim() : 'Unknown Company',
@@ -280,7 +259,12 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewInterviewLog = (log: InterviewLog) => {
-    navigate(`/interview/view/${log.id}`, { state: { conversation: log.log } });
+    navigate(`/interview/view/${log.id}`, { 
+        state: { 
+            conversation: log.log, 
+            thread_id: log.thread_id // Include thread_id in the state
+        } 
+    });
   };
   
   const handleDeleteInterview = (log: InterviewLog) => {

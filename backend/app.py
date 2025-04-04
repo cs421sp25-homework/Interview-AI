@@ -1166,7 +1166,14 @@ def add_favorite_question():
         # Set created_at if not provided
         if 'created_at' not in data:
             data['created_at'] = datetime.utcnow().isoformat()
-            
+        
+        # Ensure session_id is included in the data
+        data['session_id'] = data['session_id']  # This line ensures session_id is part of the data
+        
+        # Add thread_id to the data if provided
+        if 'thread_id' in data:
+            data['thread_id'] = data['thread_id']
+        
         print("Attempting to insert data into Supabase:", data)
         
         # First check if the question already exists
@@ -1176,7 +1183,9 @@ def add_favorite_question():
             # Update existing record
             result = supabase.table('interview_questions').update({
                 'is_favorite': data['is_favorite'],
-                'updated_at': datetime.utcnow().isoformat()
+                'updated_at': datetime.utcnow().isoformat(),
+                'thread_id': data.get('thread_id'),  # Update thread_id if it exists
+                'session_id': data['session_id']  # Ensure session_id is updated
             }).eq('id', existing.data[0]['id']).execute()
         else:
             # Insert new record
