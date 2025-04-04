@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Sparkles, Check} from 'lucide-react';
+import { Home, Sparkles, Check } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { message, Button, Spin, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -54,8 +54,7 @@ const InterviewLogViewPage: React.FC = () => {
     // Start the loading animation
     const loadingInterval = setInterval(() => {
       setLoadingSteps(prev => {
-        // If we're already at step 3 (final step), keep it there
-        if (prev[index] >= 3) return prev;
+        if (prev[index] >= 3) return prev; // If at final step, stay there
         return { ...prev, [index]: prev[index] + 1 };
       });
     }, 1500); // Change steps every 1.5 seconds
@@ -63,16 +62,15 @@ const InterviewLogViewPage: React.FC = () => {
     try {
       // Find the AI question that the user was responding to
       let aiQuestion = '';
-      
+
       // Look for the most recent AI message before this user message
       for (let i = index - 1; i >= 0; i--) {
-        if (messages[i] && messages[i].sender === 'ai') {
+        if (messages[i]?.sender === 'ai') {
           aiQuestion = messages[i].text;
           break;
         }
       }
       
-      // Debug logging
       console.log("Sending request to generate_good_response with data:", {
         message: messageText,
         ai_question: aiQuestion
@@ -89,10 +87,10 @@ const InterviewLogViewPage: React.FC = () => {
       
       const data = await res.json();
       if (data.response) {
-        // Set step to completed before clearing interval
-        setLoadingSteps(prev => ({ ...prev, [index]: 4 })); // 4 is completed
+        // Move to a “completed” step
+        setLoadingSteps(prev => ({ ...prev, [index]: 4 }));
         
-        // Short delay to show completion state
+        // Slight delay to show that final state
         setTimeout(() => {
           setGeneratedResponse(prev => ({ ...prev, [index]: data.response }));
           message.success('AI response generated successfully');
@@ -112,7 +110,7 @@ const InterviewLogViewPage: React.FC = () => {
     }
   };
 
-  // Avoid layout shift by ensuring container exists on first render.
+  // Avoid layout shift by ensuring container exists on first render
   useEffect(() => {
     const container = document.getElementById('logViewContainer');
     if (container) {
@@ -121,12 +119,15 @@ const InterviewLogViewPage: React.FC = () => {
     
     setLoading(true);
     if (location.state && (location.state as LocationState).conversation) {
-      setMessages((location.state as LocationState).conversation);
-      setThreadId((location.state as LocationState).thread_id);
-      setQuestionType((location.state as LocationState).question_type);
+      // Load conversation from router state
+      const { conversation, thread_id, question_type } = location.state as LocationState;
+      setMessages(conversation);
+      setThreadId(thread_id);
+      setQuestionType(question_type);
       setTimeout(() => setLoading(false), 300);
-      console.log('Thread ID:', (location.state as LocationState).thread_id);
+      console.log('Thread ID:', thread_id);
     } else {
+      // Fetch from DB if not in router state
       const fetchLog = async () => {
         try {
           const userEmail = localStorage.getItem('user_email') || '';
@@ -137,7 +138,7 @@ const InterviewLogViewPage: React.FC = () => {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
             setMessages(conversation);
             setThreadId(log.thread_id);
-            setQuestionType((location.state as LocationState).question_type);
+            setQuestionType(log.question_type || '');
           } else {
             message.error('Interview log not found.');
           }
@@ -165,10 +166,9 @@ const InterviewLogViewPage: React.FC = () => {
 
   const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#ec4899' }} spin />;
 
-  // Helper function to render loading steps
+  // Helper function to render the multi-step loading
   const renderLoadingSteps = (index: number) => {
     const currentStep = loadingSteps[index] || 0;
-    
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingMessage}>
@@ -177,23 +177,79 @@ const InterviewLogViewPage: React.FC = () => {
         
         <div className={styles.loadingSteps}>
           <div className={styles.loadingStep}>
-            <div className={`${styles.loadingStepDot} ${currentStep >= 0 ? styles.active : ''} ${currentStep > 0 ? styles.completed : ''}`}></div>
-            <div className={`${styles.loadingStepText} ${currentStep >= 0 ? styles.active : ''} ${currentStep > 0 ? styles.completed : ''}`}>Analyze</div>
+            <div
+              className={`
+                ${styles.loadingStepDot}
+                ${currentStep >= 0 ? styles.active : ''}
+                ${currentStep > 0 ? styles.completed : ''}
+              `}
+            ></div>
+            <div
+              className={`
+                ${styles.loadingStepText}
+                ${currentStep >= 0 ? styles.active : ''}
+                ${currentStep > 0 ? styles.completed : ''}
+              `}
+            >
+              Analyze
+            </div>
           </div>
           
           <div className={styles.loadingStep}>
-            <div className={`${styles.loadingStepDot} ${currentStep >= 1 ? styles.active : ''} ${currentStep > 1 ? styles.completed : ''}`}></div>
-            <div className={`${styles.loadingStepText} ${currentStep >= 1 ? styles.active : ''} ${currentStep > 1 ? styles.completed : ''}`}>Improve</div>
+            <div
+              className={`
+                ${styles.loadingStepDot}
+                ${currentStep >= 1 ? styles.active : ''}
+                ${currentStep > 1 ? styles.completed : ''}
+              `}
+            ></div>
+            <div
+              className={`
+                ${styles.loadingStepText}
+                ${currentStep >= 1 ? styles.active : ''}
+                ${currentStep > 1 ? styles.completed : ''}
+              `}
+            >
+              Improve
+            </div>
           </div>
           
           <div className={styles.loadingStep}>
-            <div className={`${styles.loadingStepDot} ${currentStep >= 2 ? styles.active : ''} ${currentStep > 2 ? styles.completed : ''}`}></div>
-            <div className={`${styles.loadingStepText} ${currentStep >= 2 ? styles.active : ''} ${currentStep > 2 ? styles.completed : ''}`}>Refine</div>
+            <div
+              className={`
+                ${styles.loadingStepDot}
+                ${currentStep >= 2 ? styles.active : ''}
+                ${currentStep > 2 ? styles.completed : ''}
+              `}
+            ></div>
+            <div
+              className={`
+                ${styles.loadingStepText}
+                ${currentStep >= 2 ? styles.active : ''}
+                ${currentStep > 2 ? styles.completed : ''}
+              `}
+            >
+              Refine
+            </div>
           </div>
           
           <div className={styles.loadingStep}>
-            <div className={`${styles.loadingStepDot} ${currentStep >= 3 ? styles.active : ''} ${currentStep > 3 ? styles.completed : ''}`}></div>
-            <div className={`${styles.loadingStepText} ${currentStep >= 3 ? styles.active : ''} ${currentStep > 3 ? styles.completed : ''}`}>Finalize</div>
+            <div
+              className={`
+                ${styles.loadingStepDot}
+                ${currentStep >= 3 ? styles.active : ''}
+                ${currentStep > 3 ? styles.completed : ''}
+              `}
+            ></div>
+            <div
+              className={`
+                ${styles.loadingStepText}
+                ${currentStep >= 3 ? styles.active : ''}
+                ${currentStep > 3 ? styles.completed : ''}
+              `}
+            >
+              Finalize
+            </div>
           </div>
         </div>
         
@@ -206,8 +262,9 @@ const InterviewLogViewPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {/* Header */}
       <div className={styles.header}>
-        <button 
+        <button
           className={styles.backButton}
           onClick={handleBack}
         >
@@ -218,6 +275,7 @@ const InterviewLogViewPage: React.FC = () => {
         <div className={styles.placeholder} />
       </div>
 
+      {/* Main Content */}
       <div id="logViewContainer" className={styles.contentContainer}>
         {loading ? (
           <div className={styles.loadingContainer}>
@@ -229,8 +287,13 @@ const InterviewLogViewPage: React.FC = () => {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper}
+                className={
+                  msg.sender === 'ai'
+                    ? styles.aiMessageWrapper
+                    : styles.userMessageWrapper
+                }
               >
+                {/* Avatar */}
                 <div className={styles.avatarContainer}>
                   {msg.sender === 'ai' ? (
                     <div className={styles.botAvatar}>
@@ -239,17 +302,22 @@ const InterviewLogViewPage: React.FC = () => {
                   ) : (
                     <div className={styles.userAvatar}>
                       {localStorage.getItem('user_photo_url') ? (
-                        <img 
-                          src={localStorage.getItem('user_photo_url') || ''} 
-                          alt="User" 
+                        <img
+                          src={localStorage.getItem('user_photo_url') || ''}
+                          alt="User"
                           className={styles.avatarImage}
                         />
                       ) : (
-                        localStorage.getItem('user_email')?.charAt(0).toUpperCase() || 'U'
+                        localStorage
+                          .getItem('user_email')
+                          ?.charAt(0)
+                          .toUpperCase() || 'U'
                       )}
                     </div>
                   )}
                 </div>
+
+                {/* If AI, use InterviewMessage */}
                 {msg.sender === 'ai' ? (
                   <InterviewMessage
                     message={msg}
@@ -259,6 +327,7 @@ const InterviewLogViewPage: React.FC = () => {
                     isFirstMessage={index === 0}
                   />
                 ) : (
+                  // Otherwise, user message
                   <div className={styles.userMessage}>
                     <div className={styles.messageContent}>
                       {msg.text}
@@ -275,7 +344,9 @@ const InterviewLogViewPage: React.FC = () => {
                         renderLoadingSteps(index)
                       ) : (
                         <Tooltip title="Generate an AI-suggested response to improve your answer quality">
-                          <Button onClick={() => handleGenerateResponse(msg.text, index)}>
+                          <Button
+                            onClick={() => handleGenerateResponse(msg.text, index)}
+                          >
                             <Sparkles size={16} />
                             <span>Generate AI Response</span>
                           </Button>
