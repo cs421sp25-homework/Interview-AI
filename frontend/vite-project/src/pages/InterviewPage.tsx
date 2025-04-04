@@ -355,9 +355,21 @@ const InterviewPage: React.FC = () => {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingContent}>
-          <Loader size={48} className={styles.loadingSpinner} />
-          <h2>Initializing interview session</h2>
-          <p>Setting up your interview for: {config_name}</p>
+          <Loader size={80} className={styles.loadingSpinner} />
+          <h2>Initializing Interview</h2>
+          <p>We're setting up your personalized interview experience for: <strong>{config_name}</strong></p>
+          
+          <div className={styles.loadingIndicator}>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+          </div>
+          
+          <div className={styles.loadingText}>Preparing AI interviewer...</div>
+          
+          <span className={styles.secondaryText}>
+            This may take a few moments
+          </span>
         </div>
       </div>
     );

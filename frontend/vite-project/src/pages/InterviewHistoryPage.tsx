@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty } from 'antd';
+import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty, Tooltip, Spin } from 'antd';
 import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewHistoryPage.module.css';
 import { exportToPDF } from '../utils/pdfExport';
+import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
+import type { SortOrder } from 'antd/es/table/interface';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+
+// Define Message interface
+interface Message {
+  text: string;
+  sender: string;
+  question_type?: string;
+  audioUrl?: string;
+  storagePath?: string;
+  duration?: number;
+  isReady?: boolean;
+}
 
 // 辅助函数用于确保日期时区处理正确
 const formatToEasternTime = (dateStr: string) => {
@@ -272,13 +286,13 @@ const InterviewHistoryPage: React.FC = () => {
     modal.confirm({
       title: 'Are you sure you want to delete this interview?',
       icon: <ExclamationCircleOutlined />,
-      content: 'This action cannot be undone. The interview session will be deleted, but your favorite questions will be preserved.',
+      content: 'This action cannot be undone. The interview session and any favorite questions from this session will be permanently deleted.',
       okText: 'Yes, Delete',
       cancelText: 'Cancel',
       okType: 'danger',
       onOk: async () => {
         try {
-          // Delete only the interview log
+          // Delete the interview log (and associated favorites)
           const response = await fetch(`${API_BASE_URL}/api/chat_history/${log.id}`, {
             method: 'DELETE',
           });
@@ -288,7 +302,7 @@ const InterviewHistoryPage: React.FC = () => {
           }
   
           const result = await response.json();
-          message.success(result.message || 'Interview deleted successfully');
+          message.success(result.message || 'Interview and associated favorite questions deleted successfully');
           setLogs(prevLogs => prevLogs.filter(item => item.id !== log.id));
         } catch (error) {
           console.error('Error deleting interview:', error);
@@ -720,6 +734,30 @@ const InterviewHistoryPage: React.FC = () => {
     }
   ];
   
+  if (loading) {
+    return (
+      <div className={styles.pageLoadingContainer}>
+        <div className={styles.loadingContent}>
+          <Spin size="large" className={styles.loadingSpinner} />
+          <h2>Loading Interview History</h2>
+          <p>We're retrieving your past interviews and preparing your dashboard</p>
+          
+          <div className={styles.loadingIndicator}>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+          </div>
+          
+          <div className={styles.loadingText}>Analyzing your interview data...</div>
+          
+          <span className={styles.secondaryText}>
+            This may take a few moments
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.interviewContainer}>
       {contextHolder}
@@ -908,7 +946,12 @@ const InterviewHistoryPage: React.FC = () => {
               {loadingPerformance ? (
                 <div className={styles.loadingContainer}>
                   <div className={styles.spinner}></div>
-                  <Text>Loading performance data...</Text>
+                  <div className={styles.loadingText}>Loading performance data...</div>
+                  <div className={styles.loadingIndicator}>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                  </div>
                 </div>
               ) : performanceData ? (
                 <>
@@ -995,7 +1038,12 @@ const InterviewHistoryPage: React.FC = () => {
               {loadingFavorites ? (
                 <div className={styles.loadingContainer}>
                   <div className={styles.spinner}></div>
-                  <Text>Loading favorite questions...</Text>
+                  <div className={styles.loadingText}>Loading favorite questions...</div>
+                  <div className={styles.loadingIndicator}>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                  </div>
                 </div>
               ) : favoriteQuestions.length > 0 ? (
                 <ul className={styles.questionsList}>

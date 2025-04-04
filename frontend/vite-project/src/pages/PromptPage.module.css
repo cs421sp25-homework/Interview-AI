@@ -105,15 +105,45 @@
 
 .pageContainer {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #fdf2f8, #ffffff);
+  background: linear-gradient(135deg, #fdf2f8 0%, #ffffff 100%);
+  animation: fadeIn 0.6s ease-out forwards;
+  overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav {
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 1.25rem 2rem;
+  backdrop-filter: blur(8px);
+  animation: slideDown 0.5s ease-out forwards;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .navContent {
@@ -129,34 +159,77 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
+  animation: fadeInLogo 0.8s ease-out forwards;
 }
 
 .logoIcon {
   color: #ec4899;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .logoText {
   font-weight: 700;
   font-size: 1.25rem;
-  color: #111827;
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes fadeInLogo {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .backButton {
-  background-color: transparent;
+  background-color: white;
   color: #4b5563;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  animation: fadeInRight 0.8s ease-out forwards;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .backButton:hover {
   background-color: #f9fafb;
   color: #111827;
-  border-color: #d1d5db;
+  border-color: #ec4899;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .main {
@@ -168,11 +241,26 @@
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  animation: fadeInUp 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .header {
   text-align: center;
-  margin-bottom: 0;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.8s ease-out 0.4s forwards;
+  opacity: 0;
 }
 
 .header h1 {
@@ -180,139 +268,26 @@
   font-weight: 700;
   color: #111827;
   margin-bottom: 0.25rem;
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .header p {
   color: #6b7280;
   font-size: 1rem;
-  margin-bottom: 1rem;
-}
-
-.formCard {
-  background: white;
-  border-radius: 1rem;
-  padding: 2rem 2.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 450px;
-  margin-top: 0;
   margin-bottom: 1.5rem;
-  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.formCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
-}
-
-.errorMessage {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  border-left: 4px solid #ef4444;
-}
-
-.formGroup {
-  margin-bottom: 1.25rem;
-}
-
-.formLabel {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.required {
-  color: #ec4899;
-  margin-left: 4px;
-}
-
-.optional {
-  color: #9ca3af;
-  font-size: 0.75rem;
-  font-weight: normal;
-  margin-left: 4px;
-}
-
-.formInput {
+.interviewList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-/* 添加select元素的特殊样式 */
-select.formInput {
-  padding-right: 2.5rem; /* 增加右侧padding，让箭头向左移 */
-  background-position: calc(100% - 15px) center; /* 将背景箭头位置调整得更靠左 */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-size: 1rem;
-}
-
-.formInput:focus {
-  outline: none;
-  border-color: #ec4899;
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
-}
-
-.buttonPrimary {
-  width: 100%;
-  background-color: #ec4899;
-  color: white;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  height: 2.75rem;
-}
-
-.buttonPrimary:hover {
-  background-color: #db2777;
-}
-
-.orText {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-  position: relative;
-}
-
-.orText::before,
-.orText::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 30%;
-  height: 1px;
-  background-color: #e5e7eb;
-}
-
-.orText::before {
-  left: 0;
-}
-
-.orText::after {
-  right: 0;
+  animation: fadeInUp 0.8s ease-out 0.6s forwards;
+  opacity: 0;
 }
 
 .interviewCard {
@@ -326,94 +301,106 @@ select.formInput {
   padding: 1.5rem 2.5rem;
   background-color: white;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #4b5563;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 1rem; 
-}
-.interviewList {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); 
-  gap: 1rem; 
-  margin-top: 1rem;
-  width: 100%;
-}
-
-@media (max-width: 992px) {
-  .interviewList {
-    grid-template-columns: repeat(2, 1fr); 
-  }
-}
-
-@media (max-width: 640px) {
-  .interviewList {
-    grid-template-columns: 1fr; 
-  }
-  
-  .main {
-    padding: 2rem 1rem;
-  }
-  
-  .formCard {
-    padding: 1.5rem;
-  }
-  
-  .header h1 {
-    font-size: 1.75rem;
-  }
-}
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
-  position: relative;
-}
-
-.closeButton {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.cardDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: #4b5563;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
 }
 
 .interviewCard:hover {
   background-color: #fdf2f8;
   border-color: #ec4899;
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.15);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(236, 72, 153, 0.15);
+  z-index: 1;
 }
 
 .selectedCard {
   border: 2px solid #ec4899;
   background-color: #fdf2f8;
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
+  animation: selectedPulse 2s infinite;
+}
+
+@keyframes selectedPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(236, 72, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
+  }
+}
+
+.buttonPrimary {
+  width: 100%;
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+  color: white;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  height: 3rem;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.buttonPrimary::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(45deg);
+  transition: all 0.5s ease;
+  opacity: 0;
+}
+
+.buttonPrimary:hover::before {
+  opacity: 1;
+  transform: rotate(45deg) translate(10%, 10%);
+}
+
+.buttonPrimary:hover {
+  background: linear-gradient(90deg, #db2777 0%, #be185d 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
+}
+
+.buttonPrimary:active {
+  transform: scale(0.98) translateY(-1px);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.3);
+}
+
+.buttonDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: linear-gradient(90deg, #d1d5db, #9ca3af);
+  box-shadow: none;
+}
+
+.buttonDisabled:hover {
+  background: linear-gradient(90deg, #d1d5db, #9ca3af);
+  transform: none;
+  box-shadow: none;
 }
 
 .cardContent {
@@ -427,52 +414,206 @@ select.formInput {
   font-size: 1.1rem;
   color: #111827;
   margin-bottom: 0.5rem;
+  position: relative;
+  display: inline-block;
 }
 
-.menuContainer {
+.interviewName::after {
+  content: '';
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  cursor: pointer;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+  transition: width 0.3s ease;
 }
 
-.menuIcon {
-  color: #6b7280;
-  transition: color 0.2s;
-}
-
-.menuIcon:hover {
-  color: #ec4899;
-}
-
-.menuDropdown {
-  position: absolute;
-  top: 1.5rem;
-  right: 0;
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 0.5rem;
-  overflow: hidden;
-  z-index: 10;
-}
-
-.menuDropdown button {
-  background: none;
-  border: none;
-  padding: 0.5rem 1rem;
+.interviewCard:hover .interviewName::after {
   width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: #4b5563;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
 }
 
-.menuDropdown button:hover {
-  background-color: #fdf2f8;
+.modal {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(236, 72, 153, 0.2);
+  width: 100%;
+  max-width: 550px;
+  position: relative;
+  animation: modalZoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(236, 72, 153, 0.1);
+}
+
+@keyframes modalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f3f4f6;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.closeButton:hover {
+  background: #fee2e8;
   color: #ec4899;
+  transform: rotate(90deg);
+}
+
+.modal h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.formCard {
+  background: white;
+  border-radius: 1rem;
+  padding: 0.5rem;
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.formGroup:focus-within {
+  transform: translateY(-3px);
+}
+
+.formGroup:focus-within .formLabel {
+  color: #ec4899;
+  font-weight: 600;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: #f9fafb;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+  background-color: white;
+}
+
+.formInput:hover {
+  border-color: #d1d5db;
+}
+
+.cardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.cardDetails strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.buttonSecondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.8rem 1.25rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 3rem;
+  flex: 1;
+}
+
+.buttonSecondary:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.required {
+  color: #ec4899;
+  margin-left: 4px;
+  animation: fadeInOut 2s infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 .footer {
@@ -482,81 +623,101 @@ select.formInput {
   color: #6b7280;
   border-top: 1px solid #e5e7eb;
   margin-top: auto;
+  animation: fadeIn 0.8s ease-out 1s forwards;
+  opacity: 0;
 }
 
-.startButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background-color: #ec4899;
-  color: white;
+.menuContainer {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  cursor: pointer;
+}
+
+.menuIcon {
+  color: #6b7280;
+  transition: all 0.3s ease;
+  padding: 0.5rem;
+  border-radius: 50%;
+}
+
+.menuIcon:hover {
+  color: #ec4899;
+  background-color: #fdf2f8;
+  transform: scale(1.1);
+}
+
+.menuDropdown {
+  position: absolute;
+  top: 2.25rem;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  z-index: 10;
+  border: 1px solid #f3f4f6;
+  animation: fadeInDown 0.3s ease-out forwards;
+  transform-origin: top right;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.menuDropdown button {
+  background: none;
   border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-top: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  padding: 0.75rem 1rem;
   width: 100%;
-}
-
-.startButton:hover {
-  background-color: #db2777;
-}
-
-.buttonSecondary {
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #4b5563;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  font-weight: 500;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 16px;
-  height: 2.75rem;
-  width: 100%;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
-.buttonSecondary:hover {
-  background-color: #e5e7eb;
+.menuDropdown button:hover {
+  background-color: #fdf2f8;
+  color: #ec4899;
+  transform: translateX(3px);
 }
 
-.buttonDisabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+@media (max-width: 992px) {
+  .interviewList {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.buttonDisabled:hover {
-  background-color: #ec4899;
-  transform: none;
-  box-shadow: none;
-}
+@media (max-width: 640px) {
+  .interviewList {
+    grid-template-columns: 1fr;
+  }
+  
+  .main {
+    padding: 2rem 1rem;
+  }
+  
+  .formCard {
+    padding: 1.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.75rem;
+  }
 
-.modalActions {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.modalActions button {
-  flex: 1;
-  height: 2.75rem;
-  margin: 0;
-  padding: 0.75rem 1rem;
-}
-
-.modal h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 1.5rem;
-  text-align: center;
+  .modal {
+    padding: 1.75rem;
+    max-width: 90%;
+  }
 }

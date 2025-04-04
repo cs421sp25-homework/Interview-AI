@@ -867,10 +867,13 @@ def delete_chat_history_by_id(id):
         # Also delete associated chat history if available
         if thread_id:
             chat_history_service.delete_chat_history(thread_id)
+            
+            # Delete all favorite questions associated with this session
+            supabase.table('interview_questions').delete().eq('session_id', thread_id).execute()
 
         return jsonify({
             "success": True,
-            "message": "Interview log, performance records, and chat history deleted successfully"
+            "message": "Interview log, performance records, chat history, and associated favorite questions deleted successfully"
         }), 200
 
     except Exception as e:
