@@ -5,16 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewPage.module.css';
-import { text2speech, speech2text } from '../utils/voiceUtils';
 import VoiceBubble from '../components/VoiceBubble';
 
 interface ChatMessage {
   text: string;
   sender: 'user' | 'ai';
   audioUrl?: string;
+  storagePath?: string;  // Add this
   duration?: number;
   isReady: boolean;
-  realText?: string; // For AI placeholder usage in subsequent messages
+  realText?: string;
 }
 
 const VoiceInterviewPage: React.FC = () => {
@@ -41,10 +41,18 @@ const VoiceInterviewPage: React.FC = () => {
   // Stop all audios
   const stopAllAudios = useCallback(() => {
     audioRefs.current.forEach((audio) => {
-      audio.pause();
-      audio.currentTime = 0;
-      if (audio.src.startsWith('blob:')) {
-        URL.revokeObjectURL(audio.src);
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        // Clean up both blob URLs and Supabase audio URLs
+        if (audio.src.startsWith('blob:') || audio.src.startsWith(`${API_BASE_URL}/audio`)) {
+          URL.revokeObjectURL(audio.src);
+        }
+        // Remove any event listeners
+        audio.onended = null;
+        audio.onerror = null;
+      } catch (error) {
+        console.warn('Error cleaning up audio:', error);
       }
     });
     audioRefs.current = [];
@@ -56,24 +64,24 @@ const VoiceInterviewPage: React.FC = () => {
     async (msg: ChatMessage, index: number) => {
       stopAllAudios();
       try {
-        if (msg.sender === 'user' && msg.audioUrl) {
-          // User message has its own recorded audio URL
-          const audio = new Audio(msg.audioUrl);
-          audioRefs.current.push(audio);
-          audio.onended = () => {
-            setCurrentlyPlaying(null);
-            audioRefs.current = audioRefs.current.filter((a) => a !== audio);
-          };
-          await audio.play();
-          setCurrentlyPlaying(index);
-        } else if (msg.sender === 'ai') {
-          // AI message uses TTS
-          await text2speech(msg.text, audioRefs);
-          setCurrentlyPlaying(index);
+        if (!msg.audioUrl) {
+          throw new Error('No audio available for this message');
         }
+        
+        const audio = new Audio(msg.audioUrl);
+        audioRefs.current.push(audio);
+        
+        audio.onended = () => {
+          setCurrentlyPlaying(null);
+          audioRefs.current = audioRefs.current.filter((a) => a !== audio);
+        };
+        
+        await audio.play();
+        setCurrentlyPlaying(index);
       } catch (error) {
         console.error('Error playing message:', error);
         setCurrentlyPlaying(null);
+        message.error('Failed to play audio message');
       }
     },
     [stopAllAudios]
@@ -155,7 +163,7 @@ const VoiceInterviewPage: React.FC = () => {
         } catch (profileError) {
           console.error('Error fetching user profile:', profileError);
         }
-
+    
         const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -174,56 +182,74 @@ const VoiceInterviewPage: React.FC = () => {
             }
           })
         });
-
+    
         if (!res.ok) {
           throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
         }
-
+    
         const data = await res.json();
         setThreadId(data.thread_id);
-
+    
         const welcomeMessage = data.response || 
           `Welcome to your voice interview session for "${config_name}". Click the microphone below to start speaking.`;
-
-        // Hide the first message until TTS is ready:
+    
         if (!hasAutoPlayedInitial.current) {
           hasAutoPlayedInitial.current = true;
           
-          // Generate TTS for the *initial* AI response
-          const duration = await text2speech(welcomeMessage, audioRefs);
-
-          // Now that TTS is done, add the message to state with a real duration
-          setMessages([
-            {
+          try {
+            // Call text2speech API endpoint
+            const ttsResponse = await fetch(`${API_BASE_URL}/api/text2speech/${userEmail}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                text: welcomeMessage,
+                email: userEmail  // Include user email for path generation
+              })
+            });
+    
+            if (!ttsResponse.ok) throw new Error('TTS API call failed');
+            
+            const ttsData = await ttsResponse.json();
+    
+            // Create audio element for playback
+            const audio = new Audio(ttsData.audio_url);
+            audioRefs.current.push(audio);
+            audio.onended = () => {
+              audioRefs.current = audioRefs.current.filter(a => a !== audio);
+            };
+    
+            // Add welcome message with audio data
+            setMessages([{
               text: welcomeMessage,
               sender: 'ai',
-              duration,
+              audioUrl: ttsData.audio_url,
+              storagePath: ttsData.storage_path,
+              duration: ttsData.duration,
               isReady: true
-            }
-          ]);
+            }]);
+    
+            // Auto-play welcome message
+            await audio.play().catch(e => console.warn('Autoplay prevented:', e));
+            
+          } catch (error) {
+            console.error('Error generating welcome message audio:', error);
+            // Fallback to text-only if audio fails
+            setMessages([{
+              text: welcomeMessage,
+              sender: 'ai',
+              isReady: true
+            }]);
+          }
         } else {
           const realAiText = data.response || "I'm thinking about my response...";
-          const aiMessage: ChatMessage = {
-            text: '...', // placeholder
+          setMessages(prev => [...prev, {
+            text: '...',
             realText: realAiText,
             sender: 'ai',
             isReady: false
-          };
-          setMessages((prev) => [...prev, aiMessage]);
+          }]);
         }
-
-        // const welcomeDuration = await text2speech(welcomeMessage, audioRefs);
-
-        // // Now that TTS is done, we have a real duration - only THEN
-        // // add the AI message to state:
-        // const aiWelcomeMessage: ChatMessage = {
-        //   text: welcomeMessage,
-        //   sender: 'ai',
-        //   duration: welcomeDuration,
-        //   isReady: true
-        // };
-        // setMessages([aiWelcomeMessage]);
-
+    
         setIsChatReady(true);
         setIsLoading(false);
       } catch (error) {
@@ -291,37 +317,48 @@ const VoiceInterviewPage: React.FC = () => {
   // Process the recorded audio
   const handleRecordingComplete = async (audioBlob: Blob) => {
     try {
+      // Calculate duration
       const audioContext = new AudioContext();
       const arrayBuffer = await audioBlob.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const duration = audioBuffer.duration;
+      const duration = audioBuffer.duration; // Get actual duration from audio data
 
-      const transcript = await speech2text(audioBlob);
-      const audioUrl = URL.createObjectURL(audioBlob);
-
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.wav');
+  
+      const response = await fetch(`${API_BASE_URL}/api/speech2text/${userEmail}`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) throw new Error('Upload failed');
+      
+      const data = await response.json();
+  
       const userMessage: ChatMessage = {
-        text: transcript,
+        text: data.transcript,
         sender: 'user',
-        audioUrl,
-        duration,
+        audioUrl: data.audio_url,
+        storagePath: data.storage_path,  // Store for backend reference
+        duration: duration,
         isReady: true
       };
-
-      setMessages((prev) => [...prev, userMessage]);
+  
+      setMessages(prev => [...prev, userMessage]);
       await handleSendVoice(userMessage);
     } catch (error) {
       console.error('Recording processing error:', error);
       message.error('Error processing recording. Please try again.');
     }
   };
-
+  
   // Handle AI reply
   const handleSendVoice = async (userMessage: ChatMessage) => {
     if (!threadId) {
       message.warning('No active interview session');
       return;
     }
-
+  
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
@@ -334,34 +371,49 @@ const VoiceInterviewPage: React.FC = () => {
           config_id
         })
       });
-
-      if (!res.ok) {
-        throw new Error('Network response not ok');
-      }
-
+  
+      if (!res.ok) throw new Error('Network response not ok');
       const data = await res.json();
-      const realAiText = data.response || "I'm thinking about my response...";
-
-      // Insert a placeholder bubble for the new AI reply
+      const realAiText = data.response || "I'm thinking...";
+  
+      // Insert placeholder
       const aiMessage: ChatMessage = {
-        text: '...', // placeholder
+        text: '...',
         realText: realAiText,
         sender: 'ai',
         isReady: false
       };
-      setMessages((prev) => [...prev, aiMessage]);
-
-      // Generate TTS in background
-      const duration = await text2speech(realAiText, audioRefs);
-
-      // Replace placeholder with final text
-      setMessages((prev) =>
-        prev.map((msg) =>
+      setMessages(prev => [...prev, aiMessage]);
+  
+      // Generate and store TTS
+      const ttsResponse = await fetch(`${API_BASE_URL}/api/text2speech/${userEmail}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: realAiText })
+      });
+      
+      const ttsData = await ttsResponse.json();
+  
+      // Update with final audio data
+      setMessages(prev =>
+        prev.map(msg =>
           msg === aiMessage
-            ? { ...msg, text: realAiText, duration, isReady: true }
+            ? { 
+                ...msg, 
+                text: realAiText,
+                audioUrl: ttsData.audio_url,
+                storagePath: ttsData.storage_path,
+                duration: ttsData.duration,
+                isReady: true 
+              }
             : msg
         )
       );
+      
+      // Auto-play response
+      const audio = new Audio(ttsData.audio_url);
+      await audio.play();
+
     } catch (error) {
       console.error('Chat error:', error);
       message.error('Failed to send message. Please try again.');
@@ -371,35 +423,26 @@ const VoiceInterviewPage: React.FC = () => {
   // End interview
   const handleEndInterview = async () => {
     stopAllAudios();
-    if (!threadId) {
-      navigate('/dashboard');
-      return;
-    }
-
+    
     try {
-      message.loading('Saving your voice interview responses...', 1);
-
-      const finalMessages: ChatMessage[] = [
-        ...messages,
-        {
-          text: 'Voice interview session ended',
-          sender: 'ai',
-          isReady: true
-        }
-      ];
-      const saveResult = await saveChatHistory(threadId, finalMessages);
-      if (saveResult) {
-        message.success('Voice interview ended. Your responses have been saved.');
-      } else {
-        message.warning('Interview ended, but there might be an issue saving your responses.');
-      }
-
-      localStorage.removeItem('current_config');
-      localStorage.removeItem('current_config_id');
+      message.loading('Saving your interview...', 1);
+      
+      const finalMessages = messages.map(msg => ({
+        ...msg,
+        // Ensure all audio references are included
+        ...(msg.audioUrl ? { 
+          audioUrl: msg.audioUrl,
+          storagePath: msg.storagePath,
+          duration: msg.duration 
+        } : {})
+      }));
+  
+      await saveChatHistory(threadId!, finalMessages);
+      message.success('Interview saved successfully');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error ending voice interview:', error);
-      message.error('Failed to end voice interview properly.');
+      console.error('Error ending interview:', error);
+      message.error('Failed to save interview');
     }
   };
 

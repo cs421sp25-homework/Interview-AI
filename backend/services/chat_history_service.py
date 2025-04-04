@@ -16,94 +16,120 @@ class ChatHistoryService:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-    
     def save_chat_history(self, thread_id: str, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None) -> Dict[str, Any]:
-        """Save or update chat history
+        """Save or update chat history with separated text and audio metadata
         
         Args:
-            thread_id: Session ID
-            user_email: User email
-            messages: List of messages
-            config_name: Configuration name
-            config_id: Configuration ID
+            thread_id: Unique session identifier
+            user_email: User's email address
+            messages: List of chat messages
+            config_name: Interview configuration name
+            config_id: Interview configuration ID
             
         Returns:
-            Dict[str, Any]: Result with success status and interview ID
+            Dictionary with:
+            - success: Boolean status
+            - interview_id: ID of created/updated record
+            - error: Error message if failed
         """
         try:
             self.logger.info(f"Saving chat history for thread_id: {thread_id}")
             
-            # Check if the message list only contains one AI message (welcome message)
+            # Skip saving if only contains welcome message
             if len(messages) == 1 and messages[0].get('sender') == 'ai':
-                self.logger.info(f"Skip saving chat history with only welcome message for thread_id: {thread_id}")
+                self.logger.info("Skipping save - only welcome message")
                 return {"success": True, "skipped": True}
                 
-            # Check existing record's message count to avoid overwriting with fewer messages
+            # Check existing record to prevent overwriting longer histories
             interview_id = None
+            existing_message_count = 0
+            
             try:
-                existing = self.supabase.table(self.table_name).select('id,log').eq('thread_id', thread_id).execute()
-                
+                existing = self.supabase.table(self.table_name) \
+                    .select('id,log,audio_metadata') \
+                    .eq('thread_id', thread_id) \
+                    .execute()
+                    
                 if existing.data and len(existing.data) > 0:
-                    interview_id = existing.data[0].get('id')
-                    existing_log = existing.data[0].get('log')
+                    existing_record = existing.data[0]
+                    interview_id = existing_record.get('id')
+                    
+                    # Check message count in existing log
+                    existing_log = existing_record.get('log')
                     if existing_log:
-                        # Ensure we have parsed JSON
                         if isinstance(existing_log, str):
                             existing_log = json.loads(existing_log)
-                            
-                        # If existing record has more messages than new messages, skip update
-                        if len(existing_log) > len(messages):
-                            self.logger.info(f"Existing log has more messages ({len(existing_log)}) than new log ({len(messages)}), skipping update")
-                            return {"success": True, "skipped": True, "interview_id": interview_id}
+                        existing_message_count = len(existing_log)
+                        
+                        # Skip update if existing has more messages
+                        if existing_message_count > len(messages):
+                            self.logger.info(
+                                f"Skipping update - existing has {existing_message_count} messages, "
+                                f"new has {len(messages)}"
+                            )
+                            return {
+                                "success": True, 
+                                "skipped": True, 
+                                "interview_id": interview_id
+                            }
             except Exception as e:
-                self.logger.warning(f"Error checking existing log message count: {e}")
+                self.logger.warning(f"Error checking existing log: {e}")
             
-            # Check if record exists
-            if not interview_id:
-                existing = self.supabase.table(self.table_name).select('id').eq('thread_id', thread_id).execute()
-                if existing.data and len(existing.data) > 0:
-                    interview_id = existing.data[0].get('id')
+            # Process data for storage
+            text_messages = []
+            audio_metadata = []
+            
+            for idx, msg in enumerate(messages):
+                # Store "text" and "sender" in log
+                text_messages.append({
+                    "text": msg.get('text', ''),
+                    "sender": msg.get('sender')
+                })
                 
+                # Store “audioUrl” and "storagePath" in audio metadata
+                if msg.get('audioUrl') or msg.get('storagePath'):
+                    audio_metadata.append({
+                        "audioUrl": msg.get('audioUrl'),
+                        "storagePath": msg.get('storagePath')
+                    })
+            
             current_time = datetime.datetime.now().isoformat()
             
-            # Prepare message data
-            messages_json = json.dumps(messages)
+            # Prepare data for insert/update
+            data = {
+                'thread_id': thread_id,
+                'email': user_email,
+                'config_name': config_name,
+                'log': json.dumps(text_messages),
+                'updated_at': current_time,
+                'audio_metadata': json.dumps(audio_metadata) if audio_metadata else None
+            }
             
+            if config_id:
+                data['config_id'] = config_id
+                
+            # Update existing or create new record
             if interview_id:
-                # Update existing record
-                update_data = {
-                    'log': messages_json,
-                    'updated_at': current_time
-                }
-                
-                if config_id:
-                    update_data['config_id'] = config_id
-                
-                self.supabase.table(self.table_name).update(update_data).eq('id', interview_id).execute()
-                self.logger.info(f"Updated chat history for thread_id {thread_id}, interview_id {interview_id}")
+                self.supabase.table(self.table_name) \
+                    .update(data) \
+                    .eq('id', interview_id) \
+                    .execute()
+                self.logger.info(f"Updated chat history for {thread_id}")
             else:
-                # Create new record
-                insert_data = {
-                    'thread_id': thread_id,
-                    'email': user_email,
-                    'config_name': config_name,
-                    'log': messages_json,
-                    'created_at': current_time,
-                    'updated_at': current_time
-                }
-                
-                if config_id:
-                    insert_data['config_id'] = config_id
-                
-                result = self.supabase.table(self.table_name).insert(insert_data).execute()
-                if result.data and len(result.data) > 0:
+                data['created_at'] = current_time
+                result = self.supabase.table(self.table_name) \
+                    .insert(data) \
+                    .execute()
+                if result.data:
                     interview_id = result.data[0].get('id')
-                self.logger.info(f"Created new chat history for thread_id {thread_id}, interview_id {interview_id}")
-                
+                self.logger.info(f"Created new chat history for {thread_id}")
+            
             return {"success": True, "interview_id": interview_id}
+            
         except Exception as e:
-            self.logger.error(f"Error saving chat history: {e}", exc_info=True)
+            self.logger.error(f"Error saving chat history: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
+
     
     def get_chat_history(self, thread_id: str) -> Optional[List[Dict[str, Any]]]:
         """Get chat history for a specific session
