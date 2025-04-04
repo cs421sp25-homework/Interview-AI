@@ -701,9 +701,21 @@ const VoiceInterviewPage: React.FC = () => {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingContent}>
-          <Loader size={48} className={styles.loadingSpinner} />
-          <h2>Initializing voice interview</h2>
-          <p>Setting up your voice interview for: {config_name}</p>
+          <Loader size={80} className={styles.loadingSpinner} />
+          <h2>Initializing Voice Interview</h2>
+          <p>We're setting up your interactive voice interview experience for: <strong>{config_name}</strong></p>
+          
+          <div className={styles.loadingIndicator}>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+          </div>
+          
+          <div className={styles.loadingText}>Preparing AI voice interviewer...</div>
+          
+          <span className={styles.secondaryText}>
+            Please ensure your microphone is ready
+          </span>
         </div>
       </div>
     );

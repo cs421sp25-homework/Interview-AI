@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select } from 'antd';
-import { SearchOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
+import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
+import { SearchOutlined, DeleteOutlined, LeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './FavoriteQuestionsPage.module.css';
@@ -24,6 +24,9 @@ const FavoritesPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [modal, contextHolder] = Modal.useModal();
+  const [loadingSession, setLoadingSession] = useState<number | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Loading session...");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -165,6 +168,53 @@ const FavoritesPage: React.FC = () => {
     }
   };
 
+  const handleViewSession = async (record: FavoriteQuestion) => {
+    try {
+      // 设置当前问题ID为加载状态
+      setLoadingSession(record.id);
+      
+      const userEmail = localStorage.getItem('user_email');
+      if (!userEmail) {
+        throw new Error('User not logged in');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch interview log');
+      }
+      const data = await response.json();
+      
+      if (!data || !Array.isArray(data.data)) {
+        throw new Error('Invalid interview log data');
+      }
+
+      // Find the log with matching session_id
+      const matchingLog = data.data.find((log: any) => log.thread_id === record.session_id);
+      if (!matchingLog || !matchingLog.log) {
+        throw new Error('Interview log not found');
+      }
+
+      const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
+      
+      // 开始页面过渡动画
+      setTransitioning(true);
+      
+      // 使用较短的延迟，保持用户体验流畅
+      setTimeout(() => {
+        // 导航到目标页面
+        navigate(`/interview/view/${record.session_id}`, { 
+          state: { conversation, thread_id: matchingLog.thread_id } 
+        });
+      }, 600);
+    } catch (error) {
+      console.error('Error loading interview session:', error);
+      message.error('Failed to load interview session');
+      // 重置加载状态
+      setLoadingSession(null);
+      setTransitioning(false);
+    }
+  };
+
   const columns = [
     {
       title: 'Question',
@@ -213,42 +263,24 @@ const FavoritesPage: React.FC = () => {
           <Button
             type="link"
             className={`${styles.actionButtonWithLabel} ${styles.viewButton}`}
-            onClick={async () => {
-              try {
-                const userEmail = localStorage.getItem('user_email');
-                if (!userEmail) {
-                  throw new Error('User not logged in');
-                }
-
-                const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
-                if (!response.ok) {
-                  throw new Error('Failed to fetch interview log');
-                }
-                const data = await response.json();
-                console.log('Fetched interview logs:', data);
-                
-                if (!data || !Array.isArray(data.data)) {
-                  throw new Error('Invalid interview log data');
-                }
-
-                // Find the log with matching session_id
-                const matchingLog = data.data.find((log: any) => log.thread_id === record.session_id);
-                if (!matchingLog || !matchingLog.log) {
-                  throw new Error('Interview log not found');
-                }
-
-                const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
-                navigate(`/interview/view/${record.session_id}`, { 
-                  state: { conversation, thread_id: matchingLog.thread_id } 
-                });
-              } catch (error) {
-                console.error('Error loading interview session:', error);
-                message.error('Failed to load interview session');
-              }
-            }}
+            onClick={() => handleViewSession(record)}
+            disabled={loadingSession !== null || transitioning}
           >
-            <SearchOutlined className={styles.actionIcon} />
-            <span className={styles.actionText}>View Session</span>
+            {loadingSession === record.id ? (
+              <>
+                <div className={styles.actionIcon}>
+                  <Spin size="small" />
+                </div>
+                <span className={styles.actionText}>Loading...</span>
+              </>
+            ) : (
+              <>
+                <div className={styles.actionIcon}>
+                  <SearchOutlined />
+                </div>
+                <span className={styles.actionText}>View Session</span>
+              </>
+            )}
           </Button>
           <Button
             type="link"
@@ -263,8 +295,11 @@ const FavoritesPage: React.FC = () => {
                 onOk: () => handleDelete(record.id),
               });
             }}
+            disabled={loadingSession !== null || transitioning}
           >
-            <DeleteOutlined className={styles.actionIcon} />
+            <div className={styles.actionIcon}>
+              <DeleteOutlined />
+            </div>
             <span className={styles.actionText}>Delete</span>
           </Button>
         </Space>
@@ -273,7 +308,17 @@ const FavoritesPage: React.FC = () => {
   ];
 
   return (
-    <div className={styles.interviewContainer}>
+    <div className={`${styles.interviewContainer} ${transitioning ? styles.pageTransition : ''}`}>
+      {/* 简化的过渡覆盖层 */}
+      {transitioning && (
+        <div className={styles.transitionOverlay}>
+          <div className={styles.transitionContent}>
+            <Spin size="large" />
+            <p className={styles.transitionMessage}>Loading session...</p>
+          </div>
+        </div>
+      )}
+      
       <div className={styles.interviewHeader}>
         <button 
           className={styles.backButton}
