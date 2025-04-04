@@ -52,6 +52,7 @@ const UserDashboard = () => {
       try {
         console.log("Fetching profile for email:", userEmail);
         const email = localStorage.getItem('user_email') || 'test@example.com';
+        console.log("Email:", email);
 
         const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
         
@@ -85,7 +86,10 @@ const UserDashboard = () => {
             }
           } catch (error) {
             console.error("Error parsing date:", error);
+            console.log("Profile:", email);
             joinedDate = 'Date error';
+
+            navigate('/signup-oauth');
           }
           
           setUserData({
@@ -102,7 +106,8 @@ const UserDashboard = () => {
           fetchUserScores(profile.id || email);
         }
       } catch (error) {
-        navigate('/login');
+        console.error("Error fetching user profile:", error);
+        navigate('/signup-oauth');
       }
     };
 
@@ -145,8 +150,8 @@ const UserDashboard = () => {
     'Quick Learner'
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 

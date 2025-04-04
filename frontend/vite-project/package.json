@@ -12,6 +12,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@clerk/clerk-react": "^5.25.6",
     "@uploadthing/react": "^7.3.0",
     "antd": "^5.24.2",
     "axios": "^1.7.9",
