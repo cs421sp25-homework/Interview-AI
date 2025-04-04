@@ -37,7 +37,8 @@ from llm.llm_interface import LLMInterface
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": os.getenv('FRONTEND_URL', 'http://localhost:5173')}})
+# Enable CORS for all origins (development mode)
+CORS(app, supports_credentials=True, origins="*")
 
 app.register_error_handler(400, handle_bad_request)
 

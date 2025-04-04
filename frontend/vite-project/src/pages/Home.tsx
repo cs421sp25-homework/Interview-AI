@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { Bot, Briefcase, Star } from 'lucide-react';
 import styles from './Home.module.css';
 import { useNavigate } from 'react-router-dom';
-import { useUser, useClerk, SignInButton, SignUpButton } from '@clerk/clerk-react';
+import { useUser, SignInButton, SignUpButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 
 interface ButtonProps {
@@ -39,44 +39,35 @@ const Card = ({ children, className }: CardProps) => {
 const Home = () => {
   const navigate = useNavigate();
   const { isSignedIn, user } = useUser();
-  const { signOut } = useClerk();
-  const { isAuthenticated, logout } = useAuth();
-
-  const handleSignOut = async () => {
-    console.log("Signing out");
-    
-    // First handle our app's logout
-    await logout();
-    
-    // Then try to sign out with Clerk if the user is signed in
-    if (isSignedIn) {
-      try {
-        console.log("Signing out of Clerk");
-        await signOut();
-      } catch (error) {
-        console.error("Error signing out with Clerk:", error);
-      }
+  const { isAuthenticated, login, setClerkEmail } = useAuth();
+  const hasCompletedSignup = localStorage.getItem('has_completed_signup') === 'true';
+  
+  // Update Clerk user info whenever it changes
+  useEffect(() => {
+    if (isSignedIn && user?.primaryEmailAddress) {
+      const email = user.primaryEmailAddress.emailAddress;
+      setClerkEmail(email);
     }
+  }, [isSignedIn, user, setClerkEmail]);
+
+  
+
+  // Redirect to dashboard if already authenticated
+  // useEffect(() => {
+
     
-    // Redirect to home page after sign out
-    navigate('/');
-  };
+    
+  //   console.log("hasCompletedSignup:", hasCompletedSignup);
+  //   console.log("isSignedIn:", isSignedIn);
+  //   console.log("isAuthenticated:", isAuthenticated);
+
+  //   if (isSignedIn) {
+  //     navigate('/dashboard');
+  //   }
+  // }, [isSignedIn, isAuthenticated, navigate, hasCompletedSignup]);
 
   const handleStartPracticing = () => {
-    if (isSignedIn || isAuthenticated) {
-      const hasCompletedSignup = localStorage.getItem('has_completed_signup') === 'true';
-      
-      if (hasCompletedSignup) {
-        navigate('/dashboard');
-      } else if (isSignedIn) {
-        navigate('/signup-oauth');
-      } else {
-        navigate('/signup');
-      }
-    } else {
-      // Not signed in, show signup options
-      navigate('/signup');
-    }
+    navigate('/signup');
   };
 
   return (
@@ -92,11 +83,8 @@ const Home = () => {
             <Button variant="ghost">Features</Button>
             <Button variant="ghost">Pricing</Button>
             
-            {isSignedIn || isAuthenticated ? (
-              <>
-                <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
-                <Button onClick={handleSignOut}>Sign Out</Button>
-              </>
+            {isSignedIn? (
+              <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
             ) : (
               <>
                 <SignUpButton mode="modal">
