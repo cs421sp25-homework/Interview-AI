@@ -273,13 +273,18 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewInterviewLog = (log: InterviewLog) => {
-    navigate(`/interview/view/${log.id}`, { 
-        state: { 
-            conversation: log.log, 
-            thread_id: log.thread_id,
-            question_type: log.question_type
-        } 
-    });
+    if (log.interview_type?.toLowerCase() === 'voice') {
+      navigate(`/voice/interview/view/${log.id}`);
+      } else {
+       // text or any other type => old route
+      navigate(`/interview/view/${log.id}`, {
+      state: {
+        conversation: log.log,
+        thread_id: log.thread_id,
+        question_type: log.question_type
+        }
+        });
+      }
   };
   
   const handleDeleteInterview = (log: InterviewLog) => {

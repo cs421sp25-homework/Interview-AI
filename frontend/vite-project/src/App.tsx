@@ -16,7 +16,7 @@ import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
 import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
-
+import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
 function App() {
   return (
     <Routes>
@@ -36,6 +36,7 @@ function App() {
       <Route path="/interview/history" element={<InterviewHistoryPage />} />
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
+      <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
     </Routes>
   );
 }
