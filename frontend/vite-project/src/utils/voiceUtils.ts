@@ -1,6 +1,12 @@
 // voiceUtils.ts
 import API_BASE_URL from '../config/api';
 
+/**
+ * Convert text to speech by calling the /api/text2speech endpoint.
+ * @param text The text to convert.
+ * @param audioRefs An optional ref array to track active Audio objects.
+ * @returns The audio duration (in seconds). 0 on error.
+ */
 export async function text2speech(
   text: string,
   audioRefs?: React.MutableRefObject<HTMLAudioElement[]>
@@ -13,7 +19,8 @@ export async function text2speech(
     });
 
     if (!response.ok) {
-      throw new Error(`TTS failed: ${response.status}`);
+      console.error('TTS endpoint error:', response.status, response.statusText);
+      return 0; // or throw new Error(...)
     }
 
     const audioBlob = await response.blob();
@@ -30,12 +37,17 @@ export async function text2speech(
 
     return new Promise<number>((resolve) => {
       audio.onloadedmetadata = () => {
-        resolve(audio.duration || 0);
+        const duration = audio.duration || 0;
         audio.play().catch((err) => {
           console.warn('Audio play was interrupted:', err);
         });
+        resolve(duration);
       };
-      audio.onerror = () => resolve(0);
+      // handle possible errors in loading or decoding the audio
+      audio.onerror = (e) => {
+        console.error('Audio onerror triggered:', e);
+        resolve(0);
+      };
     });
   } catch (error) {
     console.error('Text-to-speech error:', error);
@@ -43,6 +55,11 @@ export async function text2speech(
   }
 }
 
+/**
+ * Convert speech (audio Blob) to text by calling the /api/speech2text endpoint.
+ * @param audioBlob The recorded audio as a Blob.
+ * @returns A transcript string of recognized speech.
+ */
 export async function speech2text(audioBlob: Blob): Promise<string> {
   try {
     const formData = new FormData();
@@ -54,13 +71,17 @@ export async function speech2text(audioBlob: Blob): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`STT failed: ${response.status}`);
+      console.error('STT endpoint error:', response.status, response.statusText);
+      throw new Error(`STT failed with status ${response.status}`);
     }
 
     const data = await response.json();
+    if (!data || typeof data.transcript !== 'string') {
+      throw new Error('STT response was missing "transcript" field');
+    }
     return data.transcript;
   } catch (error) {
     console.error('Speech-to-text error:', error);
-    throw error;
+    throw error; // Or return a fallback text, like "".
   }
 }
