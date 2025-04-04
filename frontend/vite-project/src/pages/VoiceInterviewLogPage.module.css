@@ -1535,3 +1535,65 @@
       left: 100%;
     }
   }
+
+
+  /* The container that holds the fancy loading shimmer + text */
+.beautifulLoaderContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+  }
+  
+  /* A box to show the shimmer effect */
+  .shimmerBox {
+    width: 150px;
+    height: 20px;
+    background: #f3f3f3;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  
+  /* The actual shimmer animation */
+  .shimmer {
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, #f3f3f3, #e0e0e0, #f3f3f3);
+    animation: shimmer-animation 1.2s ease-in-out infinite;
+  }
+  
+  /* Keyframes for the shimmer */
+  @keyframes shimmer-animation {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
+  
+  /* The text below the shimmer */
+  .loadingText {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    animation: fadeDots 2s infinite;
+  }
+  
+  /* Optional: if you want to fade the dots in/out (but we are doing a simpler approach in JS) */
+  @keyframes fadeDots {
+    0% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 0.8;
+    }
+  }
+  
