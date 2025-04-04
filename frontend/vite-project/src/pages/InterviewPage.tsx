@@ -431,12 +431,29 @@ const InterviewPage: React.FC = () => {
               )}
             </div>
           ))}
-          {isLoading && (
-            <div className={styles.loadingContainer}>
-              <Loader className={styles.loadingIcon} />
-              <span>Loading...</span>
-            </div>
-          )}
+        </div>
+        <div className={styles.inputContainer}>
+          <textarea
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // Auto-adjust height based on content
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+            placeholder="Type your response..."
+            className={styles.input}
+            disabled={!isChatReady}
+            rows={1}
+          />
+          <button 
+            className={styles.sendButton} 
+            onClick={handleSend}
+            disabled={!input.trim() || !isChatReady}
+          >
+            <Send size={20} />
+          </button>
         </div>
       </div>
     </div>

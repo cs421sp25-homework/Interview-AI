@@ -6,6 +6,7 @@ import traceback
 import datetime
 import logging
 from openai import OpenAI
+from pydantic import BaseModel
 
 class ChatHistoryService:
     def __init__(self, supabase_url, supabase_key):
@@ -170,6 +171,7 @@ class ChatHistoryService:
             self.logger.error(f"Error deleting chat history: {e}", exc_info=True)
             return False 
         
+        
     def save_analysis(self, interview_id: int, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None) -> Dict[str, Any]:
         """
         Analyze interview conversation and save performance metrics
@@ -185,6 +187,7 @@ class ChatHistoryService:
             Dict[str, Any]: Result with success status
         """
         try:
+            client = OpenAI()
             # Skip analysis if there are too few messages
             if len(messages) < 3:  # Need at least welcome message, user response, and interviewer follow-up
                 self.logger.info(f"Skip analysis - too few messages for interview_id: {interview_id}")
@@ -198,6 +201,8 @@ class ChatHistoryService:
                     "role": role,
                     "content": msg.get('text', '')
                 })
+
+
             
             # Prepare the analysis prompt with very specific output format requirements
             analysis_prompt = [
@@ -212,69 +217,66 @@ class ChatHistoryService:
                 5. resume_strength: How well they discuss their experience (0.0-1.0)
                 6. leadership: Leadership qualities demonstrated (0.0-1.0)
                 
-                Your response MUST be a JSON object with EXACTLY these keys and numeric values between 0.0 and 1.0.
-                Example of the required format:
-                {
-                    "technical": 0.85,
-                    "communication": 0.92,
-                    "confidence": 0.78,
-                    "problem_solving": 0.88,
-                    "resume_strength": 0.75,
-                    "leadership": 0.82
-                }
-                
                 Do not include any additional keys or explanations in your response.
                 """},
                 {"role": "user", "content": f"Interview type: {config_name}\n\nConversation:\n{json.dumps(conversation, indent=2)}"}
+
             ]
+
+            response = client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
+                response_format=ScoreRubrics,
+                messages=analysis_prompt 
+            )
+
+            print(response)
             
             # Call OpenAI for analysis
-            max_attempts = 3
-            for attempt in range(max_attempts):
-                try:
-                    client = OpenAI()
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        response_format={"type": "json_object"},
-                        messages=analysis_prompt
-                    )
+            # max_attempts = 3
+            # for attempt in range(max_attempts):
+            #     try:
+            #         client = OpenAI()
+            #         response = client.chat.completions.create(
+            #             model="gpt-4o-mini",
+            #             response_format=ScoreRubrics,
+            #             messages=analysis_prompt
+            #         )
                     
-                    # Parse the analysis results
-                    analysis_text = response.choices[0].message.content
-                    analysis = json.loads(analysis_text)
+            #         # Parse the analysis results
+            #         analysis = response.choices[0].message.parsed
                     
                     # Validate the response format
-                    required_keys = ["technical", "communication", "confidence", "problem_solving", "resume_strength", "leadership"]
-                    if all(key in analysis for key in required_keys) and all(isinstance(analysis[key], (int, float)) for key in required_keys):
-                        # Format is correct, proceed with saving
-                        break
-                    else:
-                        missing_keys = [key for key in required_keys if key not in analysis]
-                        invalid_types = [key for key in required_keys if key in analysis and not isinstance(analysis[key], (int, float))]
+                    # required_keys = ["technical", "communication", "confidence", "problem_solving", "resume_strength", "leadership"]
+                    # if all(key in analysis for key in required_keys) and all(isinstance(analysis[key], (int, float)) for key in required_keys):
+                    #     # Format is correct, proceed with saving
+                    #     break
+                    # else:
+                    #     missing_keys = [key for key in required_keys if key not in analysis]
+                    #     invalid_types = [key for key in required_keys if key in analysis and not isinstance(analysis[key], (int, float))]
                         
-                        if missing_keys:
-                            self.logger.warning(f"Analysis response missing keys: {missing_keys}. Retrying...")
-                        if invalid_types:
-                            self.logger.warning(f"Analysis response has invalid types for keys: {invalid_types}. Retrying...")
+                    #     if missing_keys:
+                    #         self.logger.warning(f"Analysis response missing keys: {missing_keys}. Retrying...")
+                    #     if invalid_types:
+                    #         self.logger.warning(f"Analysis response has invalid types for keys: {invalid_types}. Retrying...")
                         
-                        if attempt == max_attempts - 1:
-                            # Last attempt, use default values for missing/invalid keys
-                            for key in required_keys:
-                                if key not in analysis or not isinstance(analysis[key], (int, float)):
-                                    analysis[key] = 0.75  # Default value
+                    #     if attempt == max_attempts - 1:
+                    #         # Last attempt, use default values for missing/invalid keys
+                    #         for key in required_keys:
+                    #             if key not in analysis or not isinstance(analysis[key], (int, float)):
+                    #                 analysis[key] = 0.75  # Default value
 
-                except Exception as e:
-                    self.logger.error(f"Error in analysis attempt {attempt+1}: {str(e)}")
-                    if attempt == max_attempts - 1:
-                        # Last attempt failed, use default values
-                        analysis = {
-                            "technical": 0.75,
-                            "communication": 0.75,
-                            "confidence": 0.75,
-                            "problem_solving": 0.75,
-                            "resume_strength": 0.75,
-                            "leadership": 0.75
-                        }
+                # except Exception as e:
+                #     self.logger.error(f"Error in analysis attempt {attempt+1}: {str(e)}")
+                #     if attempt == max_attempts - 1:
+                #         # Last attempt failed, use default values
+                #         analysis = {
+                #             "technical": 0.75,
+                #             "communication": 0.75,
+                #             "confidence": 0.75,
+                #             "problem_solving": 0.75,
+                #             "resume_strength": 0.75,
+                #             "leadership": 0.75
+                #         }
             
             # Strengths prompt - get a list of strengths
             strengths_prompt = [
@@ -389,7 +391,7 @@ class ChatHistoryService:
 
 
             print("Analysis:")
-            print(analysis)
+            print(response.choices[0].message.parsed)
             print("Strengths:")
             print(strengths_data)
             print("Weaknesses:")
@@ -397,15 +399,16 @@ class ChatHistoryService:
             print("Specific Feedback:")
             print(specific_feedback_text)
             # Store the analysis in the database
+
             result = self.supabase.table('interview_performance').upsert({
                 'interview_id': interview_id,
                 'user_email': user_email,
-                'technical_accuracy_score': analysis.get('technical', 0),
-                'communication_score': analysis.get('communication', 0),
-                'confidence_score': analysis.get('confidence', 0),
-                'problem_solving_score': analysis.get('problem_solving', 0),
-                'resume_strength_score': analysis.get('resume_strength', 0),
-                'leadership_score': analysis.get('leadership', 0),
+                'technical_accuracy_score': response.choices[0].message.parsed.technical,
+                'communication_score': response.choices[0].message.parsed.communication,
+                'confidence_score': response.choices[0].message.parsed.confidence,
+                'problem_solving_score': response.choices[0].message.parsed.problem_solving,
+                'resume_strength_score': response.choices[0].message.parsed.resume_strength,
+                'leadership_score': response.choices[0].message.parsed.leadership,
                 'strengths': json.dumps(strengths_data),  # Convert to JSON string
                 'areas_for_improvement': json.dumps(weaknesses_data),  # Convert to JSON string
                 'specific_feedback': specific_feedback_text,
@@ -419,3 +422,13 @@ class ChatHistoryService:
             self.logger.error(f"Error saving analysis for interview_id {interview_id}: {str(e)}")
             self.logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
+
+class ScoreRubrics(BaseModel):
+    technical: float
+    communication: float
+    confidence: float
+    problem_solving: float
+    resume_strength: float
+    leadership: float
+
+

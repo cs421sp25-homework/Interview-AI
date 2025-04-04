@@ -31,7 +31,7 @@ from utils.speech_2_text import speech_to_text
 from utils.audio_conversion import convert_to_wav
 import json
 from llm.llm_interface import LLMInterface
-from datetime import datetime
+import time
 
 
 # Load environment variables
@@ -967,11 +967,75 @@ def api_speech2text():
 def generate_good_response():
     data = request.get_json()
     user_message = data.get('message', '')
+    ai_question = data.get('ai_question', '')
+    
     if not user_message:
          return jsonify({"error": "Missing message"}), 400
 
-    # Build a prompt instructing the LLM to improve the candidate's answer.
-    prompt = f"As the person being interviewed, Please provide an improved version of the following interview answer:\n\n{user_message}"
+    print(f"Received AI question: {ai_question}")
+    print(f"Received user message: {user_message}")
+
+    # 添加一个人为的延迟来显示加载状态 (3 秒)
+    time.sleep(3)
+
+    # Build a prompt that adapts to question type
+    prompt = f"""As an expert interview coach, your task is to create an improved interview answer.
+
+INTERVIEW CONTEXT:
+Interviewer's Question: "{ai_question if ai_question else 'Not provided'}"
+
+Candidate's Original Answer:
+"{user_message}"
+
+INSTRUCTIONS:
+Analyze the type of question (behavioral, technical, situational, or general), but DO NOT include this analysis in your response.
+
+Create an improved answer following the appropriate guidelines for that question type:
+
+FOR BEHAVIORAL QUESTIONS:
+- Use the STAR format (Situation, Task, Action, Results)
+- Include specific details about the context
+- Focus on YOUR actions and contributions 
+- Quantify results when possible
+- End with lessons learned
+
+FOR TECHNICAL QUESTIONS:
+- Start with a clear definition or explanation of the concept
+- Provide examples that demonstrate understanding
+- Explain any relevant trade-offs or alternatives
+- Connect the concept to real-world applications
+- Show both theoretical knowledge and practical experience
+
+FOR SITUATIONAL QUESTIONS:
+- Outline your approach step-by-step
+- Explain your reasoning for each decision
+- Demonstrate problem-solving skills and critical thinking
+- Focus on collaboration and communication strategies
+- Consider multiple perspectives or solutions
+
+FOR GENERAL QUESTIONS:
+- Be concise and focused
+- Highlight relevant experiences and skills
+- Align your answer with the job requirements
+- Show enthusiasm and genuine interest
+- Demonstrate self-awareness and growth mindset
+
+GENERAL GUIDELINES:
+- Be concise but thorough
+- Use professional but natural language
+- Show confidence without arrogance
+- Address the specific question directly
+- Avoid clichés and generic statements
+- Structure the answer with clear beginning, middle, and end
+
+RESPONSE FORMAT REQUIREMENTS:
+- Start directly with the improved answer content
+- DO NOT include any classification of the question type
+- DO NOT include phrases like "Improved Answer:" or "This is a technical question"
+- DO NOT include any meta-commentary about the answer
+- Provide ONLY the answer itself
+
+Your response:"""
 
     # Initialize the LLM interface and call the model.
     llm_interface = LLMInterface()
@@ -980,8 +1044,39 @@ def generate_good_response():
 
     # Retrieve the last message's content as the enhanced response.
     good_response = response[-1].content
-
-    return jsonify({"response": good_response})
+    
+    # 清理回答内容，移除可能的前缀内容
+    clean_prefixes = [
+        "This is a behavioral question.", 
+        "This is a technical question.", 
+        "This is a situational question.", 
+        "This is a general question.",
+        "This is a behavioral question:", 
+        "This is a technical question:", 
+        "This is a situational question:", 
+        "This is a general question:",
+        "Improved Answer:", 
+        "IMPROVED ANSWER:"
+    ]
+    
+    for prefix in clean_prefixes:
+        if good_response.startswith(prefix):
+            good_response = good_response[len(prefix):].strip()
+    
+    # 使用正则表达式清理更复杂的前缀模式
+    import re
+    patterns = [
+        r'^This is an? \w+ question\.\s*',
+        r'^This is an? \w+ question:\s*',
+        r'^Improved answer:\s*',
+        r'^Here\'s an improved answer:\s*',
+        r'^Here is an improved answer:\s*',
+    ]
+    
+    for pattern in patterns:
+        good_response = re.sub(pattern, '', good_response, flags=re.IGNORECASE)
+    
+    return jsonify({"response": good_response.strip()})
 
 
 # service that returns the scores of the interview
