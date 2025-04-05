@@ -46,16 +46,12 @@
 .title {
   font-size: 1.8rem;
   font-weight: 700;
-  color: transparent;
+  color: #000000;
   margin: 0;
   text-align: center;
   position: relative;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  background: linear-gradient(45deg, #ec4899, #8b5cf6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: titlePulse 3s infinite alternate;
 }
 
 .title::after {
@@ -68,15 +64,6 @@
   height: 3px;
   background: linear-gradient(90deg, transparent, #ec4899, transparent);
   border-radius: 2px;
-}
-
-@keyframes titlePulse {
-  0% {
-    filter: brightness(1);
-  }
-  100% {
-    filter: brightness(1.15);
-  }
 }
 
 /* 占位符样式，用于平衡布局 */
