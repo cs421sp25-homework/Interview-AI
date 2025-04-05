@@ -53,7 +53,7 @@ const VoiceBubble: React.FC<VoiceBubbleProps> = ({
               }
             </div>
             <div className={styles.duration}>
-              {message.duration ? message.duration.toFixed(1) + 's' : '0.0s'}
+              Click to play
             </div>
             
             {/* 播放提示 */}

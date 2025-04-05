@@ -44,11 +44,26 @@
 
 /* 标题样式 */
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #000000;
   margin: 0;
   text-align: center;
+  position: relative;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.title::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #ec4899, transparent);
+  border-radius: 2px;
 }
 
 /* 占位符样式，用于平衡布局 */
@@ -435,4 +450,9 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Remove the .accentText style since it's no longer needed */
+.accentText {
+  display: none;
 }
