@@ -511,7 +511,7 @@ const VoiceInterviewPage: React.FC = () => {
         // 隐藏保存动画
         setShowSavingOverlay(false);
         // 保存后导航到查看页面
-        navigate(`/interview/log/view/${threadId}`);
+        navigate(`/dashboard`);
       }, 800);
     } catch (error) {
       console.error('Error ending interview:', error);
@@ -525,6 +525,8 @@ const VoiceInterviewPage: React.FC = () => {
   const handleBackToDashboard = () => {
     // 直接调用 handleEndInterview 函数，确保音频停止和保存逻辑执行
     handleEndInterview();
+    stopAllAudios();
+    navigate("/dashboard");
   };
 
   // 在组件卸载时确保所有音频都被停止并保存数据
