@@ -421,7 +421,6 @@ const VoiceInterviewPage: React.FC = () => {
         realText: realAiText,
         sender: 'ai',
         isReady: false,
-        realText: realAiText
       };
       setMessages(prev => [...prev, aiMessage]);
   
