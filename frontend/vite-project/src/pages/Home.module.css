@@ -1,11 +1,28 @@
+/* Container with a lighter animated gradient background */
 .container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #fdf2f8, #ffffff);
+  background: linear-gradient(45deg, #fde2e8, #ffffff, #fde2e8);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
   padding-top: 64px; /* Height of fixed nav */
 }
 
+/* Keyframes for the animated gradient */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Navigation bar with slide down animation */
 .nav {
   position: fixed;
   top: 0;
@@ -15,6 +32,18 @@
   background: white;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   z-index: 100;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .navContent {
@@ -26,6 +55,7 @@
   align-items: center;
 }
 
+/* Logo styling */
 .logo {
   display: flex;
   align-items: center;
@@ -44,16 +74,19 @@
   color: #1f2937;
 }
 
+/* Navigation links */
 .navLinks {
   display: flex;
   gap: 1rem;
 }
 
+/* Button styling with smooth transition */
 .button {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  cursor: pointer;
 }
 
 .primary {
@@ -71,51 +104,81 @@
 }
 
 .ghost:hover {
-  background: #fdf2f8;
+  background: #fde2e8;
   color: #ec4899;
 }
 
+/* Card styling with hover effect */
 .card {
   background: white;
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
   padding: 1.5rem;
-  transition: box-shadow 0.2s;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
 }
 
+/* Hero section with background image (no dark overlay) */
 .hero {
+  position: relative;
   flex: 1;
-  min-height: calc(100vh - 64px); /* Subtract nav height */
+  min-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 2rem 1rem;
+  animation: fadeInUp 1s ease-out;
+
+  /* Adjust hero background image here */
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero title and text with subtle text-shadow for contrast */
 .heroTitle {
   font-size: 3rem;
   font-weight: bold;
-  color: #1f2937;
+  color: #6b1f1f;
   margin-bottom: 1.5rem;
 }
 
 .heroText {
   font-size: 1.25rem;
-  color: #4b5563;
+  color: #000000;
   margin-bottom: 2rem;
 }
 
+/* Hero button with subtle scale on hover */
 .heroButton {
   font-size: 1.125rem;
   padding: 1.5rem 2rem;
+  transition: transform 0.3s;
 }
 
-.features, .stats {
+.heroButton:hover {
+  transform: scale(1.05);
+}
+
+/* Features and Stats sections remain similar */
+.features,
+.stats {
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -127,6 +190,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .featureIcon {
@@ -147,6 +212,7 @@
   color: #4b5563;
 }
 
+/* Stats section styling */
 .statsGrid {
   max-width: 1200px;
   margin: 0 auto;
@@ -174,6 +240,7 @@
   color: #4b5563;
 }
 
+/* Footer styling */
 .footer {
   background: white;
   border-top: 1px solid #f3f4f6;
@@ -238,16 +305,17 @@
   font-size: 0.875rem;
 }
 
+/* Responsive tweaks */
 @media (max-width: 768px) {
   .navLinks {
     display: none;
   }
-  
+
   .heroTitle {
     font-size: 2rem;
   }
-  
+
   .heroText {
     font-size: 1rem;
   }
-} 
+}

@@ -49,25 +49,22 @@ const Home = () => {
             <Button variant="ghost">About</Button>
             <Button variant="ghost">Features</Button>
             <Button variant="ghost">Pricing</Button>
-            <Button>Get Started</Button>
-            <Button 
-              onClick={() => navigate('/login')}
-            >
-              Log In
-            </Button>
+            <Button
+            onClick={() => navigate('/signup')}
+            >Get Started</Button>
+            <Button onClick={() => navigate('/login')}>Log In</Button>
           </div>
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <div className={styles.hero}>
-        <h1 className={styles.heroTitle}>
-          Ace Your Next Interview with AI
-        </h1>
+        <h1 className={styles.heroTitle}>Ace Your Next Interview with AI</h1>
         <p className={styles.heroText}>
           Practice interviews with our intelligent AI assistant and get real-time feedback
           to improve your performance.
         </p>
-        <Button 
+        <Button
           className={styles.heroButton}
           onClick={() => navigate('/signup')}
         >
@@ -75,6 +72,7 @@ const Home = () => {
         </Button>
       </div>
 
+      {/* FEATURES */}
       <div className={styles.features}>
         <div className={styles.featureGrid}>
           <Card>
@@ -103,6 +101,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* STATS */}
       <div className={styles.stats}>
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
@@ -120,6 +119,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* FOOTER */}
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <div className={styles.footerGrid}>
