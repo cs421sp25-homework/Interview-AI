@@ -80,7 +80,6 @@ const InterviewLogViewPage: React.FC = () => {
       // Look for the most recent AI message before this user message
       for (let i = index - 1; i >= 0; i--) {
         if (messages[i]?.sender === 'ai') {
-        if (messages[i]?.sender === 'ai') {
           aiQuestion = messages[i].text;
           break;
         }

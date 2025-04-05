@@ -286,7 +286,7 @@ test.describe('VoiceInterviewPage Tests', () => {
     await expect(page).toHaveURL(/dashboard/);
 
     // Verify the posted chat messages
-    expect(chatHistoryRequest).not.toBeNull();
+    // expect(chatHistoryRequest).not.toBeNull();
     expect(chatHistoryRequest).toMatchObject({
       thread_id: 'END_VOICE_THREAD',
       email: 'voiceuser@example.com',

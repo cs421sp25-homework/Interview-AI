@@ -212,8 +212,18 @@ After both services are deployed, update the environment variables in both servi
 
 # Testing 
 
-## TODO
+## Test Backend with pytest
 
+1. Go to the backend folder /backend.
+2. Make sure the backend is running.
+3. run test script: python run_tests.py run.
+
+## Test Frontend with Playwright
+
+1. go to frontend folder /frontend/vite-project.
+2. Make sure both frontend and backend are running.
+3. run the playwright test: npx playwright test
+4. Or if you want to do it with UI: npx playwright test --ui
 
 # Troubleshooting
 

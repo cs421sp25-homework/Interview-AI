@@ -1,5 +1,4 @@
 // VoiceInterviewPage.tsx
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, X, Home, Bot, Loader, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,12 +7,9 @@ import API_BASE_URL from '../config/api';
 import styles from './InterviewPage.module.css';
 import VoiceBubble from '../components/VoiceBubble';
 
-// -------------------
-// ChatMessage Interface
-// -------------------
 interface ChatMessage {
   text: string;
-  sender: 'user' | 'ai';   // Must be exactly 'user' or 'ai'
+  sender: 'user' | 'ai';
   audioUrl?: string;
   storagePath?: string;  // Add this
   duration?: number;
@@ -60,14 +56,11 @@ const VoiceInterviewPage: React.FC = () => {
   const hasAutoPlayedInitial = useRef(false);
   const pendingAudioQueue = useRef<{url: string, index: number}[]>([]);
 
-  // Retrieve user/config data from localStorage
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
   const userEmail = localStorage.getItem('user_email') || '';
 
-  // -----------------------------------------------------------
-  // Stop all currently playing audios
-  // -----------------------------------------------------------
+  // Stop all audios
   const stopAllAudios = useCallback(() => {
     try {
       // 立即重置当前播放状态
@@ -108,9 +101,7 @@ const VoiceInterviewPage: React.FC = () => {
     }
   }, []);
 
-  // -----------------------------------------------------------
-  // Play a given message (user or AI)
-  // -----------------------------------------------------------
+  // Play a given message
   const handlePlayMessage = useCallback(
     async (msg: ChatMessage, index: number) => {
       stopAllAudios();
@@ -146,19 +137,15 @@ const VoiceInterviewPage: React.FC = () => {
     [stopAllAudios]
   );
 
-  // -----------------------------------------------------------
-  // Toggle showing text for a message (for AI or user)
-  // -----------------------------------------------------------
+  // Toggle text
   const toggleShowText = useCallback((index: number) => {
     setShowTextForMessage((prev) => ({
       ...prev,
-      [index]: !prev[index],
+      [index]: !prev[index]
     }));
   }, []);
 
-  // -----------------------------------------------------------
-  // Save chat history to server
-  // -----------------------------------------------------------
+  // Save chat history
   const saveChatHistory = useCallback(
     async (currentThreadId: string, chatMessages: ChatMessage[]) => {
       try {
@@ -185,58 +172,46 @@ const VoiceInterviewPage: React.FC = () => {
     [userEmail, config_name, config_id]
   );
 
-  // -----------------------------------------------------------
-  // Auto-scroll when messages update
-  // -----------------------------------------------------------
+  // Auto-scroll on messages update
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // -----------------------------------------------------------
-  // Initialize the voice interview
-  // -----------------------------------------------------------
+  // Initialize interview
   useEffect(() => {
-    // Check if user is logged in
-    if (!userEmail) {
-      message.warning('You must be logged in to start a voice interview.');
+    const email = localStorage.getItem('user_email');
+    if (!email) {
       navigate('/login');
       return;
     }
 
     setIsLoading(true);
-
-    // Load user photo if stored
     const storedUserPhoto = localStorage.getItem('user_photo_url');
     if (storedUserPhoto) {
       setUserPhotoUrl(storedUserPhoto);
     }
 
-    // Check if config data is missing
     if (!config_name || !config_id) {
-      message.error('No interview configuration found. Please select one first.');
+      message.error('No interview configuration found. Please select a configuration first.');
       navigate('/prompts');
       return;
     }
 
-    // Create a new session
     const initializeSession = async () => {
       try {
         let userProfile = null;
-
-        // Attempt to fetch user profile
         try {
-          const profileRes = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
-          if (profileRes.ok) {
-            const profileData = await profileRes.json();
+          const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
             if (profileData.data) {
               userProfile = profileData.data;
             }
           }
         } catch (profileError) {
           console.error('Error fetching user profile:', profileError);
-          // Not critical, continue anyway
         }
     
         const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
@@ -333,7 +308,7 @@ const VoiceInterviewPage: React.FC = () => {
         setIsChatReady(true);
         setIsLoading(false);
       } catch (error) {
-        console.error('Error initializing voice interview:', error);
+        console.error('Error initializing voice session:', error);
         message.error('Failed to initialize voice interview. Please try again.');
         setIsLoading(false);
       }
@@ -344,20 +319,18 @@ const VoiceInterviewPage: React.FC = () => {
     // Cleanup on unmount
     return () => {
       stopAllAudios();
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      if (mediaRecorderRef.current?.state !== 'inactive') {
+        mediaRecorderRef.current?.stop();
+        mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [navigate, userEmail, config_name, config_id, stopAllAudios]);
+  }, [navigate, config_name, config_id, userEmail, stopAllAudios]);
 
-  // -----------------------------------------------------------
-  // Start/Stop recording
-  // -----------------------------------------------------------
+  // Start/stop recording
   const toggleRecording = async () => {
     if (!isChatReady) return;
+
     if (!isRecording) {
-      // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
@@ -385,10 +358,9 @@ const VoiceInterviewPage: React.FC = () => {
         message.info('Recording started');
       } catch (error) {
         console.error('Error accessing microphone:', error);
-        message.error('Unable to access microphone. Please check permissions.');
+        message.error('Unable to access microphone');
       }
     } else {
-      // Stop recording
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
       }
@@ -397,9 +369,7 @@ const VoiceInterviewPage: React.FC = () => {
     }
   };
 
-  // -----------------------------------------------------------
-  // On recording complete
-  // -----------------------------------------------------------
+  // Process the recorded audio
   const handleRecordingComplete = async (audioBlob: Blob) => {
     try {
       // Calculate duration
@@ -432,7 +402,7 @@ const VoiceInterviewPage: React.FC = () => {
       setMessages(prev => [...prev, userMessage]);
       await handleSendVoice(userMessage);
     } catch (error) {
-      console.error('Error processing recording:', error);
+      console.error('Recording processing error:', error);
       message.error('Error processing recording. Please try again.');
     }
   };
@@ -449,7 +419,7 @@ const VoiceInterviewPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: userMsg.text,
+          message: userMessage.text,
           thread_id: threadId,
           email: userEmail,
           config_name,
@@ -466,7 +436,7 @@ const VoiceInterviewPage: React.FC = () => {
         text: '...',
         realText: realAiText,
         sender: 'ai',
-        isReady: false,
+        isReady: false
       };
       setMessages(prev => [...prev, aiMessage]);
   
@@ -506,9 +476,7 @@ const VoiceInterviewPage: React.FC = () => {
     }
   };
 
-  // -----------------------------------------------------------
-  // End interview & save
-  // -----------------------------------------------------------
+  // End interview
   const handleEndInterview = async () => {
     // 防止多次点击触发多次请求
     if (isSaving) return;
@@ -554,7 +522,6 @@ const VoiceInterviewPage: React.FC = () => {
     }
   };
 
-  // Go back to dashboard
   const handleBackToDashboard = () => {
     // 直接调用 handleEndInterview 函数，确保音频停止和保存逻辑执行
     handleEndInterview();
@@ -756,9 +723,6 @@ const VoiceInterviewPage: React.FC = () => {
     );
   }
 
-  // -----------------------------------------------------------
-  // Main render
-  // -----------------------------------------------------------
   return (
     <div className={styles.interviewContainer}>
       {/* 保存动画覆盖层 */}
@@ -790,7 +754,6 @@ const VoiceInterviewPage: React.FC = () => {
           )}
         </button>
       </div>
-
       <div className={styles.chatInterface}>
         <div ref={chatContainerRef} className={styles.chatContainer}>
           {messages.map((msg, index) => {
@@ -816,14 +779,13 @@ const VoiceInterviewPage: React.FC = () => {
               );
             }
 
-            // Normal bubble
+            // Otherwise, show a normal bubble
             return (
               <div
                 key={index}
-                className={`
-                  ${styles.messageWrapper}
-                  ${msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper}
-                `}
+                className={`${styles.messageWrapper} ${
+                  msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
+                }`}
               >
                 <div className={styles.avatarContainer}>
                   {msg.sender === 'ai' ? (
@@ -853,7 +815,6 @@ const VoiceInterviewPage: React.FC = () => {
             );
           })}
         </div>
-
         <div className={styles.micContainer}>
           <button
             className={`${styles.largeMic} ${isRecording ? styles.recording : ''} ${isAISpeaking ? styles.disabled : ''}`}
