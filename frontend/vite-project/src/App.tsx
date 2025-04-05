@@ -11,10 +11,11 @@ import AuthCallback from './pages/AuthCallback';
 import OAuthSignUpForm from './pages/OAuthSignUpForm';
 // import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
-import OnGoingVoice from './pages/OnGoingVoice';
+// import OnGoingVoice from './pages/OnGoingVoice';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
+import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
 
 function App() {
   return (
@@ -34,7 +35,7 @@ function App() {
       <Route path="/interview/voice" element={<VoiceInterviewPage />} />
       <Route path="/interview/history" element={<InterviewHistoryPage />} />
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
-
+      <Route path="/favorites" element={<FavoriteQuestionsPage />} />
     </Routes>
   );
 }

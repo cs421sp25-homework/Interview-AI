@@ -1,14 +1,29 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Bot, Home, Loader } from 'lucide-react';
+import { Send, X, Bot, Home, Loader, Save } from 'lucide-react';
 import styles from './InterviewPage.module.css';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
+import InterviewMessage from '../components/InterviewMessage';
+import { Button } from 'antd';
+import { HeartOutlined } from '@ant-design/icons';
 
-interface ChatMessage {
-  text: string;
-  sender: 'user' | 'ai';
-}
+// 添加保存过渡动画组件
+const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div className={styles.savingOverlay}>
+      <div className={styles.savingContent}>
+        <Save size={60} className={styles.savingIcon} />
+        <h2 className={styles.savingText}>Saving Interview</h2>
+        <p className={styles.savingSubtext}>
+          Please wait while we save your interview data...
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const InterviewPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -18,8 +33,10 @@ const InterviewPage: React.FC = () => {
   const [isChatReady, setIsChatReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnding, setIsEnding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Refs to track interview status
+  
+  // Record whether the interview has ended and if there is actual conversation
   const hasEndedInterviewRef = useRef(false);
   const hasRealConversationRef = useRef(false);
   const initialLoadRef = useRef(true);
@@ -29,8 +46,10 @@ const InterviewPage: React.FC = () => {
   const config_name = localStorage.getItem('current_config') || '';
   const config_id = localStorage.getItem('current_config_id') || '';
   const navigate = useNavigate();
-
-  // Auto-scroll to bottom when messages update
+  
+  // 添加保存动画状态
+  const [showSavingOverlay, setShowSavingOverlay] = useState(false);
+  
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -119,83 +138,120 @@ const InterviewPage: React.FC = () => {
           return;
         }
 
-        setIsLoading(true);
-
-        // Fetch user photo if available
-        const storedUserPhoto = localStorage.getItem('user_photo_url');
-        if (storedUserPhoto) {
-          setUserPhotoUrl(storedUserPhoto);
-        }
-
-        // Check if there's a config
-        if (!config_name || !config_id) {
-          message.error('No interview configuration. Please select a configuration first.');
-          navigate('/prompts');
-          return;
-        }
-
-        console.log("Creating new interview session...");
-        let userProfile = null;
-        try {
-          const profileRes = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
-          if (profileRes.ok) {
-            const profileData = await profileRes.json();
-            userProfile = profileData.data || null;
-          }
-        } catch (profileError) {
-          console.error("Error fetching user profile:", profileError);
-        }
-
-        const startRes = await fetch(`${API_BASE_URL}/api/new_chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: userEmail,
-            name: config_name,
-            new_session: true,
-            userProfile: userProfile || {
-              first_name: localStorage.getItem('user_first_name') || '',
-              last_name: localStorage.getItem('user_last_name') || '',
-              job_title: localStorage.getItem('user_job_title') || '',
-              key_skills: localStorage.getItem('user_skills')
-                ? localStorage.getItem('user_skills')!.split(',')
-                : [],
-              education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
-              resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
-            }
-          }),
-        });
-
-        if (!startRes.ok) {
-          throw new Error(`Failed to start interview: ${startRes.status} ${startRes.statusText}`);
-        }
-
-        const data = await startRes.json();
-        if (!data.thread_id) {
-          throw new Error("No thread_id returned from server");
-        }
-
-        setThreadId(data.thread_id);
-        const welcomeMessage = data.response ||
-          `Welcome to your interview session for "${config_name}". Please start by introducing yourself.`;
-
-        setMessages([{ text: welcomeMessage, sender: 'ai' }]);
-        setIsChatReady(true);
-        setIsLoading(false);
-
-        // End initial load after a short delay
-        setTimeout(() => {
-          initialLoadRef.current = false;
-          console.log("Initial load phase completed");
-        }, 1000);
-      } catch (err) {
-        console.error("Error in InterviewPage initialization:", err);
-        message.error('Failed to start interview. Please try again.');
-        setIsLoading(false);
+      setIsLoading(true);
+      
+      const storedUserPhoto = localStorage.getItem('user_photo_url');
+      if (storedUserPhoto) {
+        setUserPhotoUrl(storedUserPhoto);
       }
-    };
+      
+      if (!config_name || !config_id) {
+        message.error('Please select a configuration to start an interview');
+        navigate('/prompts');
+        return;
+      }
+      
+      const createSession = async () => {
+        try {
+          console.log("Creating new interview session...");
+          
+          // Fetch user profile data
+          let userProfile = null;
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData.data) {
+                userProfile = profileData.data;
+              }
+            }
+          } catch (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            // Continue even if profile fetch fails
+          }
+          console.log("User profile:", userProfile);
 
-    initInterview();
+          // Fetch config details to get company name and type
+          try {
+            const configResponse = await fetch(`${API_BASE_URL}/api/interview_config/${config_id}`);
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              if (configData.data) {
+                const config = configData.data;
+                // Store these values in localStorage for persistence
+                localStorage.setItem('current_company_name', config.company_name || '');
+                localStorage.setItem('current_interview_type', config.interview_type || '');
+                localStorage.setItem('current_question_type', config.question_type || '');
+              }
+            }
+          } catch (configError) {
+            console.error('Error fetching config details:', configError);
+            // Continue even if config fetch fails
+          }
+          
+          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: userEmail, 
+              name: config_name,
+              new_session: true,
+              // Include user profile information for the LLM
+              userProfile: userProfile || {
+                first_name: localStorage.getItem('user_first_name') || '',
+                last_name: localStorage.getItem('user_last_name') || '',
+                job_title: localStorage.getItem('user_job_title') || '',
+                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
+                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+              }
+            }), 
+          });
+    
+          if (!res.ok) {
+            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
+          }
+    
+          const data = await res.json();
+          console.log("Received session data:", data);
+          
+          if (!data.thread_id) {
+            throw new Error("No thread_id received from server");
+          }
+          
+          setThreadId(data.thread_id);
+          
+          const welcomeMessage = data.response || 
+            `Welcome to your interview session for "${config_name}". Please feel free to start the conversation.`;
+          
+          setMessages([{ 
+            text: welcomeMessage, 
+            sender: 'ai' as const 
+          }]);
+          
+          setIsChatReady(true);
+          setIsLoading(false);
+          
+          // Set initial load flag to false after a short delay
+          setTimeout(() => {
+            initialLoadRef.current = false;
+            console.log("Initial load phase completed");
+          }, 1000);
+          
+          return data.thread_id;
+        } catch (error) {
+          console.error('Error creating new chat session:', error);
+          message.error('Failed to start interview. Please try again.');
+          setIsLoading(false);
+          return null;
+        }
+      };
+      
+      createSession();
+    } catch (error) {
+      console.error('Error in InterviewPage:', error);
+      navigate('/login');
+    }
   }, [navigate, userEmail, config_name, config_id]);
 
   // -----------------------------------
@@ -250,40 +306,50 @@ const InterviewPage: React.FC = () => {
       navigate('/dashboard');
       return;
     }
-
-    if (isEnding) return; // Prevent multiple clicks
-    setIsEnding(true);
-
-    hasEndedInterviewRef.current = true;
-    message.loading('Saving your interview responses...', 0);
-
-    // Attempt to save
-    saveChatHistory(threadId, messages)
-      .then((saveResult) => {
-        if (saveResult) {
-          message.success('Interview responses saved.');
-        } else {
-          message.warning('Interview ended, but there was an issue saving your responses.');
-        }
-      })
-      .catch((err) => {
-        console.error('Error saving chat history on end:', err);
-        message.error('Failed to save your responses.');
-      });
-
-    setTimeout(() => {
-      localStorage.removeItem('current_config');
-      localStorage.removeItem('current_config_id');
-    }, 500);
-
-    navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
-    setIsEnding(false);
+    
+    // 防止多次点击触发多次请求
+    if (isSaving) return;
+    
+    // 设置保存状态
+    setIsSaving(true);
+    
+    // 显示保存动画
+    setShowSavingOverlay(true);
+    
+    // 显示加载消息
+    message.loading('Saving your interview...', 1);
+    
+    try {
+      // 执行保存操作
+      const saveResult = await saveChatHistory(threadId, messages);
+      
+      if (saveResult) {
+        message.success('Interview saved successfully');
+      } else {
+        message.warning('There might be issues saving your responses');
+      }
+      
+      // 短暂延迟以显示保存动画
+      setTimeout(() => {
+        // 隐藏保存动画
+        setShowSavingOverlay(false);
+        // 保存后导航到查看页面
+        navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
+      }, 800);
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+      message.error('Failed to save your responses');
+      // 如果出错，重置保存状态，让用户可以重试
+      setIsSaving(false);
+      setShowSavingOverlay(false);
+    }
   };
 
   // -----------------------------------
   // Go back to Dashboard
   // -----------------------------------
   const handleBackToDashboard = () => {
+    // 直接调用 handleEndInterview 函数，确保保存逻辑执行
     handleEndInterview();
   };
 
@@ -294,9 +360,21 @@ const InterviewPage: React.FC = () => {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingContent}>
-          <Loader size={48} className={styles.loadingSpinner} />
-          <h2>Initializing interview session</h2>
-          <p>Setting up your interview for: {config_name}</p>
+          <Loader size={80} className={styles.loadingSpinner} />
+          <h2>Initializing Interview</h2>
+          <p>We're setting up your personalized interview experience for: <strong>{config_name}</strong></p>
+          
+          <div className={styles.loadingIndicator}>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+            <div className={styles.loadingDot}></div>
+          </div>
+          
+          <div className={styles.loadingText}>Preparing AI interviewer...</div>
+          
+          <span className={styles.secondaryText}>
+            This may take a few moments
+          </span>
         </div>
       </div>
     );
@@ -307,24 +385,27 @@ const InterviewPage: React.FC = () => {
   // -----------------------------------
   return (
     <div className={styles.interviewContainer}>
+      {/* 保存动画覆盖层 */}
+      <SavingOverlay isVisible={showSavingOverlay} />
+      
       <div className={styles.interviewHeader}>
-        <button
-          className={styles.backButton}
+        <button 
+          className={`${styles.backButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleBackToDashboard}
-          disabled={isEnding}
+          disabled={isSaving}
         >
           <Home size={18} />
-          Back to Dashboard
+          {isSaving ? 'Saving...' : 'Back to Dashboard'}
         </button>
         <h1>Interview: {config_name}</h1>
-        <button
-          className={styles.endButton}
+        <button 
+          className={`${styles.endButton} ${isSaving ? styles.saving : ''}`}
           onClick={handleEndInterview}
-          disabled={isEnding}
+          disabled={isSaving}
         >
-          {isEnding ? (
+          {isSaving ? (
             <>
-              <Loader size={20} /> Ending Interview...
+              <Loader size={20} className={styles.loadingSpinner} /> Saving...
             </>
           ) : (
             <>
@@ -335,8 +416,8 @@ const InterviewPage: React.FC = () => {
       </div>
 
       <div className={styles.chatInterface}>
-        <div ref={chatContainerRef} className={styles.chatContainer}>
-          {messages.map((msg, idx) => (
+        <div className={styles.chatContainer} ref={chatContainerRef}>
+          {messages.map((message, index) => (
             <div
               key={idx}
               className={`
@@ -361,13 +442,18 @@ const InterviewPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div
-                className={`${styles.message} ${
-                  msg.sender === 'ai' ? styles.aiMessage : styles.userMessage
-                }`}
-              >
-                {msg.text || <span>&nbsp;</span>}
-              </div>
+              {message.sender === 'ai' ? (
+                <InterviewMessage
+                  message={message}
+                  messageId={`${threadId}-${index}`}
+                  threadId={threadId || ''}
+                  isFirstMessage={index === 0}
+                />
+              ) : (
+                <div className={`${styles.message} ${styles.userMessage}`}>
+                  {message.text || <span>&nbsp;</span>}
+                </div>
+              )}
             </div>
           ))}
         </div>

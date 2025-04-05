@@ -468,24 +468,32 @@ const SettingsPage: React.FC = () => {
     setProfile({ ...profile, experience: updatedExps });
   };
 
-  // -------------------------------------------
-  // Rendering
-  // -------------------------------------------
 
-  // Loading or error states
-  if (loading) return <div className={styles.loadingScreen}>Loading profile...</div>;
-  if (error) {
-    // Show error message + a button to re-check or go back
-    return (
-      <div className={styles.errorScreen}>
-        <h2>Error</h2>
+  if (loading) return (
+    <div className={styles.loadingContainer}>
+      <div className={styles.loadingCard}>
+        <div className={styles.spinner}></div>
+        <p>Loading your profile...</p>
+      </div>
+    </div>
+  );
+  
+  if (error) return (
+    <div className={styles.loadingContainer}>
+      <div className={styles.errorCard}>
+        <div className={styles.errorIcon}>!</div>
+        <h3>Something went wrong</h3>
         <p>{error}</p>
-        <button onClick={() => navigate('/dashboard')} className={styles.backButton}>
-          Go to Dashboard
+        <button 
+          className={styles.errorButton}
+          onClick={() => navigate('/dashboard')}
+        >
+          Return to Dashboard
         </button>
       </div>
-    );
-  }
+    </div>
+  );
+
 
   return (
     <div className={styles.container}>
@@ -509,10 +517,12 @@ const SettingsPage: React.FC = () => {
           <p>Manage Your Profile Information</p>
         </div>
 
-        <div className={styles.grid}>
-          {/* Column 1: Basic Info + Education */}
-          <div className={styles.column}>
-            <h3>Basic Info</h3>
+
+        {/* Two-Column Grid */}
+<div className={styles.grid}>
+  {/* Column 1: Basic Info + Education */}
+  <div className={styles.column}>
+    <h3>Basic Information</h3>
 
             {/* Avatar + Resume */}
             <div className={styles.avatarSection}>
@@ -580,218 +590,247 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Basic Info Fields */}
-            {[
-              {
-                label: 'First Name',
-                value: profile.firstName,
-                error: errors.firstName,
-                onChange: (v: string) => setProfile({ ...profile, firstName: v })
-              },
-              {
-                label: 'Last Name',
-                value: profile.lastName,
-                error: errors.lastName,
-                onChange: (v: string) => setProfile({ ...profile, lastName: v })
-              },
-              { 
-                label: 'Job Title',
-                value: profile.title,
-                error: '', 
-                onChange: (v: string) => setProfile({ ...profile, title: v })
-              },
-              {
-                label: 'Email',
-                value: profile.email,
-                error: errors.email,
-                onChange: (v: string) => setProfile({ ...profile, email: v })
-              },
-              {
-                label: 'Phone',
-                value: profile.phone,
-                error: errors.phone,
-                onChange: (v: string) => setProfile({ ...profile, phone: v })
-              }
-            ].map((field, idx) => (
-              <div className={styles.formGroup} key={idx}>
-                <label>{field.label}</label>
-                <input
-                  type="text"
-                  className={`${styles.input} ${field.error ? styles.inputError : ''}`}
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
-                />
-                {field.error && <span className={styles.error}>{field.error}</span>}
-              </div>
-            ))}
+    <div className={styles.sectionDivider}>
+      <span>Personal Details</span>
+    </div>
 
-            {/* About */}
-            <div className={styles.formGroup}>
-              <label>About</label>
-              <textarea
-                className={`${styles.textarea} autoExpand`}
-                value={profile.about}
-                onChange={(e) => {
-                  setProfile({ ...profile, about: e.target.value });
-                  autoExpand(e);
-                }}
-              />
-            </div>
+    {/* Form Fields */}
+    {[
+      {
+        label: 'First Name',
+        value: profile.firstName,
+        error: errors.firstName,
+        onChange: (v: string) => setProfile({ ...profile, firstName: v }),
+        testId: 'first-name-input'
+      },
+      {
+        label: 'Last Name',
+        value: profile.lastName,
+        error: errors.lastName,
+        onChange: (v: string) => setProfile({ ...profile, lastName: v }),
+        testId: 'last-name-input'
+      },
+      { 
+        label: 'Job Title', 
+        value: profile.title, 
+        error: '', 
+        onChange: (v: string) => setProfile({ ...profile, title: v }),
+        testId: 'job-title-input'
+      },
+      { 
+        label: 'Email', 
+        value: profile.email, 
+        error: errors.email, 
+        onChange: (v: string) => setProfile({ ...profile, email: v }),
+        testId: 'email-input'
+      },
+      { 
+        label: 'Phone', 
+        value: profile.phone, 
+        error: errors.phone, 
+        onChange: (v: string) => setProfile({ ...profile, phone: v }),
+        testId: 'phone-input'
+      },
+    ].map((field, idx) => (
+      <div className={styles.formGroup} key={idx}>
+        <label>{field.label}</label>
+        <input
+          type="text"
+          className={`${styles.input} ${field.error ? styles.inputError : ''}`}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          data-testid={field.testId}
+          placeholder={`Enter your ${field.label.toLowerCase()}`}
+        />
+        {field.error && <span className={styles.error}>{field.error}</span>}
+      </div>
+    ))}
 
-            {/* Skills */}
-            <div className={styles.formGroup}>
-              <label>Skills (comma-separated)</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={profile.skills.join(', ')}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    skills: e.target.value.split(',').map(s => s.trim())
-                  })
-                }
-              />
-            </div>
+    <div className={styles.sectionDivider}>
+      <span>About & Skills</span>
+    </div>
 
-            {/* Social/Portfolio Links */}
-            {[
-              {
-                label: 'LinkedIn URL',
-                value: profile.linkedin,
-                error: errors.linkedin,
-                onChange: (v: string) => setProfile({ ...profile, linkedin: v })
-              },
-              {
-                label: 'GitHub URL',
-                value: profile.github,
-                error: errors.github,
-                onChange: (v: string) => setProfile({ ...profile, github: v })
-              },
-              {
-                label: 'Portfolio URL',
-                value: profile.portfolio,
-                error: errors.portfolio,
-                onChange: (v: string) => setProfile({ ...profile, portfolio: v })
-              }
-            ].map((field, idx) => (
-              <div className={styles.formGroup} key={idx}>
-                <label>{field.label}</label>
-                <input
-                  type="url"
-                  className={`${styles.input} ${field.error ? styles.inputError : ''}`}
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
-                />
-                {field.error && <span className={styles.error}>{field.error}</span>}
-              </div>
-            ))}
+    {/* Description Textarea (Auto-Expand) */}
+    <div className={styles.formGroup}>
+      <label>About</label>
+      <textarea 
+        className={`${styles.textarea} autoExpand`} 
+        value={profile.about} 
+        placeholder="Write a short bio about yourself..."
+        onChange={(e) => {
+          setProfile({ ...profile, about: e.target.value });
+          autoExpand(e);
+        }} 
+      />
+    </div>
 
-            {/* Education */}
-            <h3>Education</h3>
-            {profile.education_history.map((edu, idx) => (
-              <div key={idx} className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <strong>Education {idx + 1}</strong>
-                  <Trash
-                    size={16}
-                    className={styles.icon}
-                    onClick={() => deleteEducation(idx)}
-                  />
-                </div>
-                {[
-                  { label: 'School', value: edu.institution, key: 'institution' },
-                  { label: 'Degree', value: edu.degree, key: 'degree' },
-                  { label: 'Date', value: edu.dates, key: 'dates' },
-                  { label: 'Location', value: edu.location, key: 'location' }
-                ].map((field, i) => (
-                  <div key={i} className={styles.formGroup}>
-                    <label>{field.label}</label>
-                    <input
-                      type="text"
-                      className={styles.input}
-                      value={field.value}
-                      onChange={(e) => handleEducationChange(idx, field.key as keyof EducationItem, e.target.value)}
-                    />
-                  </div>
-                ))}
 
-                <div className={styles.formGroup}>
-                  <label>Description</label>
-                  <textarea
-                    className={`${styles.textarea} autoExpand`}
-                    value={edu.description}
-                    onChange={(e) => {
-                      handleEducationChange(idx, 'description', e.target.value);
-                      autoExpand(e);
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            <button className={styles.addButton} onClick={addEducation}>
-              <PlusCircle size={16} /> Add Education
-            </button>
-          </div>
+    {/* Skills */}
+    <div className={styles.formGroup}>
+      <label>Skills (comma-separated)</label>
+      <input 
+        type="text" 
+        className={styles.input} 
+        value={profile.skills.join(', ')} 
+        placeholder="e.g. JavaScript, React, UI Design"
+        onChange={(e) => setProfile({ ...profile, skills: e.target.value.split(',').map(s => s.trim()) })} 
+      />
+    </div>
 
-          {/* Column 2: Experience */}
-          <div className={styles.column}>
-            <h3>Experience</h3>
-            {profile.experience.map((exp, idx) => (
-              <div key={idx} className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <strong>Experience {idx + 1}</strong>
-                  <Trash
-                    size={16}
-                    className={styles.icon}
-                    onClick={() => deleteExperience(idx)}
-                  />
-                </div>
-                {[
-                  { label: 'Title', value: exp.title, key: 'title' },
-                  { label: 'Organization', value: exp.organization, key: 'organization' },
-                  { label: 'Date', value: exp.dates, key: 'dates' },
-                  { label: 'Location', value: exp.location, key: 'location' }
-                ].map((field, i) => (
-                  <div key={i} className={styles.formGroup}>
-                    <label>{field.label}</label>
-                    <input
-                      type="text"
-                      className={styles.input}
-                      value={field.value}
-                      onChange={(e) => handleExperienceChange(idx, field.key as keyof ExperienceItem, e.target.value)}
-                    />
-                  </div>
-                ))}
+    <div className={styles.sectionDivider}>
+      <span>Professional Links</span>
+    </div>
 
-                <div className={styles.formGroup}>
-                  <label>Description</label>
-                  <textarea
-                    className={`${styles.textarea} autoExpand`}
-                    value={exp.description}
-                    onChange={(e) => {
-                      handleExperienceChange(idx, 'description', e.target.value);
-                      autoExpand(e);
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            <button className={styles.addButton} onClick={addExperience}>
-              <PlusCircle size={16} /> Add Experience
-            </button>
-          </div>
+    {/* Links */}
+    {[
+      { 
+        label: 'LinkedIn URL', 
+        value: profile.linkedin, 
+        error: errors.linkedin, 
+        onChange: (v: string) => setProfile({ ...profile, linkedin: v }),
+        testId: 'linkedin-input',
+        placeholder: 'https://linkedin.com/in/yourprofile'
+      },
+      { 
+        label: 'GitHub URL', 
+        value: profile.github, 
+        error: errors.github, 
+        onChange: (v: string) => setProfile({ ...profile, github: v }),
+        testId: 'github-input',
+        placeholder: 'https://github.com/yourusername'
+      },
+      { 
+        label: 'Portfolio URL', 
+        value: profile.portfolio, 
+        error: errors.portfolio, 
+        onChange: (v: string) => setProfile({ ...profile, portfolio: v }),
+        testId: 'portfolio-input',
+        placeholder: 'https://yourportfolio.com'
+      },
+    ].map((field, idx) => (
+      <div className={styles.formGroup} key={idx}>
+        <label>{field.label}</label>
+        <input
+          type="url"
+          className={`${styles.input} ${field.error ? styles.inputError : ''}`}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          data-testid={field.testId}
+          placeholder={field.placeholder}
+        />
+        {field.error && <span className={styles.error}>{field.error}</span>}
+      </div>
+    ))}
+
+
+
+
+    {/* Education Cards */}
+    <div className={styles.sectionDivider}>
+      <span>Education</span>
+    </div>
+    
+    {profile.education_history.map((edu, idx) => (
+      <div key={idx} className={styles.card} data-testid={`education-card-${idx}`}>
+        <div className={styles.cardHeader}>
+          <strong data-testid={`education-title-${idx}`}>Education {idx + 1}</strong>
+          <Trash size={16} className={styles.icon} onClick={() => deleteEducation(idx)} data-testid="trash" />
         </div>
 
-        {/* Save Button */}
-        <button
-          className={styles.saveButton}
-          onClick={handleSave}
-          disabled={uploading}
-        >
-          <Save size={20} /> 
-          {uploading ? 'Saving...' : 'Save Changes'}
-        </button>
+        {[
+          { label: 'School', value: edu.institution, key: 'institution', testId: `institution-input-${idx}`, placeholder: 'Enter school name' },
+          { label: 'Degree', value: edu.degree, key: 'degree', testId: `degree-input-${idx}`, placeholder: 'Enter degree or certificate' },
+          { label: 'Date', value: edu.dates, key: 'dates', testId: `dates-input-${idx}`, placeholder: 'e.g. 2018-2022' },
+          { label: 'Location', value: edu.location, key: 'location', testId: `location-input-${idx}`, placeholder: 'Enter location' },
+        ].map((field, i) => (
+          <div key={i} className={styles.formGroup}>
+            <label>{field.label}</label>
+            <input 
+              type="text" 
+              className={styles.input} 
+              value={field.value} 
+              placeholder={field.placeholder}
+              onChange={(e) => handleEducationChange(idx, field.key as keyof EducationItem, e.target.value)} 
+              data-testid={field.testId}
+            />
+          </div>
+        ))}
+
+        <div className={styles.formGroup}>
+          <label>Description</label>
+          <textarea 
+            className={`${styles.textarea} autoExpand`} 
+            value={edu.description} 
+            placeholder="Describe your education experience..."
+            onChange={(e) => {
+              handleEducationChange(idx, 'description', e.target.value);
+              autoExpand(e);
+            }} 
+          />
+        </div>
+      </div>
+    ))}
+    <button className={styles.addButton} onClick={addEducation}><PlusCircle size={16}/> Add Education</button>
+  </div>
+
+
+  {/* Column 2: Experience */}
+  <div className={styles.column}>
+    <h3>Work Experience</h3>
+    
+    {profile.experience.map((exp, idx) => (
+      <div key={idx} className={styles.card} data-testid={`experience-card-${idx}`}>
+        <div className={styles.cardHeader}>
+          <strong data-testid={`experience-title-${idx}`}>Experience {idx + 1}</strong>
+          <Trash size={16} className={styles.icon} onClick={() => deleteExperience(idx)} data-testid="trash" />
+        </div>
+
+        {[
+          { label: 'Title', value: exp.title, key: 'title', testId: `title-input-${idx}`, placeholder: 'Enter job title' },
+          { label: 'Organization', value: exp.organization, key: 'organization', testId: `organization-input-${idx}`, placeholder: 'Enter company name' },
+          { label: 'Date', value: exp.dates, key: 'dates', testId: `exp-dates-input-${idx}`, placeholder: 'e.g. Jan 2020 - Present' },
+          { label: 'Location', value: exp.location, key: 'location', testId: `exp-location-input-${idx}`, placeholder: 'Enter location' },
+        ].map((field, i) => (
+          <div key={i} className={styles.formGroup}>
+            <label>{field.label}</label>
+            <input 
+              type="text" 
+              className={styles.input} 
+              value={field.value} 
+              placeholder={field.placeholder}
+              onChange={(e) => handleExperienceChange(idx, field.key as keyof ExperienceItem, e.target.value)} 
+              data-testid={field.testId}
+            />
+          </div>
+        ))}
+
+        <div className={styles.formGroup}>
+          <label>Description</label>
+          <textarea 
+            className={`${styles.textarea} autoExpand`} 
+            value={exp.description} 
+            placeholder="Describe your responsibilities and achievements..."
+            onChange={(e) => {
+              handleExperienceChange(idx, 'description', e.target.value);
+              autoExpand(e);
+            }} 
+          />
+        </div>
+      </div>
+    ))}
+    <button className={styles.addButton} onClick={addExperience}><PlusCircle size={16}/> Add Experience</button>
+  </div>
+</div>
+
+
+{/* Save Button */}
+<button 
+  className={styles.saveButton} 
+  onClick={handleSave} 
+  data-testid="save-changes-button"
+>
+  <Save size={24}/> Save Changes
+</button>
       </main>
     </div>
   );
