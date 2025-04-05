@@ -122,7 +122,7 @@
   max-width: 85%;
   width: auto;
   align-self: flex-end;
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 /* 消息包装器通用样式 */

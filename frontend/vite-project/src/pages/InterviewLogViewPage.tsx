@@ -87,7 +87,7 @@ const InterviewLogViewPage: React.FC = () => {
       
       const data = await res.json();
       if (data.response) {
-        // Move to a “completed” step
+        // Move to a "completed" step
         setLoadingSteps(prev => ({ ...prev, [index]: 4 }));
         
         // Slight delay to show that final state
