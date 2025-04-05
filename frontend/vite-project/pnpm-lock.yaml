@@ -50,7 +50,7 @@ devDependencies:
     specifier: ^9.19.0
     version: 9.20.0
   '@playwright/test':
-    specifier: ^1.50.1
+    specifier: ^1.51.1
     version: 1.51.1
   '@types/node':
     specifier: ^22.13.9
