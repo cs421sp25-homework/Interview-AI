@@ -3,8 +3,7 @@ import { Button, message as antMessage, Tooltip } from 'antd';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewMessage.module.css';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getLoggedInFirebaseUid } from "../pages/ConfigPage";
+
 
 interface InterviewMessageProps {
   message: {

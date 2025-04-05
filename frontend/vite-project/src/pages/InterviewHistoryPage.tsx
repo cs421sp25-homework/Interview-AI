@@ -6,8 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewHistoryPage.module.css';
 import { exportToPDF } from '../utils/pdfExport';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
 import type { SortOrder } from 'antd/es/table/interface';
 
 const { Title, Text } = Typography;
