@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Bot, User, Save, ArrowLeft, PlusCircle, Trash, FileText } from 'lucide-react';
+import { Bot, User, Save, FileText, PlusCircle, Trash } from 'lucide-react';
 import styles from './SettingsPage.module.css';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../config/api';
-
 
 interface EducationItem {
   institution: string;
@@ -15,7 +14,6 @@ interface EducationItem {
   description: string;
 }
 
-
 interface ExperienceItem {
   title: string;
   organization: string;
@@ -23,7 +21,6 @@ interface ExperienceItem {
   location: string;
   description: string;
 }
-
 
 interface UserProfile {
   firstName: string;
@@ -41,18 +38,26 @@ interface UserProfile {
   experience: ExperienceItem[];
 }
 
-
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { userEmail } = useAuth();
+
+  // Basic UI states
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  // If there's a major error loading or saving, store it here
   const [error, setError] = useState<string | null>(null);
+
+  // For uploading photo
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+  // For uploading resume
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeName, setResumeName] = useState<string>("");
 
-
-
+  // Profile data
   const [profile, setProfile] = useState<UserProfile>({
     firstName: '',
     lastName: '',
@@ -69,7 +74,7 @@ const SettingsPage: React.FC = () => {
     experience: [],
   });
 
-
+  // Field-level error messages
   const [errors, setErrors] = useState({
     firstName: '',
     lastName: '',
@@ -80,31 +85,66 @@ const SettingsPage: React.FC = () => {
     portfolio: ''
   });
 
+  // -------------------------------------------
+  // Validation Helpers
+  // -------------------------------------------
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  
+  // If you want phone to be truly optional, allow blank
+  // but if provided, must match phone pattern
+  const validatePhone = (phone: string) =>
+    !phone || /^\+?\d{10,15}$/.test(phone);
 
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeName, setResumeName] = useState<string>("");
-  const [uploading, setUploading] = useState<boolean>(false);
- 
+  const validateURL = (url: string) =>
+    !url || /^https?:\/\//.test(url);
 
+  const validateName = (name: string) =>
+    name.trim().length >= 2;
 
+  // -------------------------------------------
+  // Auto-expand textareas
+  // -------------------------------------------
+  const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto'; // reset
+    textarea.style.height = textarea.scrollHeight + 'px';
+  };
 
+  // -------------------------------------------
+  // Load user profile on mount
+  // -------------------------------------------
   useEffect(() => {
-
+    // If userEmail is missing, redirect to login
+    if (!userEmail) {
+      setError('Please log in to view settings.');
+      navigate('/login');
+      return;
+    }
 
     const fetchProfile = async () => {
       try {
-        console.log("Fetching profile for email:", userEmail);
-        const email = localStorage.getItem('user_email') || 'test@example.com';
+        // We retrieve user_email from localStorage in case `userEmail` from context is empty
+        const localEmail = localStorage.getItem('user_email') || userEmail;
+        if (!localEmail) {
+          setError('No user email found. Please log in again.');
+          navigate('/login');
+          return;
+        }
 
-        const response = await axios.get(`${API_BASE_URL}/api/profile/${email}`);
+        console.log("Fetching profile for email:", localEmail);
+        setError(null);
+
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${localEmail}`);
         if (response.data?.data) {
           const userData = response.data.data;
-          console.log(response.data)
+          console.log("Profile data loaded:", userData);
+
           const profileData: UserProfile = {
             firstName: userData.first_name || '',
             lastName: userData.last_name || '',
             title: userData.job_title || '',
-            email: email || '',
+            email: localEmail || '',
             phone: userData.phone || '',
             skills: Array.isArray(userData.key_skills)
               ? userData.key_skills
@@ -116,40 +156,47 @@ const SettingsPage: React.FC = () => {
             github: userData.github_url || '',
             portfolio: userData.portfolio_url || '',
             photoUrl: userData.photo_url || null,
-            education_history: userData.education_history || userData.resume?.education_history || [],
-            experience: userData.resume_experience || userData.resume?.experience || []
+            education_history: userData.education_history
+              || userData.resume?.education_history
+              || [],
+            experience: userData.resume_experience
+              || userData.resume?.experience
+              || [],
           };
-
 
           setProfile(profileData);
           setPhotoPreview(userData.photo_url || null);
+        } else {
+          // No data returned
+          setError('No profile data found. Please complete your profile.');
         }
-      } catch (err) {
-        navigate('/login'); // Redirect to the login page in case of an error
+      } catch (err: any) {
+        console.error('Error fetching profile:', err);
+
+        if (err.response) {
+          // Server responded
+          const { status } = err.response;
+          if (status === 401) {
+            setError('Session expired or unauthorized. Please log in again.');
+            navigate('/login');
+          } else {
+            setError('Failed to load profile data from server.');
+          }
+        } else {
+          // Likely a network error
+          setError('Network error. Could not fetch your profile.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-
-
   }, [userEmail, navigate]);
-  const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target;
-    textarea.style.height = 'auto'; // Reset height
-    textarea.style.height = textarea.scrollHeight + 'px'; // Expand to fit content
-  };
 
-
-
-
-  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validateURL = (url: string) => !url || /^https?:\/\//.test(url);
-  const validateName = (name: string) => name.trim().length >= 2;
-  const validatePhone = (phone: string) => /^\+?\d{10,15}$/.test(phone);
-
-
+  // -------------------------------------------
+  // Photo Upload
+  // -------------------------------------------
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -158,41 +205,48 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handlePhotoUpload = async () => {
+  const handlePhotoUpload = async (): Promise<string | null> => {
     if (!photoFile) return null;
-
-
-    const formData = new FormData();
-    formData.append('file', photoFile);
-    formData.append('email', userEmail || "test@example.com");
-    console.log("Uploading image for email:", userEmail);
-
-
     try {
+      const localEmail = localStorage.getItem('user_email') || userEmail;
+      if (!localEmail) {
+        setError('Missing email. Please log in again.');
+        return null;
+      }
+
+      const formData = new FormData();
+      formData.append('file', photoFile);
+      formData.append('email', localEmail);
+
+      console.log("Uploading image for email:", localEmail);
+
       const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const imageUrl = response.data.url;
 
-
-      setProfile({ ...profile, photoUrl: imageUrl });
-      console.log('Image uploaded successfully:', imageUrl);
-
-
-      return imageUrl;
+      if (response.data?.url) {
+        console.log('Image uploaded successfully:', response.data.url);
+        return response.data.url;
+      } else {
+        console.error('Upload response did not contain a URL:', response.data);
+        setError('Server did not return photo URL. Please try again.');
+        return null;
+      }
     } catch (err) {
       console.error('Error uploading image:', err);
+      setError('Error uploading image. Please try again.');
       return null;
     }
   };
 
-
-
+  // -------------------------------------------
+  // Resume Upload + Parsing
+  // -------------------------------------------
   const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Ensure it's a PDF file
+    // Ensure it's a PDF
     if (file.type !== "application/pdf") {
       alert("Please upload a valid PDF file.");
       return;
@@ -202,28 +256,35 @@ const SettingsPage: React.FC = () => {
     setResumeName(file.name);
     setUploading(true);
 
-    const formData = new FormData();
-    formData.append("resume", file);
-
-    formData.append("email", userEmail || "test@example.com");
- 
     try {
+      const localEmail = localStorage.getItem('user_email') || userEmail;
+      if (!localEmail) {
+        setError('Missing email. Please log in again.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("resume", file);
+      formData.append("email", localEmail);
+
       const response = await axios.post(`${API_BASE_URL}/api/parse-resume`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      if (response.status === 200) {
+      if (response.status === 200 && response.data.resume) {
         const resumeData = response.data.resume;
         console.log("Parsed resume data:", resumeData);
 
+        // Update local state
         setProfile(prev => ({
           ...prev,
           education_history: resumeData.education_history || [],
           experience: resumeData.experience || []
         }));
 
+        // Also update server profile
         const updateResponse = await axios.put(
-          `${API_BASE_URL}/api/profile/${userEmail}`,
+          `${API_BASE_URL}/api/profile/${localEmail}`,
           {
             education_history: resumeData.education_history,
             resume_experience: resumeData.experience
@@ -232,91 +293,94 @@ const SettingsPage: React.FC = () => {
             headers: { 'Content-Type': 'application/json' }
           }
         );
-
         console.log("Profile updated with new resume data:", updateResponse.data);
+        alert("Resume parsed and profile updated successfully!");
+      } else {
+        setError('Server returned an unexpected response parsing resume.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error processing resume:", error);
       alert("Failed to process resume. Please try again.");
     } finally {
       setUploading(false);
     }
   };
- 
 
-
-
-
-
-
+  // -------------------------------------------
+  // Save Changes (Profile Update)
+  // -------------------------------------------
   const handleSave = async () => {
-    // Validate inputs
+    // Validate fields
     let hasErrors = false;
     const newErrors = { ...errors };
-    
+
     if (!validateName(profile.firstName)) {
       newErrors.firstName = 'First name must be at least 2 characters';
       hasErrors = true;
     } else {
       newErrors.firstName = '';
     }
-    
+
     if (!validateName(profile.lastName)) {
       newErrors.lastName = 'Last name must be at least 2 characters';
       hasErrors = true;
     } else {
       newErrors.lastName = '';
     }
-    
+
     if (!validateEmail(profile.email)) {
       newErrors.email = 'Invalid email address';
       hasErrors = true;
     } else {
       newErrors.email = '';
     }
-    
-    if (!validatePhone(profile.phone)) {
-      newErrors.phone = 'Invalid phone number';
+
+    // If phone is optional, only validate if not empty
+    if (profile.phone && !validatePhone(profile.phone)) {
+      newErrors.phone = 'Invalid phone number (must be 10–15 digits)';
       hasErrors = true;
     } else {
       newErrors.phone = '';
     }
-    
+
     if (!validateURL(profile.linkedin)) {
-      newErrors.linkedin = 'Invalid URL';
+      newErrors.linkedin = 'Invalid URL (must start with http or https)';
       hasErrors = true;
     } else {
       newErrors.linkedin = '';
     }
-    
+
     if (!validateURL(profile.github)) {
-      newErrors.github = 'Invalid URL';
+      newErrors.github = 'Invalid URL (must start with http or https)';
       hasErrors = true;
     } else {
       newErrors.github = '';
     }
-    
+
     if (!validateURL(profile.portfolio)) {
-      newErrors.portfolio = 'Invalid URL';
+      newErrors.portfolio = 'Invalid URL (must start with http or https)';
       hasErrors = true;
     } else {
       newErrors.portfolio = '';
     }
-    
+
     setErrors(newErrors);
     if (hasErrors) return;
-    
+
+    // Attempt to upload photo and update profile
     try {
       setUploading(true);
-      
-      // Upload photo if changed
+      setError(null);
+
       let imageUrl = profile.photoUrl;
       if (photoFile) {
         imageUrl = await handlePhotoUpload();
-        console.log("Image URL:", imageUrl);
+        if (!imageUrl) {
+          // If we fail to upload the photo, do not proceed with updating the rest
+          throw new Error('Failed to upload photo.');
+        }
       }
-      
-      // Update profile
+
       const updateData = {
         firstName: profile.firstName,
         lastName: profile.lastName,
@@ -327,38 +391,54 @@ const SettingsPage: React.FC = () => {
         linkedinUrl: profile.linkedin,
         githubUrl: profile.github,
         portfolioUrl: profile.portfolio,
-        photo_url: imageUrl || profile.photoUrl || null,
+        photo_url: imageUrl || null,
         education_history: profile.education_history,
         resume_experience: profile.experience
       };
-      
-      await axios.put(`${API_BASE_URL}/api/profile/${profile.email}`, updateData);
+
+      const response = await axios.put(`${API_BASE_URL}/api/profile/${profile.email}`, updateData);
+      console.log('Profile update server response:', response.data);
+
       alert('Profile updated successfully!');
-      
       navigate('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile:', err);
-      setError('Failed to update profile');
+
+      if (err.response) {
+        const { status, data } = err.response;
+        if (status === 401) {
+          setError('Session expired or unauthorized. Please log in again.');
+          navigate('/login');
+        } else {
+          setError(data?.message || 'Failed to update profile. Please try again.');
+        }
+      } else {
+        // Possibly a network error or an error thrown by handlePhotoUpload
+        setError('Failed to update profile. Check your connection or try again.');
+      }
     } finally {
       setUploading(false);
     }
   };
 
-
+  // -------------------------------------------
+  // Education/Experience Handlers
+  // -------------------------------------------
   const handleEducationChange = (index: number, key: keyof EducationItem, value: string) => {
     const updatedEdus = [...profile.education_history];
     updatedEdus[index] = { ...updatedEdus[index], [key]: value };
     setProfile({ ...profile, education_history: updatedEdus });
   };
 
-
   const addEducation = () => {
     setProfile({
       ...profile,
-      education_history: [...profile.education_history, { institution: '', degree: '', dates: '', location: '', description: '' }],
+      education_history: [
+        ...profile.education_history,
+        { institution: '', degree: '', dates: '', location: '', description: '' }
+      ],
     });
   };
-
 
   const deleteEducation = (index: number) => {
     const updatedEdus = [...profile.education_history];
@@ -366,21 +446,21 @@ const SettingsPage: React.FC = () => {
     setProfile({ ...profile, education_history: updatedEdus });
   };
 
-
   const handleExperienceChange = (index: number, key: keyof ExperienceItem, value: string) => {
     const updatedExps = [...profile.experience];
     updatedExps[index] = { ...updatedExps[index], [key]: value };
     setProfile({ ...profile, experience: updatedExps });
   };
 
-
   const addExperience = () => {
     setProfile({
       ...profile,
-      experience: [...profile.experience, { title: '', organization: '', dates: '', location: '', description: '' }],
+      experience: [
+        ...profile.experience,
+        { title: '', organization: '', dates: '', location: '', description: '' }
+      ],
     });
   };
-
 
   const deleteExperience = (index: number) => {
     const updatedExps = [...profile.experience];
@@ -430,11 +510,10 @@ const SettingsPage: React.FC = () => {
         </div>
       </nav>
 
-
       {/* Main */}
       <main className={styles.main}>
         <div className={styles.header}>
-          <h1>Profile Setting</h1>
+          <h1>Profile Settings</h1>
           <p>Manage Your Profile Information</p>
         </div>
 
@@ -445,76 +524,71 @@ const SettingsPage: React.FC = () => {
   <div className={styles.column}>
     <h3>Basic Information</h3>
 
+            {/* Avatar + Resume */}
+            <div className={styles.avatarSection}>
+              {/* Avatar or Icon */}
+              <div className={styles.avatar}>
+                {photoPreview || profile?.photoUrl ? (
+                  <img 
+                    src={photoPreview || profile.photoUrl || ''} 
+                    alt="Profile" 
+                    className={styles.avatarImage} 
+                  />
+                ) : (
+                  <User size={48} color="#ec4899" />
+                )}
+              </div>
 
-    {/* Avatar Section */}
-<div className={styles.avatarSection}>
-  {/* Avatar Image or Default Icon */}
-  <div className={styles.avatar}>
-    {photoPreview || profile?.photoUrl ? (
-      <img 
-        src={photoPreview || profile?.photoUrl || ''} 
-        alt="Profile" 
-        className={styles.avatarImage} 
-      />
-    ) : (
-      <User size={48} color="#ec4899" />
-    )}
-  </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+                id="photoUpload"
+              />
+              <button 
+                className={styles.uploadButton} 
+                onClick={() => document.getElementById('photoUpload')?.click()}
+                disabled={uploading}
+              >
+                <User size={20} />
+                <span>Change Photo</span>
+              </button>
 
-
-  <input
-    type="file"
-    accept="image/*"
-    onChange={handlePhotoChange}
-    style={{ display: 'none' }}
-    id="photoUpload"
-  />
-
-
-  {/* Change Photo Button */}
-  <button 
-    className={styles.uploadButton} 
-    onClick={() => document.getElementById('photoUpload')?.click()}
-  >
-    <User size={20} />
-    <span>Change Photo</span>
-  </button>
-
-
-  {/* Resume Upload Section */}
-  <input
-    type="file"
-    accept=".pdf"
-    onChange={handleResumeChange}
-    style={{ display: 'none' }}
-    id="resumeUpload"
-  />
-  <div className={styles.resumeUploadContainer}>
-    <button
-      className={`${styles.uploadButton} ${uploading ? styles.uploading : ''}`}
-      onClick={() => document.getElementById('resumeUpload')?.click()}
-      disabled={uploading}
-    >
-      {uploading ? (
-        <div className={styles.uploadingMessage}>
-          <div className={styles.uploadSpinner}></div>
-          <span>Processing your resume...</span>
-        </div>
-      ) : (
-        <>
-          <FileText size={20} />
-          <span>Upload Resume PDF</span>
-        </>
-      )}
-    </button>
-    {resumeName && !uploading && (
-      <div className={styles.fileInfo}>
-        <FileText size={16} />
-        <span className={styles.fileName}>{resumeName}</span>
-      </div>
-    )}
-  </div>
-</div>
+              {/* Resume Upload */}
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleResumeChange}
+                style={{ display: 'none' }}
+                id="resumeUpload"
+              />
+              <div className={styles.resumeUploadContainer}>
+                <button
+                  className={`${styles.uploadButton} ${uploading ? styles.uploading : ''}`}
+                  onClick={() => document.getElementById('resumeUpload')?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <div className={styles.uploadingMessage}>
+                      <div className={styles.uploadSpinner}></div>
+                      <span>Processing your resume...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <FileText size={20} />
+                      <span>Upload Resume PDF</span>
+                    </>
+                  )}
+                </button>
+                {resumeName && !uploading && (
+                  <div className={styles.fileInfo}>
+                    <FileText size={16} />
+                    <span className={styles.fileName}>{resumeName}</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
     <div className={styles.sectionDivider}>
       <span>Personal Details</span>
@@ -761,6 +835,5 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 };
-
 
 export default SettingsPage;
