@@ -1,42 +1,128 @@
 .messageContainer {
   position: relative;
-  margin: 16px 0;
-  padding: 16px;
-  border-radius: 8px;
-  max-width: 80%;
+  margin: 18px 0;
+  padding: 18px;
+  border-radius: 12px;
+  max-width: 85%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.messageContainer:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .aiMessage {
-  background-color: #f0f2f5;
+  background: linear-gradient(to right bottom, #f8f9fa, #e9ecef);
   margin-right: auto;
+  border-left: 4px solid #8b5cf6;
 }
 
 .userMessage {
-  background-color: #e6f7ff;
+  background: linear-gradient(to right bottom, #e6f7ff, #d1e9ff);
   margin-left: auto;
+  border-right: 4px solid #4096ff;
 }
 
 .messageContent {
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .favoriteButton {
   position: absolute;
   top: 8px;
   right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: transparent;
+  border: none;
+  transition: all 0.3s ease;
+  opacity: 0.3;
   color: #d9d9d9;
-  transition: color 0.3s;
+  z-index: 2;
+}
+
+.messageContainer:hover .favoriteButton {
+  opacity: 1;
 }
 
 .favoriteButton:hover {
+  background-color: rgba(255, 105, 180, 0.1);
+  transform: scale(1.1);
   color: #ff69b4;
 }
 
 .favoriteActive {
+  opacity: 1 !important;
   color: #ff69b4;
 }
 
 .favoriteActive:hover {
+  background-color: rgba(255, 105, 180, 0.15);
   color: #ff1493;
+}
+
+.favoriteButton::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(255, 105, 180, 0.2);
+  transform: scale(0);
+  transition: transform 0.3s ease;
+}
+
+.favoriteButton:hover::after {
+  transform: scale(1);
+}
+
+.favoriteActive::after {
+  background-color: rgba(255, 105, 180, 0.3);
+}
+
+/* Animación cuando se hace clic en favorito */
+.animating {
+  animation: heartPulse 0.6s ease-in-out;
+}
+
+@keyframes heartPulse {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.3);
+  }
+  30% {
+    transform: scale(0.95);
+  }
+  45% {
+    transform: scale(1.2);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
 } 

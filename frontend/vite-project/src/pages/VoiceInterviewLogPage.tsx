@@ -10,6 +10,7 @@ import React, {
   import { message, Button, Tooltip, Tabs } from 'antd';
   import { Home, Bot, Loader, Sparkles, Check, Headphones, FileText } from 'lucide-react';
   import VoiceBubble from '../components/VoiceBubble';
+  import InterviewMessage from '../components/InterviewMessage';
   import API_BASE_URL from '../config/api';
   import styles from './VoiceInterviewLogPage.module.css';
   
@@ -21,6 +22,7 @@ import React, {
     duration?: number;
     isReady: boolean;
     realText?: string;
+    question_type?: string;
   }
   
   const VoiceInterviewLogPage: React.FC = () => {
@@ -60,6 +62,10 @@ import React, {
       "Polishing answer...",
       "Finalizing response..."
     ]);
+  
+    // Add state for thread id and question type for favorite function
+    const [threadId, setThreadId] = useState<string>("");
+    const [questionType, setQuestionType] = useState<string>("");
   
     /**
      * Stop all playing audio
@@ -148,10 +154,45 @@ import React, {
             throw new Error(`Failed to fetch voice interview log: ${res.status}`);
           }
           const data = await res.json();
+          console.log('Voice chat history API response:', data);
           if (!data || !data.messages) {
             throw new Error('No messages found in response');
           }
           setMessages(data.messages);
+          
+          // Set thread ID and question type if available in the response
+          if (data.thread_id) {
+            console.log('Setting thread_id from API response:', data.thread_id);
+            setThreadId(data.thread_id);
+          } else if (data.id) {
+            // If thread_id is not available, use the id field instead
+            console.log('Setting thread_id from API id field:', data.id);
+            setThreadId(String(data.id));
+          } else {
+            // If neither is available, use the id from the URL
+            console.log('Setting thread_id from URL parameter:', id);
+            setThreadId(id || '');
+          }
+          
+          if (data.question_type) {
+            console.log('Setting question_type from API response:', data.question_type);
+            setQuestionType(data.question_type);
+          } else if (data.messages && data.messages.length > 0) {
+            // Try to get question_type from the first AI message if available
+            const firstAiMessage = data.messages.find((msg: ChatMessage) => msg.sender === 'ai');
+            if (firstAiMessage && firstAiMessage.question_type) {
+              console.log('Setting question_type from first AI message:', firstAiMessage.question_type);
+              setQuestionType(firstAiMessage.question_type);
+            } else {
+              // Default to 'behavioral' if no question_type is found
+              console.log('Setting default question_type: behavioral');
+              setQuestionType('behavioral');
+            }
+          } else {
+            // Default to 'behavioral' if no messages found
+            console.log('Setting default question_type: behavioral (no messages)');
+            setQuestionType('behavioral');
+          }
         } catch (error) {
           console.error('Error fetching voice interview log:', error);
           message.error('Failed to load voice interview log');
@@ -387,11 +428,13 @@ import React, {
                     </div>
                   </div>
                 ) : (
-                  <div className={styles.aiMessage}>
-                    <div className={styles.messageContent}>
-                      {msg.text}
-                    </div>
-                  </div>
+                  <InterviewMessage
+                    message={msg}
+                    messageId={`${id}-${index}`}
+                    threadId={threadId}
+                    questionType={questionType}
+                    isFirstMessage={index === 0}
+                  />
                 )}
               </div>
             );

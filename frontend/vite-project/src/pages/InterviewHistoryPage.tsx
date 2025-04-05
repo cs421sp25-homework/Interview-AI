@@ -297,7 +297,25 @@ const InterviewHistoryPage: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          // Delete the interview log (and associated favorites)
+          // Show loading message
+          message.loading('Deleting interview and associated favorites...', 1);
+          
+          // For voice interviews, explicitly delete favorites by the numeric ID
+          // This is needed because favorites might be saved with the numeric ID instead of thread_id
+          if (log.interview_type?.toLowerCase() === 'voice') {
+            try {
+              // Delete favorites associated with the log.id (numeric ID)
+              await fetch(`${API_BASE_URL}/api/favorite_questions/session/${log.id}`, {
+                method: 'DELETE',
+              });
+              
+              console.log(`Deleted favorites associated with voice session ID: ${log.id}`);
+            } catch (error) {
+              console.error('Error deleting voice favorites by ID:', error);
+            }
+          }
+
+          // Now delete the interview log (this also deletes favorites by thread_id in the backend)
           const response = await fetch(`${API_BASE_URL}/api/chat_history/${log.id}`, {
             method: 'DELETE',
           });
@@ -574,19 +592,38 @@ const InterviewHistoryPage: React.FC = () => {
       console.log('Fetching favorites for:', {
         email,
         thread_id: log.thread_id,
+        id: log.id,
         log: log
       });
 
-      // Use the full thread_id
-      const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}?session_id=${log.thread_id}`);
+      let favoritesList = [];
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch favorite questions: ${response.status}`);
+      // For voice interviews, the session_id might be stored as the log.id
+      if (log.interview_type?.toLowerCase() === 'voice') {
+        // Try fetching using the log.id as session_id
+        const voiceResponse = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}?session_id=${log.id}`);
+        
+        if (voiceResponse.ok) {
+          const voiceData = await voiceResponse.json();
+          console.log('Fetched voice favorite questions response:', voiceData);
+          favoritesList = Array.isArray(voiceData.data) ? voiceData.data : [];
+        }
       }
       
-      const data = await response.json();
-      console.log('Fetched favorite questions response:', data);
-      setFavoriteQuestions(Array.isArray(data.data) ? data.data : []);
+      // If we didn't get any favorites from the voice method, or this is a text interview
+      // try the standard thread_id method
+      if (favoritesList.length === 0) {
+        // Use the full thread_id
+        const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}?session_id=${log.thread_id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched text favorite questions response:', data);
+          favoritesList = Array.isArray(data.data) ? data.data : [];
+        }
+      }
+      
+      setFavoriteQuestions(favoritesList);
     } catch (error) {
       console.error('Error fetching favorite questions:', error);
       message.error('Failed to load favorite questions');

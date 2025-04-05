@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Button, message as antMessage } from 'antd';
+import { Button, message as antMessage, Tooltip } from 'antd';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewMessage.module.css';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getLoggedInFirebaseUid } from "../pages/ConfigPage";
 
 interface InterviewMessageProps {
   message: {
@@ -29,6 +31,7 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [favoriteId, setFavoriteId] = useState<number | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     checkIfFavorite();
@@ -115,6 +118,14 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
   const toggleFavorite = async () => {
     if (isLoading) return;
     setIsLoading(true);
+    
+    // Set animation state
+    setIsAnimating(true);
+    
+    // Reset animation after it completes
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 600);
 
     try {
       const email = localStorage.getItem('user_email');
@@ -153,13 +164,20 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
   return (
     <div className={`${styles.messageContainer} ${message.sender === 'ai' ? styles.aiMessage : styles.userMessage}`}>
       {message.sender === 'ai' && !isFirstMessage && (
-        <Button
-          type="text"
-          icon={isFavorite ? <HeartFilled /> : <HeartOutlined />}
-          onClick={toggleFavorite}
-          loading={isLoading}
-          className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteActive : ''}`}
-        />
+        <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+          <Button
+            type="text"
+            icon={isFavorite ? <HeartFilled /> : <HeartOutlined />}
+            onClick={toggleFavorite}
+            loading={isLoading}
+            className={`
+              ${styles.favoriteButton} 
+              ${isFavorite ? styles.favoriteActive : ''} 
+              ${isAnimating ? styles.animating : ''}
+            `}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          />
+        </Tooltip>
       )}
       <div className={styles.messageContent}>
         {message.text}
