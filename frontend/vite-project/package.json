@@ -26,8 +26,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
-    "@playwright/test": "^1.50.1",
-    "@types/node": "^22.13.9",
+    "@playwright/test": "^1.51.1",
+    "@types/node": "^22.14.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
@@ -45,5 +45,13 @@
       "node",
       "jest"
     ]
-  }
+  },
+  "description": "This guide walks you through setting up and running the **React + Vite** frontend and **Flask** backend for the **InterviewAI** project. You can choose to run it locally or using Docker Compose.",
+  "main": "eslint.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

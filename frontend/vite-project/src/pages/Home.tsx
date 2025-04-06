@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Bot, Briefcase, Star } from 'lucide-react';
-import styles from './Home.module.css';
 import { useNavigate } from 'react-router-dom';
+import styles from './Home.module.css';
 
 interface ButtonProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface ButtonProps {
 
 const Button = ({ children, className, variant = 'primary', onClick }: ButtonProps) => {
   return (
-    <button 
+    <button
       className={`${styles.button} ${styles[variant]} ${className || ''}`}
       onClick={onClick}
     >
@@ -36,6 +36,18 @@ const Card = ({ children, className }: CardProps) => {
 
 const Home = () => {
   const navigate = useNavigate();
+
+  // Example of a small error boundary approach
+  // (If you ever add any async calls or complex logic here)
+  const safeNavigate = (path: string) => {
+    try {
+      navigate(path);
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      // You could display an error dialog or fallback UI here
+      alert('Something went wrong navigating to that page. Please try again.');
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -66,7 +78,7 @@ const Home = () => {
         </p>
         <Button
           className={styles.heroButton}
-          onClick={() => navigate('/signup')}
+          onClick={() => safeNavigate('/signup')}
         >
           Start Practicing Now
         </Button>

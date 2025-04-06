@@ -1,7 +1,10 @@
 name: CI/CD Pipeline
 
-
 on:
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -31,14 +34,13 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'  # Adjust as needed
+          python-version: '3.x'
 
       # 5. Install dependencies for the frontend.
       - name: Install Frontend Dependencies
         run: |
           cd frontend/vite-project
           pnpm install
-          # Install Playwright as a dev dependency
           pnpm add -D @playwright/test
 
       # 6. Install system dependencies for speech recognition
@@ -53,7 +55,6 @@ jobs:
           pip install poetry
           cd backend
           poetry install
-          # Add missing dependencies to poetry environment
           poetry add pytest gtts PyPDF2 pydantic fastapi uvicorn SpeechRecognition pyaudio
 
       # 8. Start backend server in the background.
@@ -71,15 +72,14 @@ jobs:
       # 10. Wait until both servers are likely up.
       - name: Wait for servers to be ready
         run: sleep 10
-        # Alternatively, consider using a tool like "wait-on" for a more robust check.
 
-      # 11. Run backend tests (if you have tests set up using pytest or similar).
-    #   - name: Run Backend Tests
-    #     run: |
-    #       cd backend
-    #       poetry run python -m pytest  # Use python -m pytest to ensure we're using the correct pytest
+      # 11. Run backend tests using pytest.
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          poetry run python run_tests.py run
 
-      # 12. Install Playwright browsers.
+      # 12. Install Playwright browsers (moved up from duplicate step).
       - name: Install Playwright Browsers
         run: |
           cd frontend/vite-project
@@ -112,13 +112,13 @@ jobs:
           });
           EOL
 
-      # 12. Run Playwright tests.
+      # 13. Run Playwright tests.
       - name: Run Playwright Tests
         run: |
           cd frontend/vite-project
           npx playwright test
 
-      # 13. Upload test reports as artifacts.
+      # 14. Upload test reports as artifacts.
       - name: Upload Test Reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -132,8 +132,8 @@ jobs:
     name: Deploy Application
     runs-on: ubuntu-latest
     needs: test
-    # Only deploy on main branch if tests succeed.
-    if: github.ref == 'refs/heads/main' && success()
+    # Only deploy on main or master branch if tests succeed
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && success()
     steps:
       # 1. Check out the repository code.
       - name: Checkout code

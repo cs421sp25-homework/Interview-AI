@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Sparkles, Check } from 'lucide-react';
+import { Home, Sparkles, Check  } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { message, Button, Spin, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -29,6 +29,8 @@ interface LocationState {
 const InterviewLogViewPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // For AI-suggested improvements
   const [generatedResponses, setGeneratedResponse] = useState<{ [key: number]: string }>({});
   const [loadingResponses, setLoadingResponses] = useState<{ [key: number]: boolean }>({});
   const [loadingSteps, setLoadingSteps] = useState<{ [key: number]: number }>({});
@@ -45,19 +47,31 @@ const InterviewLogViewPage: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [threadId, setThreadId] = useState<string>("");
   const [questionType, setQuestionType] = useState<string>("");
+  // ---------------------------------------
+  // Ensure user is logged in
+  // ---------------------------------------
+  useEffect(() => {
+    const userEmail = localStorage.getItem('user_email');
+    if (!userEmail) {
+      message.warning('Please log in to view this interview log.');
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
 
+  // ---------------------------------------
+  // Handle AI suggestion generation
+  // ---------------------------------------
   const handleGenerateResponse = async (messageText: string, index: number) => {
-    // Set loading for this index
     setLoadingResponses(prev => ({ ...prev, [index]: true }));
     setLoadingSteps(prev => ({ ...prev, [index]: 0 }));
     
-    // Start the loading animation
     const loadingInterval = setInterval(() => {
       setLoadingSteps(prev => {
         if (prev[index] >= 3) return prev; // If at final step, stay there
         return { ...prev, [index]: prev[index] + 1 };
       });
-    }, 1500); // Change steps every 1.5 seconds
+    }, 1500); // step changes every 1.5s
     
     try {
       // Find the AI question that the user was responding to
@@ -85,6 +99,11 @@ const InterviewLogViewPage: React.FC = () => {
         }),
       });
       
+      // Handle possible non-2xx statuses
+      if (!res.ok) {
+        throw new Error(`Server returned status ${res.status}`);
+      }
+
       const data = await res.json();
       if (data.response) {
         // Move to a "completed" step
@@ -98,19 +117,25 @@ const InterviewLogViewPage: React.FC = () => {
           clearInterval(loadingInterval);
         }, 500);
       } else {
-        message.error('Failed to generate response');
+        message.error('Failed to generate a response. Please try again.');
         setLoadingResponses(prev => ({ ...prev, [index]: false }));
         clearInterval(loadingInterval);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating response:", error);
-      message.error('Failed to generate response');
+      message.error(
+        error.message === 'Failed to fetch'
+          ? 'Network error. Please check your connection.'
+          : 'Failed to generate response. Please try again.'
+      );
       setLoadingResponses(prev => ({ ...prev, [index]: false }));
       clearInterval(loadingInterval);
     }
   };
 
-  // Avoid layout shift by ensuring container exists on first render
+  // ---------------------------------------
+  // Load interview log
+  // ---------------------------------------
   useEffect(() => {
     const container = document.getElementById('logViewContainer');
     if (container) {
@@ -131,9 +156,26 @@ const InterviewLogViewPage: React.FC = () => {
       const fetchLog = async () => {
         try {
           const userEmail = localStorage.getItem('user_email') || '';
+          if (!userEmail) {
+            // Just in case user_email is missing in localStorage
+            message.warning('Please log in to view this interview log.');
+            navigate('/login');
+            return;
+          }
+
           const res = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
+          if (!res.ok) {
+            throw new Error(`Server responded with ${res.status}`);
+          }
+
           const data = await res.json();
-          const log = data.data.find((l: InterviewLog) => String(l.id) === id);
+          if (!data || !data.data) {
+            message.error('No data returned from server. Please try again later.');
+            setLoading(false);
+            return;
+          }
+          
+          const log = data.data.find((l: any) => String(l.id) === id);
           if (log && log.log) {
             const conversation = typeof log.log === 'string' ? JSON.parse(log.log) : log.log;
             setMessages(conversation);
@@ -142,31 +184,45 @@ const InterviewLogViewPage: React.FC = () => {
           } else {
             message.error('Interview log not found.');
           }
-        } catch (error) {
-          console.error(error);
-          message.error('Failed to load interview log.');
+        } catch (error: any) {
+          console.error('Failed to load interview log:', error);
+          message.error(
+            error.message === 'Failed to fetch'
+              ? 'Network error. Please check your connection.'
+              : 'Failed to load interview log.'
+          );
         } finally {
           setLoading(false);
         }
       };
       fetchLog();
     }
-  }, [id, location.state]);
+  }, [id, location.state, navigate]);
 
-  // Scroll to bottom when messages update
+  // ---------------------------------------
+  // Scroll to bottom on messages update
+  // ---------------------------------------
   useEffect(() => {
     if (!loading && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
+  // ---------------------------------------
+  // Navigation
+  // ---------------------------------------
   const handleBack = () => {
     navigate('/interview/history');
   };
 
+  // ---------------------------------------
+  // Helper to render loading icons
+  // ---------------------------------------
   const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#ec4899' }} spin />;
 
-  // Helper function to render the multi-step loading
+  // ---------------------------------------
+  // Helper function to render step progress
+  // ---------------------------------------
   const renderLoadingSteps = (index: number) => {
     const currentStep = loadingSteps[index] || 0;
     return (
@@ -260,6 +316,9 @@ const InterviewLogViewPage: React.FC = () => {
     );
   };
 
+  // ---------------------------------------
+  // Render
+  // ---------------------------------------
   return (
     <div className={styles.container}>
       {/* Header */}

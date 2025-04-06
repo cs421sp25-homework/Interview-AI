@@ -11,12 +11,16 @@ const LoginPage = () => {
   const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  
+  // Track loading state to prevent multiple submissions
+  const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
   useEffect(() => {
-    // Check if there's an error message in the location state (from redirect)
+    // Check if there's an error message from a redirect or other route
     if (location.state && location.state.error) {
       setError(location.state.error);
     }
@@ -28,25 +32,35 @@ const LoginPage = () => {
     }
   }, [location]);
 
-  // Add email validation function
+  // ----------------------------------------------------
+  // Utility: Validate email format
+  // ----------------------------------------------------
   const validateEmail = (email: string): { isValid: boolean; error: string } => {
     if (!email.includes('@')) {
       return { isValid: false, error: 'Please enter a valid email address.' };
     }
-    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return { isValid: false, error: 'Please enter a valid email address' };
+      return { isValid: false, error: 'Please enter a valid email address.' };
     }
-    
     return { isValid: true, error: '' };
   };
 
-  // Handle email change with validation
+  // ----------------------------------------------------
+  // Utility: Sanitize input
+  // ----------------------------------------------------
+  const sanitizeInput = (input: string): string => {
+    // Remove potentially dangerous characters and HTML tags
+    return input.replace(/<[^>]*>?/gm, '').trim();
+  };
+
+  // ----------------------------------------------------
+  // Handlers
+  // ----------------------------------------------------
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
-    
+
     if (newEmail) {
       const { error } = validateEmail(newEmail);
       setEmailError(error);
@@ -57,58 +71,89 @@ const LoginPage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(''); 
+    setEmailError('');
     
-    // Reset errors
-    setError('');
-    
+    // Prevent multiple submissions if already loading
+    if (isLoading) return;
+
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email);
-    const sanitizedPassword = password; // Don't trim passwords as spaces might be intentional
-    
-    // Validation
+    const sanitizedPassword = password; // allow spaces in password
+
+    // Basic required checks
     if (!sanitizedEmail || !sanitizedPassword) {
       setError('Please enter both email and password.');
       return;
     }
-    
+
     // Email format validation
     const { isValid, error: validationError } = validateEmail(sanitizedEmail);
     if (!isValid) {
       setEmailError(validationError);
       return;
     }
-    
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { 
-        email: sanitizedEmail, 
-        password: sanitizedPassword 
+      setIsLoading(true); // Start loading
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+        email: sanitizedEmail,
+        password: sanitizedPassword,
       });
-      
+
       if (response.status === 200) {
+        // Successful login
         console.log('Login successful');
         login(sanitizedEmail);
+        
+        // You can store email in localStorage if you want to remember next time
+        localStorage.setItem('user_email', sanitizedEmail);
+        
         navigate('/dashboard');
-      }
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      if (error.response?.data?.message === 'Invalid email format') {
-        setEmailError('Invalid email format. Please check your email address.');
-      } else if (error.response?.status === 401) {
-        setError('Invalid email or password');
       } else {
-        setError('An error occurred during login. Please try again.');
+        // Unexpected status code:
+        setError('An unknown error occurred. Please try again.');
       }
+    } catch (err: any) {
+      console.error('Login failed:', err);
+
+      // Check if we have a server response
+      if (err.response) {
+        // Handle known error responses
+        const { status, data } = err.response;
+        
+        // 400: Usually means email not in the system or client-side error
+        if (status === 400) {
+          if (data.error?.includes("don't have an account")) {
+            setError("No account found with that email. Please sign up.");
+          } else {
+            setError(data.error || 'Bad Request. Please check your credentials.');
+          }
+        }
+        // 401: Unauthorized / Invalid password
+        else if (status === 401) {
+          setError('Invalid email or password. Please try again.');
+        }
+        // 500: Server error
+        else if (status === 500) {
+          setError('Internal server error. Please try again later.');
+        }
+        // Handle any other status code
+        else {
+          setError(data.error || 'An error occurred during login. Please try again.');
+        }
+      } else {
+        // No response from server or request never left
+        setError('Network error or server unreachable. Please check your connection.');
+      }
+    } finally {
+      setIsLoading(false); // End loading
     }
   };
 
   const handleOAuthLogin = (provider: string) => {
+    // Navigate user to OAuth login endpoint
     window.location.href = `${API_BASE_URL}/api/oauth/${provider}`;
-  };
-
-  // Add sanitization function
-  const sanitizeInput = (input: string): string => {
-    // Remove potentially dangerous characters and HTML tags
-    return input.replace(/<[^>]*>?/gm, '').trim();
   };
 
   return (
@@ -139,11 +184,12 @@ const LoginPage = () => {
               value={email}
               onChange={handleEmailChange}
               onBlur={() => {
-                if (email && !email.includes('@')) {
+                if (email && !validateEmail(email).isValid) {
                   setEmailError('Please enter a valid email address.');
                 }
               }}
               placeholder="Enter your email"
+              disabled={isLoading}
             />
             {emailError && <p className={styles.fieldError}>{emailError}</p>}
           </div>
@@ -156,25 +202,35 @@ const LoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              disabled={isLoading}
             />
           </div>
 
-          <button type="submit" className={styles.buttonPrimary}>
-            <LogIn size={18} /> Login
+          <button
+            type="submit"
+            className={styles.buttonPrimary}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Logging in...' : (
+              <>
+                <LogIn size={18} /> Login
+              </>
+            )}
           </button>
         </form>
 
         <div className={styles.oauthContainer}>
           <p className={styles.orText}>Or continue with</p>
           <div className={styles.oauthButtons}>
-            <button 
+            <button
               type="button"
-              className={styles.oauthButton} 
+              className={styles.oauthButton}
               onClick={() => handleOAuthLogin('google')}
+              disabled={isLoading}
             >
-              <img src="/google.svg" alt="Google" className={styles.oauthIcon} /> Google
+              <img src="/google.svg" alt="Google" className={styles.oauthIcon} />
+              Google
             </button>
-
           </div>
         </div>
         
