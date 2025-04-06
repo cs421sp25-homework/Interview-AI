@@ -49,10 +49,10 @@ test.describe('Prompt Page', () => {
     await expect(page.getByRole('heading', { name: 'Interview Configurations' })).toBeVisible();
 
     // Check the loaded (mocked) configurations
-    // await expect(page.getByText('Technical Interview')).toBeVisible();
+    await expect(page.getByText('Technical Interview')).toBeVisible();
     await expect(page.getByText('Google')).toBeVisible();
 
-    await expect(page.getByText('Interview 2')).toBeVisible();
+    await expect(page.getByText('Behavioral Interview')).toBeVisible();
     await expect(page.getByText('Amazon')).toBeVisible();
   });
 
@@ -60,7 +60,7 @@ test.describe('Prompt Page', () => {
   // 2) Select a Configuration
   // -------------------------------------------------------------------
   test('should select a configuration', async ({ page }) => {
-    await page.getByText('Interview 2').first().click();
+    await page.getByText('Behavioral Interview').first().click();
     
     // "Start Interview" button should now be enabled
     const startButton = page.getByRole('button', { name: 'Start Interview with Selected Configuration' });
@@ -229,7 +229,7 @@ test.describe('Prompt Page', () => {
     });
     
     // Select the "Technical Interview"
-    await page.getByText('Interview 2').first().click();
+    await page.getByText('Technical Interview').first().click();
     
     // Click the start interview button
     await page.getByRole('button', { name: 'Start Interview with Selected Configuration' }).click();
