@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import InterviewMessage from '../components/InterviewMessage';
 import { Button } from 'antd';
 import { HeartOutlined } from '@ant-design/icons';
+import ChatBubble from '../components/ChatBubble';
 
 // 添加保存过渡动画组件
 const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
@@ -411,40 +412,12 @@ const InterviewPage: React.FC = () => {
       <div className={styles.chatInterface}>
         <div className={styles.chatContainer} ref={chatContainerRef}>
           {messages.map((message, index) => (
-            <div
+            <ChatBubble
               key={index}
-              className={`${styles.messageWrapper} ${
-                message.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
-              }`}
-            >
-              <div className={styles.avatarContainer}>
-                {message.sender === 'ai' ? (
-                  <div className={styles.botAvatar}>
-                    <Bot size={24} />
-                  </div>
-                ) : (
-                  <div className={styles.userAvatar}>
-                    {userPhotoUrl ? (
-                      <img src={userPhotoUrl} alt="User" />
-                    ) : (
-                      <div className={styles.defaultUserAvatar}>{userEmail.charAt(0).toUpperCase()}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-              {message.sender === 'ai' ? (
-                <InterviewMessage
-                  message={message}
-                  messageId={`${threadId}-${index}`}
-                  threadId={threadId || ''}
-                  isFirstMessage={index === 0}
-                />
-              ) : (
-                <div className={`${styles.message} ${styles.userMessage}`}>
-                  {message.text || <span>&nbsp;</span>}
-                </div>
-              )}
-            </div>
+              text={message.text}
+              sender={message.sender}
+              userPhotoUrl={userPhotoUrl}
+            />
           ))}
         </div>
         <div className={styles.inputContainer}>

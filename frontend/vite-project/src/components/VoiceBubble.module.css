@@ -1,0 +1,228 @@
+/* Container for the entire bubble */
+.bubbleContainer {
+  display: flex;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* User message appears on the right */
+.bubbleContainer.user {
+  justify-content: flex-end;
+}
+
+/* AI message appears on the left */
+.bubbleContainer.ai {
+  justify-content: flex-start;
+}
+
+/* Content wrapper for avatar and bubble */
+.messageContent {
+  display: flex;
+  max-width: 80%;
+}
+
+/* Reverse order for user messages */
+.bubbleContainer.user .messageContent {
+  flex-direction: row-reverse;
+}
+
+/* Avatar styling */
+.avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  margin: 0 8px;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+}
+
+.botAvatar, .userAvatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.botAvatar {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.userAvatar {
+  background-color: #ec4899;
+  color: white;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.defaultUserAvatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #ec4899;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* Bubble wrapper */
+.bubbleWrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100% - 52px); /* Account for avatar width + margin */
+}
+
+/* Row for the voice bubble to keep it in place */
+.bubbleRow {
+  display: flex;
+  flex-direction: row;
+}
+
+.bubbleContainer.user .bubbleRow {
+  justify-content: flex-end;
+}
+
+/* Voice bubble */
+.voiceBubble {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+  position: relative;
+  min-width: 120px;
+  max-width: fit-content;
+}
+
+/* AI bubble styling */
+.voiceBubble.aiVoiceBubble {
+  background: linear-gradient(45deg, #f3e8ff, #e0e7ff);
+  border: 1px solid #e9d5ff;
+  border-top-left-radius: 4px;
+}
+
+.voiceBubble.aiVoiceBubble:hover {
+  background: linear-gradient(45deg, #e9d5ff, #c7d2fe);
+}
+
+/* User bubble styling */
+.bubbleContainer.user .voiceBubble {
+  background-color: #ec4899;
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.bubbleContainer.ai .voiceBubble {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-top-left-radius: 4px;
+}
+
+/* Playing state */
+.voiceBubble.playing {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(236, 72, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
+  }
+}
+
+.voiceIcon {
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.duration {
+  font-size: 0.85rem;
+}
+
+/* Play hint */
+.playHint {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  animation: fadeInOut 5s forwards;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Text controls container */
+.textControls {
+  display: flex;
+  flex-direction: row;
+}
+
+.bubbleContainer.user .textControls {
+  justify-content: flex-end;
+}
+
+/* Toggle text button */
+.toggleTextButton {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  margin-top: 2px;
+}
+
+.toggleTextButton:hover {
+  text-decoration: underline;
+}
+
+.toggleTextLabel {
+  display: inline-block;
+}
+
+/* Message text */
+.messageText {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.bubbleContainer.user .messageText {
+  background-color: #fdf2f8;
+}

@@ -1,4 +1,3 @@
-// VoiceInterviewPage.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, X, Home, Bot, Loader, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -757,7 +756,7 @@ const VoiceInterviewPage: React.FC = () => {
       <div className={styles.chatInterface}>
         <div ref={chatContainerRef} className={styles.chatContainer}>
           {messages.map((msg, index) => {
-            // 如果是AI消息且尚未准备好，显示增强的加载UI
+            // If AI message is not ready, show loading UI
             if (msg.sender === 'ai' && !msg.isReady) {
               return (
                 <div
@@ -779,37 +778,16 @@ const VoiceInterviewPage: React.FC = () => {
               );
             }
 
-            // Otherwise, show a normal bubble
+            // Otherwise, show a normal bubble with the avatar inside
             return (
-              <div
-                key={index}
-                className={`${styles.messageWrapper} ${
-                  msg.sender === 'ai' ? styles.aiMessageWrapper : styles.userMessageWrapper
-                }`}
-              >
-                <div className={styles.avatarContainer}>
-                  {msg.sender === 'ai' ? (
-                    <div className={styles.botAvatar}>
-                      <Bot size={24} />
-                    </div>
-                  ) : (
-                    <div className={styles.userAvatar}>
-                      {userPhotoUrl ? (
-                        <img src={userPhotoUrl} alt="User" />
-                      ) : (
-                        <div className={styles.defaultUserAvatar}>
-                          {userEmail.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div key={index}>
                 <VoiceBubble
                   message={msg}
                   isPlaying={currentlyPlaying === index}
                   onPlay={() => handlePlayMessage(msg, index)}
                   onToggleText={() => toggleShowText(index)}
                   showText={!!showTextForMessage[index]}
+                  userPhotoUrl={userPhotoUrl}
                 />
               </div>
             );
