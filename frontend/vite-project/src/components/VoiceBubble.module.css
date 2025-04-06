@@ -47,8 +47,9 @@
 }
 
 .botAvatar {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  background-color: #ec4899;
+  color: white;
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.2);
 }
 
 .userAvatar {
@@ -102,8 +103,9 @@
   transition: all 0.2s ease;
   margin-bottom: 4px;
   position: relative;
-  min-width: 120px;
-  max-width: fit-content;
+  min-width: 160px;
+  max-width: 220px;
+  white-space: nowrap;
 }
 
 /* AI bubble styling */

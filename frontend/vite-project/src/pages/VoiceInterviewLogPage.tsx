@@ -309,32 +309,14 @@ import React, {
                   ${isUser ? styles.userMessageWrapper : styles.aiMessageWrapper}
                 `}
               >
-                {/* Avatar */}
-                <div className={styles.avatarContainer}>
-                  {isUser ? (
-                    <div className={styles.userAvatar}>
-                      {userPhotoUrl ? (
-                        <img src={userPhotoUrl} alt="User" />
-                      ) : (
-                        <div className={styles.defaultUserAvatar}>
-                          {localStorage.getItem('user_email')?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={styles.botAvatar}>
-                      <Bot size={24} />
-                    </div>
-                  )}
-                </div>
-  
-                {/* Voice bubble with fixed position */}
+                {/* Voice bubble with fixed position - contains its own avatar */}
                 <VoiceBubble
                   message={msg}
                   isPlaying={currentlyPlaying === index}
                   onPlay={() => handlePlayMessage(msg, index)}
                   onToggleText={() => toggleShowText(index)}
                   showText={!!showTextForMessage[index]}
+                  userPhotoUrl={userPhotoUrl}
                 />
               </div>
             );
