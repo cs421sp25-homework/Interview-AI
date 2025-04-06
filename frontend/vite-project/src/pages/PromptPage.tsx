@@ -290,7 +290,7 @@ const PromptPage = () => {
     <div className={styles.pageContainer} ref={pageRef}>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
-          <div className={styles.logo} onClick={() => navigate('/')}>
+          <div className={styles.logo} onClick={() => navigate('/dashboard')}>
             <Bot className={styles.logoIcon} />
             <span className={styles.logoText}>InterviewAI</span>
           </div>
