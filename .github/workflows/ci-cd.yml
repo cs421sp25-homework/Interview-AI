@@ -77,7 +77,7 @@ jobs:
       - name: Run Backend Tests
         run: |
           cd backend
-          python run_tests.py run
+          poetry run python run_tests.py run
 
       # 12. Install Playwright browsers (moved up from duplicate step).
       - name: Install Playwright Browsers
