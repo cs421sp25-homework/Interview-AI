@@ -98,7 +98,6 @@ const InterviewHistoryPage: React.FC = () => {
         return;
       }
       
-      // Continue with existing code
       fetchInterviewLogs();
     } catch (error) {
       console.error('Error in InterviewHistoryPage:', error);
@@ -342,22 +341,18 @@ const InterviewHistoryPage: React.FC = () => {
     try {
       console.log("Export button clicked", log);
       
-      // 检查是否有对话数据
       if (!log.log || (Array.isArray(log.log) && log.log.length === 0)) {
         message.warning('No conversation data found for export');
         return;
       }
       
-      // 确保conversation是数组
       const conversationData = Array.isArray(log.log) ? log.log : 
                               typeof log.log === 'string' ? JSON.parse(log.log) : [];
       
       console.log("Conversation data:", conversationData);
 
-      // 显示加载消息
       message.loading('Preparing export...', 0.5);
 
-      // 获取完整的详细数据（与Details页面相同）
       let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
       let improvementAreas = ["Consider providing more specific examples", "Work on structuring responses"];
       let specificFeedback = "Performance data available for this interview.";
@@ -366,7 +361,6 @@ const InterviewHistoryPage: React.FC = () => {
       try {
         console.log("Fetching complete details for ID:", log.id);
         
-        // 获取分数数据
         const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
         if (scoresResponse.ok) {
           const scoresData = await scoresResponse.json();
@@ -384,7 +378,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取优势数据
         const strengthsResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_strengths/${log.id}`);
         if (strengthsResponse.ok) {
           const strengthsData = await strengthsResponse.json();
@@ -393,7 +386,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取改进领域数据
         const improvementResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_improvement_areas/${log.id}`);
         if (improvementResponse.ok) {
           const improvementData = await improvementResponse.json();
@@ -402,7 +394,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取具体反馈数据
         const feedbackResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_specific_feedback/${log.id}`);
         if (feedbackResponse.ok) {
           const feedbackData = await feedbackResponse.json();
@@ -412,10 +403,8 @@ const InterviewHistoryPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to fetch complete details for export:', err);
-        // 继续导出，但使用默认值
       }
 
-      // 创建导出数据对象
       const exportData = {
         interview: {
           title: log.title || 'Unnamed Interview',
@@ -438,7 +427,6 @@ const InterviewHistoryPage: React.FC = () => {
         }
       };
 
-      // 直接导出为PDF
       try {
         console.log("Starting PDF export with complete data");
         exportToPDF(exportData);
@@ -681,9 +669,7 @@ const InterviewHistoryPage: React.FC = () => {
       sortDirections: ['ascend', 'descend', null] as SortOrder[],
       defaultSortOrder: 'descend' as const,
       render: (date: string) => {
-        try {
-          // console.log("Rendering date:", date);
-          
+        try {          
           const formattedTime = formatToEasternTime(date);
           
           return (
@@ -750,7 +736,7 @@ const InterviewHistoryPage: React.FC = () => {
             type="link" 
             className={`${styles.actionButtonWithLabel} ${styles.favoritesButton}`}
             onClick={(e) => {
-              e.stopPropagation(); // 阻止事件冒泡
+              e.stopPropagation(); 
               handleViewFavorites(record);
             }}
           >
@@ -866,10 +852,6 @@ const InterviewHistoryPage: React.FC = () => {
           }}
           className={styles.historyTable}
           locale={{ emptyText: 'No interview history found' }}
-          onChange={(pagination, filters, sorter, extra) => {
-            // console.log('Table params changed:', sorter);
-            // 可以在这里添加额外的排序逻辑
-          }}
         />
       </div>
       
@@ -904,15 +886,10 @@ const InterviewHistoryPage: React.FC = () => {
               <Title level={4}>{selectedLog.title}</Title>
               <Text type="secondary">
                 {(() => {
-                  try {
-                    // console.log("Modal date:", selectedLog.updated_at || selectedLog.date);
-                    
-                    // 使用工具函数处理时区
+                  try {                    
                     const dateStr = selectedLog.updated_at || selectedLog.date;
                     const formattedTime = formatToEasternTime(dateStr);
-                    
-                    // 对于模态框，我们希望月份为完整名称
-                    // 重新格式化日期部分为带有完整月份名称的形式
+
                     const dateObj = new Date(dateStr);
                     if (!isNaN(dateObj.getTime())) {
                       const fullFormatter = new Intl.DateTimeFormat('en-US', {

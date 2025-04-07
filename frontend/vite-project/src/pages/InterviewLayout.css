@@ -1,4 +1,3 @@
-/* Sider styles */
 .interview-sider {
   background: #ec4899 !important;
 }
@@ -11,7 +10,6 @@
   font-weight: bold;
 }
 
-/* Button styles */
 .add-button {
   width: 80%;
   margin: 10px auto;
@@ -38,7 +36,6 @@
   color: white !important;
 }
 
-/* Header styles */
 .app-title {
   margin: 0;
   color: #ec4899;
@@ -54,7 +51,6 @@
   gap: 8px;
 }
 
-/* Modal styles */
 .config-modal {
   top: 20px;
 }
@@ -86,7 +82,6 @@
   color: #ec4899;
 }
 
-/* Config button styles */
 .config-button {
   cursor: pointer;
   padding: 8px 12px;
@@ -105,7 +100,6 @@
   color: #ec4899 !important;
 }
 
-/* Menu styles */
 .interview-menu {
   background: #ec4899 !important;
 }
@@ -123,7 +117,6 @@
   color: white !important;
 }
 
-/* Content styles */
 .main-content {
   margin: 24px 16px;
   padding: 24px;
@@ -132,7 +125,6 @@
   height: calc(100vh - 112px);
 }
 
-/* Form styles */
 .config-form {
   max-width: 500px;
   margin: 0 auto;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
-import { SearchOutlined, DeleteOutlined, LeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './FavoriteQuestionsPage.module.css';
@@ -27,7 +27,6 @@ const FavoritesPage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
   const [loadingSession, setLoadingSession] = useState<number | null>(null);
   const [transitioning, setTransitioning] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState("Loading session...");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,25 +50,20 @@ const FavoritesPage: React.FC = () => {
   }, [favorites, searchText, typeFilter]);
 
   const parseQuestion = (text: string): string => {
-    // Split the text into sentences
     const sentences = text.split(/[.!?]+/);
     
-    // Find all sentences that are followed by a question mark
     const questions = sentences.filter((sentence) => {
       const trimmedSentence = sentence.trim();
       if (!trimmedSentence) return false;
       
-      // Get the text after this sentence
       const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
       return textAfterSentence.startsWith('?');
     });
     
-    // If no questions found, return the last sentence with a question mark
     if (questions.length === 0) {
       return sentences[sentences.length - 1].trim() + '?';
     }
     
-    // Return all questions joined with line breaks
     return questions.map(q => q.trim() + '?').join('\n');
   };
 
@@ -91,17 +85,13 @@ const FavoritesPage: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log('Fetched favorites:', data);
       
       if (data && Array.isArray(data.data)) {
         // Get a list of session IDs to check
         const sessionIds = data.data.map((fav: FavoriteQuestion) => fav.session_id);
         const uniqueSessionIds = [...new Set(sessionIds)] as string[];
         
-        // Map to track session type
         const sessionTypesMap: Record<string, 'voice' | 'text'> = {};
-        
-        // Map to track the correct question_type for each session
         const questionTypesMap: Record<string, string> = {};
         
         // First check regular interview logs
@@ -109,12 +99,8 @@ const FavoritesPage: React.FC = () => {
           const logsResponse = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
           if (logsResponse.ok) {
             const logsData = await logsResponse.json();
-            console.log('Fetched interview logs data:', logsData);
             
-            if (logsData && Array.isArray(logsData.data)) {
-              // Debugging
-              console.log('Session IDs we are looking for:', uniqueSessionIds);
-              
+            if (logsData && Array.isArray(logsData.data)) {              
               logsData.data.forEach((log: any) => {
                 const threadId = log.thread_id as string;
                 
@@ -124,22 +110,15 @@ const FavoritesPage: React.FC = () => {
                                   log.question_type?.toLowerCase() === 'technical';
                 
                 if (threadId && uniqueSessionIds.includes(threadId)) {
-                  // Set interview type (voice or text)
                   sessionTypesMap[threadId] = log.interview_type?.toLowerCase() === 'voice' ? 'voice' : 'text';
                   
-                  // Determine question type with priority for 'technical'
                   if (isTechnical) {
                     questionTypesMap[threadId] = 'technical';
-                    console.log(`Detected technical interview for ${threadId} based on name/config`);
                   } else if (log.question_type) {
                     questionTypesMap[threadId] = log.question_type.toLowerCase();
-                    console.log(`Using original question type for ${threadId}:`, log.question_type.toLowerCase());
                   }
                 }
               });
-              
-              console.log('Final session types:', sessionTypesMap);
-              console.log('Final question types:', questionTypesMap);
             }
           }
         } catch (error) {
@@ -173,15 +152,7 @@ const FavoritesPage: React.FC = () => {
         
         const transformedFavorites = data.data.map((favorite: FavoriteQuestion) => {
           const sessionId = favorite.session_id;
-          
-          // Get the question type from the session mapping
           const sessionQuestionType = questionTypesMap[sessionId];
-          
-          // For the question type, prioritize:
-          // 1. The type from the original session (from logs)
-          // 2. If the question text contains technical keywords, mark as technical
-          // 3. The favorite's saved question_type
-          // 4. Unknown as last resort
           let finalQuestionType = sessionQuestionType;
           
           // If we don't have a session type, check if the question appears technical
@@ -194,7 +165,6 @@ const FavoritesPage: React.FC = () => {
             const hasTechnicalKeyword = technicalKeywords.some(keyword => questionLower.includes(keyword));
             
             if (hasTechnicalKeyword) {
-              console.log(`Detected technical question for ${sessionId} based on content:`, favorite.question_text.substring(0, 50));
               finalQuestionType = 'technical';
             }
           }
@@ -203,13 +173,6 @@ const FavoritesPage: React.FC = () => {
           if (!finalQuestionType) {
             finalQuestionType = favorite.question_type?.toLowerCase() || 'unknown';
           }
-          
-          console.log(`Final type for session ${sessionId}:`, {
-            original_type: favorite.question_type,
-            session_type: sessionQuestionType,
-            content_analysis: !sessionQuestionType && favorite.question_text ? "performed" : "skipped",
-            final_type: finalQuestionType
-          });
           
           return {
             id: favorite.id,
@@ -298,7 +261,6 @@ const FavoritesPage: React.FC = () => {
 
   const handleViewSession = async (record: FavoriteQuestion) => {
     try {
-      // 设置当前问题ID为加载状态
       setLoadingSession(record.id);
       
       const userEmail = localStorage.getItem('user_email');
@@ -323,12 +285,9 @@ const FavoritesPage: React.FC = () => {
       if (matchingLog && matchingLog.log) {
         const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
         
-        // 开始页面过渡动画
         setTransitioning(true);
         
-        // 使用较短的延迟，保持用户体验流畅
         setTimeout(() => {
-          // 导航到目标页面
           navigate(`/interview/view/${record.session_id}`, { 
             state: { 
               conversation, 
@@ -366,7 +325,6 @@ const FavoritesPage: React.FC = () => {
     } catch (error) {
       console.error('Error loading interview session:', error);
       message.error('Failed to load interview session');
-      // 重置加载状态
       setLoadingSession(null);
       setTransitioning(false);
     }
@@ -485,7 +443,6 @@ const FavoritesPage: React.FC = () => {
 
   return (
     <div className={`${styles.interviewContainer} ${transitioning ? styles.pageTransition : ''}`}>
-      {/* 简化的过渡覆盖层 */}
       {transitioning && (
         <div className={styles.transitionOverlay}>
           <div className={styles.transitionContent}>

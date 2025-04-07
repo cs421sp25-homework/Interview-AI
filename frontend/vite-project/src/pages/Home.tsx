@@ -37,14 +37,11 @@ const Card = ({ children, className }: CardProps) => {
 const Home = () => {
   const navigate = useNavigate();
 
-  // Example of a small error boundary approach
-  // (If you ever add any async calls or complex logic here)
   const safeNavigate = (path: string) => {
     try {
       navigate(path);
     } catch (error) {
       console.error('Navigation failed:', error);
-      // You could display an error dialog or fallback UI here
       alert('Something went wrong navigating to that page. Please try again.');
     }
   };

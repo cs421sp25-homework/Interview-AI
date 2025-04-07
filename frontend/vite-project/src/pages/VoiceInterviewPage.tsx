@@ -448,7 +448,6 @@ const VoiceInterviewPage: React.FC = () => {
       
       const ttsData = await ttsResponse.json();
   
-      // 更新消息对象
       const updatedAiMessage = { 
         ...aiMessage, 
         text: realAiText,
@@ -458,14 +457,12 @@ const VoiceInterviewPage: React.FC = () => {
         isReady: true 
       };
       
-      // 更新消息状态
       setMessages(prev =>
         prev.map(msg =>
           msg === aiMessage ? updatedAiMessage : msg
         )
       );
       
-      // 使用新的播放函数
       await playAudio(ttsData.audio_url);
 
     } catch (error) {
@@ -477,16 +474,11 @@ const VoiceInterviewPage: React.FC = () => {
 
   // End interview
   const handleEndInterview = async () => {
-    // 防止多次点击触发多次请求
     if (isSaving) return;
     
-    // 设置保存状态
     setIsSaving(true);
-    
-    // 显示保存动画
     setShowSavingOverlay(true);
     
-    // 首先停止所有音频播放
     stopAllAudios();
     
     try {
@@ -494,7 +486,6 @@ const VoiceInterviewPage: React.FC = () => {
       
       const finalMessages = messages.map(msg => ({
         ...msg,
-        // Ensure all audio references are included
         ...(msg.audioUrl ? { 
           audioUrl: msg.audioUrl,
           storagePath: msg.storagePath,
@@ -505,33 +496,26 @@ const VoiceInterviewPage: React.FC = () => {
       await saveChatHistory(threadId!, finalMessages);
       message.success('Interview saved successfully');
       
-      // 短暂延迟以显示保存动画
       setTimeout(() => {
-        // 隐藏保存动画
         setShowSavingOverlay(false);
-        // 保存后导航到查看页面
         navigate(`/dashboard`);
       }, 800);
     } catch (error) {
       console.error('Error ending interview:', error);
       message.error('Failed to save interview');
-      // 如果出错，重置保存状态，让用户可以重试
       setIsSaving(false);
       setShowSavingOverlay(false);
     }
   };
 
   const handleBackToDashboard = () => {
-    // 直接调用 handleEndInterview 函数，确保音频停止和保存逻辑执行
     handleEndInterview();
     stopAllAudios();
     navigate("/dashboard");
   };
 
-  // 在组件卸载时确保所有音频都被停止并保存数据
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // 如果有未保存的数据，显示确认提示
       if (messages.length > 1 && !isSaving) {
         e.preventDefault();
         e.returnValue = '您有未保存的面试数据，确定要离开吗？';
@@ -539,25 +523,19 @@ const VoiceInterviewPage: React.FC = () => {
       }
     };
 
-    // 添加页面关闭前的事件监听
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      // 移除事件监听
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      // 确保所有音频停止播放
       stopAllAudios();
       
-      // 停止媒体录音（如果正在录制）
       if (mediaRecorderRef.current?.state !== 'inactive') {
         mediaRecorderRef.current?.stop();
         mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
       }
       
-      // 如果有面试数据且没有正在保存中，尝试保存
       if (threadId && messages.length > 1 && !isSaving) {
-        // 尝试同步保存（注意：这可能不会完全执行，因为页面可能已经在卸载）
         try {
           const finalMessages = messages.map(msg => ({
             ...msg,
@@ -568,7 +546,6 @@ const VoiceInterviewPage: React.FC = () => {
             } : {})
           }));
           
-          // 使用 sendBeacon API 尝试在页面关闭时发送保存请求
           const data = {
             thread_id: threadId,
             email: userEmail,
@@ -586,12 +563,10 @@ const VoiceInterviewPage: React.FC = () => {
     };
   }, [threadId, messages, stopAllAudios, userEmail, config_name, config_id, isSaving]);
 
-  // 修改初始化音频上下文的逻辑 - 自动初始化
   const initializeAudio = useCallback(() => {
     if (audioInitialized) return;
     
     try {
-      // 创建一个静音的音频上下文来初始化
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const silenceBuffer = audioContext.createBuffer(1, 1, 22050);
       const source = audioContext.createBufferSource();
@@ -602,7 +577,6 @@ const VoiceInterviewPage: React.FC = () => {
       setAudioInitialized(true);
       console.log('Audio context initialized successfully');
       
-      // 播放队列中等待的音频
       if (pendingAudioQueue.current.length > 0) {
         const next = pendingAudioQueue.current.shift();
         if (next) {
@@ -614,19 +588,15 @@ const VoiceInterviewPage: React.FC = () => {
     }
   }, [audioInitialized, handlePlayMessage, messages]);
 
-  // 组件挂载时自动尝试初始化
   useEffect(() => {
-    // 第一次尝试自动初始化
     initializeAudio();
     
-    // 仍然保留用户交互事件作为备用初始化机制
     const handleUserInteraction = () => {
       if (!audioInitialized) {
         initializeAudio();
       }
     };
     
-    // 添加用户交互事件监听作为备用
     ['click', 'touchstart', 'keydown'].forEach(event => {
       document.addEventListener(event, handleUserInteraction, { once: true });
     });
@@ -638,10 +608,8 @@ const VoiceInterviewPage: React.FC = () => {
     };
   }, [initializeAudio, audioInitialized]);
 
-  // 修改播放音频的函数
   const playAudio = async (audioUrl: string) => {
     try {
-      // 如果音频还未初始化，先将音频加入等待队列
       if (!audioInitialized) {
         const index = messages.length - 1;
         pendingAudioQueue.current.push({ url: audioUrl, index });
@@ -649,21 +617,17 @@ const VoiceInterviewPage: React.FC = () => {
         return null;
       }
       
-      // 创建音频元素
       const audio = new Audio(audioUrl);
       audioRefs.current.push(audio);
       
-      // 设置 AI 正在说话
       setIsAISpeaking(true);
       
-      // 添加结束事件处理
       audio.onended = () => {
         setIsAISpeaking(false);
         setCurrentlyPlaying(null);
         audioRefs.current = audioRefs.current.filter(a => a !== audio);
       };
       
-      // 添加错误处理
       audio.onerror = (e) => {
         console.error('Audio playback error:', e);
         setIsAISpeaking(false);
@@ -672,18 +636,15 @@ const VoiceInterviewPage: React.FC = () => {
         message.error('Failed to play AI response');
       };
       
-      // 尝试播放
       try {
         const index = messages.length - 1;
         setCurrentlyPlaying(index);
         
-        // play() 返回一个 Promise
         await audio.play();
         console.log('Audio playback started successfully');
       } catch (playError) {
         console.warn('Autoplay prevented by browser:', playError);
         
-        // 如果自动播放失败，提供静默反馈
         console.log('Click on AI message to play the response');
         setIsAISpeaking(false);
         setCurrentlyPlaying(null);
@@ -724,7 +685,6 @@ const VoiceInterviewPage: React.FC = () => {
 
   return (
     <div className={styles.interviewContainer}>
-      {/* 保存动画覆盖层 */}
       <SavingOverlay isVisible={showSavingOverlay} />
       
       <div className={styles.interviewHeader}>
