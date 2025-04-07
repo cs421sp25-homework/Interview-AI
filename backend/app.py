@@ -1,10 +1,10 @@
+import re
+import traceback
 import uuid
-from models.config_model import Interview
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
-from flask import Flask, request, jsonify, redirect, send_file
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
-import requests
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -18,9 +18,6 @@ from services.config_service import ConfigService
 from services.chat_history_service import ChatHistoryService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
-from services.chat_service import ChatService
-from models.profile_model import Profile
-from models.resume_model import ResumeData
 from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
 from services.authorization_service import AuthorizationService
@@ -28,18 +25,21 @@ from supabase import create_client
 from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
 from utils.speech_2_text import speech_to_text
-from utils.audio_conversion import convert_to_wav
 import json
 from llm.llm_interface import LLMInterface
 import time
 
-
-# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-# 修改CORS配置，使用更宽松的设置允许所有请求
-CORS(app, origins="*", supports_credentials=True, allow_headers=["Content-Type", "Authorization"])
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 app.register_error_handler(400, handle_bad_request)
 
@@ -70,7 +70,6 @@ def profile():
     return jsonify(data)
 
 
-
 @app.route('/api/signup', methods=['POST'])
 def signup():
     """
@@ -84,7 +83,6 @@ def signup():
         data = request.form.to_dict()
         resume_file = request.files['resume']
 
-        # Validate file
         validate_file(resume_file, allowed_types=['application/pdf'])
 
         # Upload resume
@@ -108,7 +106,6 @@ def signup():
         # Create profile
         result = profile_service.create_profile(profile_data)
 
-        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
             "profile": result.get("data", {})
@@ -117,7 +114,6 @@ def signup():
         print(f"Signup error: {str(e)}")
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
     
-
 
 @app.route('/api/oauth/signup', methods=['POST'])
 def oauth_signup():
@@ -132,15 +128,12 @@ def oauth_signup():
         data = request.form.to_dict()
         resume_file = request.files['resume']
 
-        # Validate file
         validate_file(resume_file, allowed_types=['application/pdf'])
 
-        # Upload resume
         file_path = f"{data['email']}/{resume_file.filename}"
         storage_service.upload_file('resumes', file_path, resume_file.read(), resume_file.content_type)
         file_url = storage_service.get_public_url('resumes', file_path)
 
-        # Process resume
         resume_file.seek(0)
         extraction_result = resume_service.process_resume(resume_file)
 
@@ -156,7 +149,6 @@ def oauth_signup():
         # Create profile
         result = profile_service.create_oauth_profile(profile_data)
         
-        # result 已经是可序列化的字典
         return jsonify({
             "message": "Signup successful",
             "profile": result.get("data", {})
@@ -166,8 +158,6 @@ def oauth_signup():
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
 
 
-
-
 @app.route('/api/config/<email>', methods=['GET'])
 def get_config(email):
     """
@@ -175,7 +165,7 @@ def get_config(email):
     """
     try:
         print(f"email: {email}")
-        configs = config_service.get_configs(email)  # Now returns a list
+        configs = config_service.get_configs(email)
         print(f"configs: {configs}")
 
         if not configs:
@@ -204,18 +194,14 @@ def get_profile(email):
     try:
         profile = profile_service.get_profile(email)
 
-        
-
         if not profile:
             return jsonify({"error": "User not found"}), 404
-        # print(f"model dumped profile: {profile.model_dump()}")
 
         print(f"profile get")
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
         }), 200
-    
 
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 401
@@ -230,9 +216,7 @@ def get_profile(email):
 def update_profile(email):
     try:
         data = request.json
-        print("Received data:")
 
-        # Call the service to update the profile
         updated_profile = profile_service.update_profile(email, data)
         if not updated_profile:
             return jsonify({"error": "User not found or failed to update"}), 404
@@ -282,10 +266,8 @@ def parse_resume():
         print("Received resume file:", resume_file.filename)
         print("File content type:", resume_file.content_type)
 
-        # Validate file
         validate_file(resume_file, allowed_types=['application/pdf'])
 
-        # Process resume
         extraction_result = resume_service.process_resume(resume_file)
         extraction_dict = extraction_result.model_dump()
 
@@ -311,12 +293,10 @@ def upload_image():
 
         print(f"Uploading image for email: {email}")
 
-        # Validate file
         validate_file(image_file, allowed_types=['image/jpeg', 'image/png', 'image/gif'])
 
         print(f"Image validated")
 
-        # Upload image
         file_path = f"{email}/{image_file.filename}"
         storage_service.upload_file('profile_pics', file_path, image_file.read(), image_file.content_type)
 
@@ -330,7 +310,6 @@ def upload_image():
         }), 200
     except Exception as e:
         return jsonify({"error": "Failed to upload image", "message": str(e)}), 500
-
 
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -369,10 +348,7 @@ def oauth_login(provider):
         # Set the redirect to our backend callback endpoint
         callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
         print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
-        print(f"Code verifier: {code_verifier}")
-        print(f"Code challenge: {code_challenge}")
         
-        # First get the response
         response = supabase.auth.sign_in_with_oauth(
             {
                 "provider": "google",
@@ -394,12 +370,43 @@ def oauth_login(provider):
         }), 500
 
 
+@app.route('/api/oauth/email', methods=['GET'])
+def get_oauth_email():
+    try:
+        # Get session ID from query params if available
+        session_id = request.args.get('session_id')
+        
+        user = None
+        
+        # If session_id is provided, use it to get the user
+        if session_id:
+            # Get user from session
+            user = authorization_service.get_user_from_session(session_id)
+        else:
+            # Try to get user from cookies or other auth methods
+            user = authorization_service.get_current_user()
+        
+        if not user:
+            # For testing/development, return a dummy email
+            if app.debug:
+                return jsonify({"email": "test@example.com"}), 200
+            return jsonify({"error": "No authenticated user found"}), 401
+            
+        return jsonify({"email": user.email}), 200
+        
+    except Exception as e:
+        print(f"Error getting OAuth email: {str(e)}")
+        # For testing/development, return a dummy email
+        if app.debug:
+            return jsonify({"email": "test@example.com"}), 200
+        return jsonify({"error": "Failed to get OAuth email"}), 500
+
+
 @app.route('/api/auth/callback', methods=['GET'])
 def auth_callback():
     try:
         print(f"Request received at callback endpoint")
         
-        # Get the code from the request URL
         code = request.args.get('code')
         print(f"Code from query params: {code}")
 
@@ -413,7 +420,6 @@ def auth_callback():
             if not result or not result.session:
                 return jsonify({"error": "Failed to exchange code for session"}), 400
             
-            # Get user info and redirect to frontend
             user = result.user
             email = user.email
             is_new_user = True
@@ -423,16 +429,14 @@ def auth_callback():
             print(f"email: {email}")
             return redirect(f"{os.getenv('FRONTEND_URL')}/#/auth/callback?email={email}&is_new_user={is_new_user}")
 
-
-
         except Exception as exchange_error:
             print(f"Exchange error: {str(exchange_error)}")
-            # Redirect to frontend for client-side handling
             return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?code={code}")
         
     except Exception as e:
         print(f"Auth callback error: {str(e)}")
         return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?error={str(e)}")
+
 
 @app.route("/api/new_chat", methods=["POST"])
 def new_chat():
@@ -449,7 +453,6 @@ def new_chat():
 
     print(f"get_single_config result: {config_row}")
     
-    config_id = config_row.get("id")
     company_name = config_row.get("company_name", "our company")
     interview_name = config_row.get("interview_name", name)
     question_type = config_row.get("question_type", "")
@@ -458,27 +461,23 @@ def new_chat():
     # Extract user profile information from request
     user_profile = data.get("userProfile", {})
     
-    # Format resume information from user profile
     resume_text = ""
     if user_profile:
-        # Format personal information
+
         full_name = f"{user_profile.get('first_name', '')} {user_profile.get('last_name', '')}".strip()
         if full_name:
             resume_text += f"Name: {full_name}\n"
         
-        # Format job title
         job_title = user_profile.get('job_title', '')
         if job_title:
             resume_text += f"Current Title: {job_title}\n"
         
-        # Format skills
         skills = user_profile.get('key_skills', [])
         if skills:
             if isinstance(skills, str):
                 skills = [s.strip() for s in skills.split(',')]
             resume_text += f"Skills: {', '.join(skills)}\n"
         
-        # Format education history
         education = user_profile.get('education_history', [])
         if education:
             resume_text += "\nEducation:\n"
@@ -490,7 +489,6 @@ def new_chat():
                     if institution or degree:
                         resume_text += f"- {institution}, {degree} {dates}\n"
         
-        # Format work experience
         experience = user_profile.get('resume_experience', [])
         if experience:
             resume_text += "\nWork Experience:\n"
@@ -510,7 +508,7 @@ def new_chat():
         language=config_row.get("interviewer_language", "English"),
         job_description=job_description,
         company_name=company_name,
-        interviewee_resume=resume_text,  # Pass formatted resume to interviewer
+        interviewee_resume=resume_text,
     )
 
     thread_id = str(uuid.uuid4())
@@ -608,6 +606,7 @@ Remember: Each question should show you've carefully listened to their previous 
         "response": welcome_message
     })
 
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """
@@ -620,9 +619,6 @@ def chat():
     data = request.get_json()
     thread_id = data.get("thread_id")
     user_input = data.get("message", "")
-    user_email = data.get("email", "")
-    config_name = data.get("config_name", "Interview Session")
-    config_id = data.get("config_id")
 
     if not thread_id:
         return jsonify({"error": "Missing 'thread_id' in request."}), 400
@@ -641,6 +637,7 @@ def chat():
         return jsonify({"response": wrap_up_message, "ended": True})
     else:
         return jsonify({"response": next_ai_response, "ended": False})
+
 
 @app.route("/api/chat_history", methods=["POST"])
 def save_chat_history():
@@ -708,37 +705,6 @@ def save_chat_history():
     
     return jsonify({"success": True})
 
-@app.route('/api/oauth/email', methods=['GET'])
-def get_oauth_email():
-    try:
-        # Get session ID from query params if available
-        session_id = request.args.get('session_id')
-        
-        user = None
-        
-        # If session_id is provided, use it to get the user
-        if session_id:
-            # Get user from session
-            user = authorization_service.get_user_from_session(session_id)
-        else:
-            # Try to get user from cookies or other auth methods
-            user = authorization_service.get_current_user()
-        
-        if not user:
-            # For testing/development, return a dummy email
-            if app.debug:
-                return jsonify({"email": "test@example.com"}), 200
-            return jsonify({"error": "No authenticated user found"}), 401
-            
-        return jsonify({"email": user.email}), 200
-        
-    except Exception as e:
-        print(f"Error getting OAuth email: {str(e)}")
-        # For testing/development, return a dummy email
-        if app.debug:
-            return jsonify({"email": "test@example.com"}), 200
-        return jsonify({"error": "Failed to get OAuth email"}), 500
-    
 
 @app.route('/api/get_interview_configs/<email>', methods=['GET'])
 def get_interview_config(email):
@@ -750,7 +716,7 @@ def get_interview_config(email):
         print(f"Error getting configs: {str(e)}")
         # Return empty array instead of error
         return jsonify([]), 200
-
+    
 
 @app.route('/api/create_interview_config', methods=['POST'])
 def create_interview_config():
@@ -852,17 +818,11 @@ def delete_chat_history_by_id(id):
 
         thread_id = result.data[0].get('thread_id')
 
-        # Delete associated performance records (new table dependency)
         supabase.table('interview_performance').delete().eq('interview_id', id).execute()
-
-        # Delete the interview log record
         supabase.table('interview_logs').delete().eq('id', id).execute()
 
-        # Also delete associated chat history if available
         if thread_id:
             chat_history_service.delete_chat_history(thread_id)
-            
-            # Delete all favorite questions associated with this session
             supabase.table('interview_questions').delete().eq('session_id', thread_id).execute()
 
         return jsonify({
@@ -874,52 +834,52 @@ def delete_chat_history_by_id(id):
         print(f"Error deleting interview log: {str(e)}")
         return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
 
-# @app.route('/api/text2speech', methods=['POST'])
-# def api_text2speech():
-#     """
-#     Convert text to speech with duration estimation
-#     """
-#     try:
-#         data = request.get_json()
-#         if not data or 'text' not in data:
-#             return jsonify({
-#                 "error": "Invalid request",
-#                 "message": "Text field is required"
-#             }), 400
 
-#         text = data['text']
-#         voice = data.get('voice', 'alloy')
-#         speed = float(data.get('speed', 1.0))
+@app.route('/api/chat_history/<int:chat_id>', methods=['GET'])
+def get_chat_history_by_id(chat_id):
+    """
+    Retrieves a single interview log record from Supabase
+    by its numeric primary key (id), then merges 'log' + 'audio_metadata'
+    into a single list of messages.
+    """
+    try:
+        # 1) Query your 'interview_logs' table in Supabase
+        result = supabase.table('interview_logs').select('*').eq('id', chat_id).execute()
+        if not result.data or len(result.data) == 0:
+            return jsonify({"error": "Interview log not found"}), 404
         
-#         audio_io, duration = text_to_speech(
-#             text=text,
-#             voice=voice,
-#             speed=speed
-#         )
-        
-#         filename = f"tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
-        
-#         response = send_file(
-#             audio_io,
-#             mimetype="audio/mpeg",
-#             as_attachment=False,
-#             download_name=filename
-#         )
-        
-#         # Add duration to headers
-#         response.headers['X-Audio-Duration'] = str(duration)
-#         return response
+        row = result.data[0]
 
-#     except ValueError as e:
-#         return jsonify({
-#             "error": "Invalid input",
-#             "message": str(e)
-#         }), 400
-#     except Exception as e:
-#         return jsonify({
-#             "error": "Conversion failed",
-#             "message": str(e)
-#         }), 500
+        # 2) Parse the "log" column (text messages)
+        text_messages = []
+        if row.get('log'):
+            text_messages = json.loads(row['log'])  # e.g., a list of { text, sender, ... }
+
+        # 3) Parse the "audio_metadata" column (audio info)
+        audio_metadata = []
+        if row.get('audio_metadata'):
+            audio_metadata = json.loads(row['audio_metadata'])
+            # e.g. [ { "audioUrl": "https://...", "storagePath": "..." }, ... ]
+
+        # 4) Merge them by index, if they line up 1-to-1
+        combined_messages = []
+        for i, txt_msg in enumerate(text_messages):
+            audio_info = audio_metadata[i] if i < len(audio_metadata) else {}
+            combined_messages.append({
+                **txt_msg,
+                "audioUrl": audio_info.get("audioUrl", txt_msg.get("audioUrl")),
+                "storagePath": audio_info.get("storagePath", txt_msg.get("storagePath"))
+            })
+
+        return jsonify({
+            "id": row["id"],
+            "messages": combined_messages
+        }), 200
+
+    except Exception as e:
+        print(f"Error retrieving chat history {chat_id}: {e}")
+        return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
+
 
 @app.route('/api/text2speech/<email>', methods=['POST'])
 def api_text2speech(email):
@@ -946,7 +906,6 @@ def api_text2speech(email):
             speed=speed
         )
 
-        # Store audio in Supabase
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_path = f"{email}/ai_{timestamp}.mp3"
 
@@ -976,44 +935,6 @@ def api_text2speech(email):
             "message": str(e)
         }), 500
     
-# @app.route('/api/speech2text', methods=['POST'])
-# def api_speech2text():
-#     """
-#     Convert speech to text with enhanced error handling
-#     """
-#     try:
-#         if 'audio' not in request.files:
-#             return jsonify({
-#                 "error": "Missing file",
-#                 "message": "Audio file is required"
-#             }), 400
-
-#         audio_file = request.files['audio']
-#         if audio_file.filename == '':
-#             return jsonify({
-#                 "error": "Empty file",
-#                 "message": "No audio file selected"
-#             }), 400
-
-#         # Limit file size (10MB)
-#         max_size = 10 * 1024 * 1024
-#         if request.content_length > max_size:
-#             return jsonify({
-#                 "error": "File too large",
-#                 "message": "Maximum size is 10MB"
-#             }), 400
-
-#         transcript = speech_to_text(audio_file.read())
-#         return jsonify({
-#             "transcript": transcript,
-#             "status": "success"
-#         }), 200
-
-#     except Exception as e:
-#         return jsonify({
-#             "error": "Conversion failed",
-#             "message": str(e)
-#         }), 500
 
 @app.route('/api/speech2text/<email>', methods=['POST'])
 def api_speech2text(email):
@@ -1086,7 +1007,6 @@ def generate_good_response():
     print(f"Received AI question: {ai_question}")
     print(f"Received user message: {user_message}")
 
-    # 添加一个人为的延迟来显示加载状态 (3 秒)
     time.sleep(3)
 
     # Build a prompt that adapts to question type
@@ -1156,7 +1076,6 @@ Your response:"""
     # Retrieve the last message's content as the enhanced response.
     good_response = response[-1].content
     
-    # 清理回答内容，移除可能的前缀内容
     clean_prefixes = [
         "This is a behavioral question.", 
         "This is a technical question.", 
@@ -1174,8 +1093,6 @@ Your response:"""
         if good_response.startswith(prefix):
             good_response = good_response[len(prefix):].strip()
     
-    # 使用正则表达式清理更复杂的前缀模式
-    import re
     patterns = [
         r'^This is an? \w+ question\.\s*',
         r'^This is an? \w+ question:\s*',
@@ -1242,7 +1159,6 @@ def get_overall_scores(id=None, email=None):
         avg_resume_strength = total_resume_strength / total_interviews
         avg_leadership = total_leadership / total_interviews
             
-            
         return jsonify({
             "scores": {
                 "confidence": avg_confidence,
@@ -1253,7 +1169,6 @@ def get_overall_scores(id=None, email=None):
                 "leadership": avg_leadership
             }
         })
-        
 
     except Exception as e:
         print(f"Error getting overall scores: {str(e)}")
@@ -1282,7 +1197,6 @@ def get_interview_scores(interview_id: int):
         return jsonify({"error": "Failed to get interview scores", "message": str(e)}), 500
 
 
-
 @app.route('/api/interview_feedback_strengths/<interview_id>', methods=['GET'])
 def get_interview_feedback_strengths(interview_id: int):
     print(f"Getting interview feedback strengths for id: {interview_id}")
@@ -1293,6 +1207,7 @@ def get_interview_feedback_strengths(interview_id: int):
         return jsonify({"strengths": result.data[0].get('strengths')}), 200
     except Exception as e:
         return jsonify({"error": "Failed to get interview feedback strengths", "message": str(e)}), 500
+
 
 @app.route('/api/interview_feedback_improvement_areas/<interview_id>', methods=['GET'])
 def get_interview_feedback_improvement_areas(interview_id: int):
@@ -1305,6 +1220,7 @@ def get_interview_feedback_improvement_areas(interview_id: int):
     except Exception as e:
         return jsonify({"error": "Failed to get interview feedback improvement areas", "message": str(e)}), 500
 
+
 @app.route('/api/interview_feedback_specific_feedback/<interview_id>', methods=['GET'])
 def get_interview_feedback_specific_feedback(interview_id: int):
     print(f"Getting interview feedback specific feedback for id: {interview_id}")
@@ -1316,6 +1232,7 @@ def get_interview_feedback_specific_feedback(interview_id: int):
     except Exception as e:
         return jsonify({"error": "Failed to get interview feedback specific feedback", "message": str(e)}), 500
 
+
 @app.route('/api/favorite_questions/<email>', methods=['GET'])
 def get_favorite_questions(email):
     """
@@ -1325,29 +1242,19 @@ def get_favorite_questions(email):
     try:
         if not email:
             return jsonify({"data": []}), 200
-
-        print(f"Fetching favorite questions for email: {email}")
         
-        # Build the query
         query = supabase.table('interview_questions').select('*').eq('email', email).eq('is_favorite', True)
         
-        # Check if session_id is provided in query parameters
         session_id = request.args.get('session_id')
         if session_id:
-            print(f"Filtering by session_id: {session_id}")  # Add logging
             query = query.eq('session_id', session_id)
             
-        print(f"Final query: {query}")  # Add logging
         result = query.execute()
         
-        print(f"Query result: {result}")
-        # Always return a 200 status code with data array (empty if no favorites)
         return jsonify({"data": result.data if result.data else []}), 200
     except Exception as e:
         print(f"Error in get_favorite_questions: {str(e)}")
-        import traceback
         print(f"Traceback: {traceback.format_exc()}")
-        # Return empty array instead of error for better UX
         return jsonify({"data": []}), 200
 
 @app.route('/api/favorite_questions', methods=['POST'])
@@ -1357,34 +1264,25 @@ def add_favorite_question():
     """
     try:
         data = request.json
-        print("Received data for favorite question:", data)
         
-        # Validate required fields
         required_fields = ['question_text', 'session_id', 'email']
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
-        # Set is_favorite to True if not provided
         if 'is_favorite' not in data:
             data['is_favorite'] = True
             
-        # Set created_at if not provided
         if 'created_at' not in data:
             data['created_at'] = datetime.utcnow().isoformat()
         
-        # Ensure session_id is included in the data
-        data['session_id'] = data['session_id']  # This line ensures session_id is part of the data
+        data['session_id'] = data['session_id'] 
         
-        # Add thread_id to the data if provided
         if 'thread_id' in data:
             data['thread_id'] = data['thread_id']
 
         data['question_type'] = data['question_type']
-        
-        print("Attempting to insert data into Supabase:", data)
-        
-        # First check if the question already exists
+                
         existing = supabase.table('interview_questions').select('*').eq('question_text', data['question_text']).eq('session_id', data['session_id']).eq('email', data['email']).execute()
         
         if existing.data and len(existing.data) > 0:
@@ -1392,12 +1290,11 @@ def add_favorite_question():
             result = supabase.table('interview_questions').update({
                 'is_favorite': data['is_favorite'],
                 'updated_at': datetime.utcnow().isoformat(),
-                'thread_id': data.get('thread_id'),  # Update thread_id if it exists
-                'session_id': data['session_id'],  # Ensure session_id is updated
+                'thread_id': data.get('thread_id'),
+                'session_id': data['session_id'],
                 'question_type': data['question_type']
             }).eq('id', existing.data[0]['id']).execute()
         else:
-            # Insert new record
             result = supabase.table('interview_questions').insert(data).execute()
         
         if not result.data:
@@ -1406,9 +1303,9 @@ def add_favorite_question():
         return jsonify({"data": result.data[0]}), 201
     except Exception as e:
         print("Error in add_favorite_question:", str(e))
-        import traceback
         print("Traceback:", traceback.format_exc())
         return jsonify({"error": "Failed to add favorite question", "message": str(e)}), 500
+
 
 @app.route('/api/favorite_questions/<id>', methods=['DELETE'])
 def remove_favorite_question(id):
@@ -1430,59 +1327,11 @@ def delete_favorite_questions_by_session(session_id):
         if not session_id:
             return jsonify({"error": "Session ID is required"}), 400
 
-        # Delete all favorite questions for this session
         result = supabase.table('interview_questions').delete().eq('session_id', session_id).execute()
         return jsonify({"message": "Favorite questions deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": "Failed to delete favorite questions", "message": str(e)}), 500
     
-
-
-@app.route('/api/chat_history/<int:chat_id>', methods=['GET'])
-def get_chat_history_by_id(chat_id):
-    """
-    Retrieves a single interview log record from Supabase
-    by its numeric primary key (id), then merges 'log' + 'audio_metadata'
-    into a single list of messages.
-    """
-    try:
-        # 1) Query your 'interview_logs' table in Supabase
-        result = supabase.table('interview_logs').select('*').eq('id', chat_id).execute()
-        if not result.data or len(result.data) == 0:
-            return jsonify({"error": "Interview log not found"}), 404
-        
-        row = result.data[0]
-
-        # 2) Parse the "log" column (text messages)
-        text_messages = []
-        if row.get('log'):
-            text_messages = json.loads(row['log'])  # e.g., a list of { text, sender, ... }
-
-        # 3) Parse the "audio_metadata" column (audio info)
-        audio_metadata = []
-        if row.get('audio_metadata'):
-            audio_metadata = json.loads(row['audio_metadata'])
-            # e.g. [ { "audioUrl": "https://...", "storagePath": "..." }, ... ]
-
-        # 4) Merge them by index, if they line up 1-to-1
-        combined_messages = []
-        for i, txt_msg in enumerate(text_messages):
-            audio_info = audio_metadata[i] if i < len(audio_metadata) else {}
-            combined_messages.append({
-                **txt_msg,
-                "audioUrl": audio_info.get("audioUrl", txt_msg.get("audioUrl")),
-                "storagePath": audio_info.get("storagePath", txt_msg.get("storagePath"))
-            })
-
-        return jsonify({
-            "id": row["id"],
-            "messages": combined_messages
-        }), 200
-
-    except Exception as e:
-        print(f"Error retrieving chat history {chat_id}: {e}")
-        return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
-
 
 if __name__ == '__main__':
     import os

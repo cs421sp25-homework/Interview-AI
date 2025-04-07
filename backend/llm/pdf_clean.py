@@ -9,7 +9,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-# Load environment variables
 load_dotenv()
 
 # Constants

@@ -1,7 +1,4 @@
-
-
 from characters.character import Character
-
 
 class Interviewer(Character):
     """

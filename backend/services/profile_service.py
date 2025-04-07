@@ -1,9 +1,7 @@
 # CURD operation for profiles
 from supabase import create_client
 from models.profile_model import Profile
-from utils.validation_utils import validate_file
-
-
+from datetime import datetime
 
 class ProfileService:
     def __init__(self, supabase_url, supabase_key):
@@ -27,7 +25,7 @@ class ProfileService:
         # Create update dict with all original fields
         update_dict = {
             "id": current_data.get("id"),  # Important: Include the primary key
-            "email": email,  # Use email
+            "email": email, 
             "password": current_data.get("password", ""),
             "first_name": data.get("firstName", current_data.get("first_name", "")),
             "last_name": data.get("lastName", current_data.get("last_name", "")),
@@ -63,7 +61,6 @@ class ProfileService:
         if not updated_result.data:
             return None  # Failed to retrieve updated data
         
-
         return updated_result.data[0]  # Return updated profile data
     
     def create_profile(self, profile_data: dict) -> dict:
@@ -106,11 +103,9 @@ class ProfileService:
                 from models.resume_model import ResumeData
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
-            # Create Profile object
             profile = self.map_profile_data(profile_data)
             
             print(f"OAuth: Attempting to insert profile into database for email: {profile.email}")
-            # Insert into database
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
             print(f"OAuth: Database insertion result: {result}")
             
@@ -123,17 +118,14 @@ class ProfileService:
             print(f"Traceback: {traceback.format_exc()}")
             raise
 
+
     def map_profile_data(self, profile_data: dict) -> Profile:
         """
         Maps the input profile_data dictionary with camelCase keys to a Profile instance with snake_case fields.
         """
         try:
-            # Directly retrieve the resume field; assuming it's already a ResumeData object if provided.
             resume = profile_data.get('resume')
             
-            from datetime import datetime
-            
-
             if not profile_data.get('username'):
                 username = profile_data.get('email', 'default_user').split('@')[0]
             else:
