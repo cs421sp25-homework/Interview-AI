@@ -38,14 +38,8 @@ import time
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
-    }
-})
+# 修改CORS配置，使用更宽松的设置允许所有请求
+CORS(app, origins="*", supports_credentials=True, allow_headers=["Content-Type", "Authorization"])
 
 app.register_error_handler(400, handle_bad_request)
 
