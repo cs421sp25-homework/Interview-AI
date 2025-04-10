@@ -1097,6 +1097,7 @@ def generate_good_response():
     data = request.get_json()
     user_message = data.get('message', '')
     ai_question = data.get('ai_question', '')
+    target_language = data.get('language', 'English') 
     
     if not user_message:
          return jsonify({"error": "Missing message"}), 400
@@ -1204,6 +1205,12 @@ Your response:"""
     
     for pattern in patterns:
         good_response = re.sub(pattern, '', good_response, flags=re.IGNORECASE)
+
+    if target_language.lower() != 'english':
+        translation_prompt = f"Translate the following interview answer into {target_language}:\n\n{good_response}"
+        translation_response = llm_interface.invoke([HumanMessage(content=translation_prompt)])
+        translated_response = translation_response[-1].content.strip()
+        return jsonify({"response": translated_response})
     
     return jsonify({"response": good_response.strip()})
 
