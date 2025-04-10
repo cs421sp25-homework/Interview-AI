@@ -756,9 +756,17 @@ def get_interview_config(email):
 def create_interview_config():
     try:
         data = request.json
-        config_id = config_service.create_config(data) 
+        
+        # Ensure we have the language key, or set a default if missing
+        language = data.get("language", "english")
+        data["language"] = language
+        
+        config_id = config_service.create_config(data)
         if config_id:
-            return jsonify({'message': 'Interview configuration saved successfully!', 'id': config_id}), 201
+            return jsonify({
+                'message': 'Interview configuration saved successfully!',
+                'id': config_id
+            }), 201
         else:
             return jsonify({'message': 'Failed to save interview configuration.'}), 500
     except Exception as e:
@@ -771,9 +779,14 @@ def update_interview_config(id):
         data = request.json
         print(data)
 
+        # Same approach: make sure "language" is in data
+        language = data.get("language", "english")
+        data["language"] = language
+
         result = config_service.update_config(id, data)
         if result:
-            return jsonify({'message': 'Interview configuration updated successfully!', 'data': result}), 200
+            return jsonify({'message': 'Interview configuration updated successfully!',
+                            'data': result}), 200
         else:
             return jsonify({'message': 'Configuration not found.'}), 404
     except Exception as e:
