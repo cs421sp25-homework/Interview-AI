@@ -4,7 +4,7 @@ import {
   User, 
   Play, 
   FileText,
-  Award,
+  Trophy,
   Star,
   Settings,
   LogOut,
@@ -32,10 +32,8 @@ const UserDashboard = () => {
   // Store user profile data
   const [userData, setUserData] = useState({
     name: '',
-    title: '',
     email: '',
     interviews: 0,
-    resumeReviews: 0,
     joined: '',
     photoUrl: null as string | null
   });
@@ -52,6 +50,9 @@ const UserDashboard = () => {
 
   // Error state for display if any API call fails
   const [error, setError] = useState('');
+  
+  // Track if we're loading the interview count
+  const [loadingInterviews, setLoadingInterviews] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -101,19 +102,23 @@ const UserDashboard = () => {
             joinedDate = 'Date error';
           }
 
-          setUserData({
+          // Create initial user data with profile info
+          const initialUserData = {
             name: `${profile.first_name} ${profile.last_name}`.trim(),
-            title: profile.job_title || '',
             email: profile.email,
-            interviews: profile.interviews_completed || 0,
-            resumeReviews: profile.resume_reviews || 0,
+            interviews: profile.interviews_completed || 0, // Initial count from profile
             joined: joinedDate,
             photoUrl: profile.photo_url || null
-          });
+          };
+          
+          setUserData(initialUserData);
 
           // Fetch user's interview scores after we have an ID or email
           const userId = profile.id || profile.email;
           fetchUserScores(userId);
+          
+          // Fetch actual interview count
+          fetchInterviewCount(initialUserData.email);
         } else {
           // If data is null or missing, show an error
           setError('Profile data not found. Please complete your profile or contact support.');
@@ -170,15 +175,50 @@ const UserDashboard = () => {
         // since it's not critical and the user can still see the rest of the page.
       }
     };
+    
+    // Helper function to fetch interview count
+    const fetchInterviewCount = async (email: string) => {
+      try {
+        setLoadingInterviews(true);
+        // Use the same endpoint as InterviewHistoryPage
+        const response = await fetch(`${API_BASE_URL}/api/interview_logs/${email}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && Array.isArray(data.data)) {
+            // Update the interview count with the actual number from the API
+            setUserData(prevData => ({
+              ...prevData,
+              interviews: data.data.length
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching interview count:', error);
+        // We don't set an error here since it's not critical
+      } finally {
+        setLoadingInterviews(false);
+      }
+    };
 
     fetchUserProfile();
   }, [userEmail, navigate, logout]);
 
-  const achievements = [
-    'Technical Expert',
-    'Communication Pro',
-    'Quick Learner'
+  // Static leaderboard data
+  const leaderboardData = [
+    { username: "SophieCoder", score: 98 },
+    { username: "AlexTechGuru", score: 95 },
+    { username: "MikeDevMaster", score: 92 },
+    { username: "EmilyJavaPro", score: 89 },
+    { username: "RyanFullStack", score: 85 }
   ];
+
+  // Static user ranking data
+  const userRanking = {
+    rank: 8,
+    username: userData.name || "You",
+    score: 82
+  };
 
   const handleLogout = () => {
     logout();
@@ -240,17 +280,18 @@ const UserDashboard = () => {
                   )}
                 </div>
                 <h2>{userData.name || 'Anonymous User'}</h2>
-                <p style={{ color: 'var(--text-light)' }}>{userData.title || 'Your Role'}</p>
               </div>
 
               <div className={styles.profileStats}>
                 <div className={styles.statItem}>
                   <span>Interviews Completed</span>
-                  <span>{userData.interviews}</span>
-                </div>
-                <div className={styles.statItem}>
-                  <span>Resume Reviews</span>
-                  <span>{userData.resumeReviews}</span>
+                  <span>
+                    {loadingInterviews ? (
+                      <span className={styles.loadingDots}>...</span>
+                    ) : (
+                      userData.interviews
+                    )}
+                  </span>
                 </div>
                 <div className={styles.statItem}>
                   <span>Member Since</span>
@@ -259,14 +300,39 @@ const UserDashboard = () => {
               </div>
 
               <div style={{ marginTop: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem' }}>Achievements</h3>
-                <div className={styles.achievements}>
-                  {achievements.map((achievement, index) => (
-                    <div key={index} className={styles.badge}>
-                      <Award size={16} />
-                      {achievement}
+                <h3 style={{ marginBottom: '1rem' }}>Leaderboard</h3>
+                <div className={styles.leaderboard}>
+                  {leaderboardData.map((user, index) => (
+                    <div key={index} className={styles.leaderboardItem}>
+                      <div className={styles.leaderboardRank}>
+                        {index === 0 ? <Trophy size={16} color="gold" /> : `#${index + 1}`}
+                      </div>
+                      <div className={styles.leaderboardUser}>
+                        {user.username}
+                      </div>
+                      <div className={styles.leaderboardScore}>
+                        {user.score}
+                      </div>
                     </div>
                   ))}
+                  
+                  {/* Divider between top users and current user */}
+                  <div className={styles.leaderboardDivider}>
+                    <span>• • •</span>
+                  </div>
+                  
+                  {/* Current user ranking */}
+                  <div className={`${styles.leaderboardItem} ${styles.currentUserRank}`}>
+                    <div className={styles.leaderboardRank}>
+                      #{userRanking.rank}
+                    </div>
+                    <div className={styles.leaderboardUser}>
+                      {userRanking.username}
+                    </div>
+                    <div className={styles.leaderboardScore}>
+                      {userRanking.score}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
