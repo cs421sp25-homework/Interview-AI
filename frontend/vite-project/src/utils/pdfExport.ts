@@ -241,8 +241,8 @@ export const exportToPDF = (data: any): void => {
                 <span>${data.interview.interviewName || 'N/A'}</span>
               </div>
               <div class="header-item">
-                <span class="header-label">Thread ID:</span>
-                <span>${data.interview.threadId || 'N/A'}</span>
+                <span class="header-label">Language:</span>
+                <span>${data.interview.language || 'English'}</span>
               </div>
             </div>
             

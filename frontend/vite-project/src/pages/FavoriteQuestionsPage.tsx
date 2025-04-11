@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
 import { SearchOutlined, DeleteOutlined, LeftOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { BookOpenIcon } from 'lucide-react';
 import API_BASE_URL from '../config/api';
 import styles from './FavoriteQuestionsPage.module.css';
 
@@ -494,7 +495,17 @@ const FavoritesPage: React.FC = () => {
           {selectedRowKeys.length > 0 ? `View ${selectedRowKeys.length} Selected Flashcards` : 'View All Flashcards'}
         </Button>
       </div>
+
+      <button 
+        className={styles.flashcardsCornerButton}
+        onClick={handleGoToFlashcards}
+      >
+        <BookOpenIcon size={18} />
+        Practice with Flashcards
+      </button>
+
       {contextHolder}
+      
       <div className={styles.historyContent}>
         <div className={styles.filterSection}>
           <div className={styles.filterLeft}>
@@ -518,8 +529,6 @@ const FavoritesPage: React.FC = () => {
             >
               <Option value="technical">Technical</Option>
               <Option value="behavioral">Behavioral</Option>
-              <Option value="voice">Voice Interview</Option>
-              <Option value="text">Text Interview</Option>
             </Select>
           </div>
         </div>

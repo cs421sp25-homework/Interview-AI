@@ -440,6 +440,9 @@ def auth_callback():
 
 @app.route("/api/new_chat", methods=["POST"])
 def new_chat():
+    import uuid
+    from langchain_core.messages import HumanMessage
+
     data = request.get_json()
     email = data.get("email")
     name = data.get("name")
@@ -453,31 +456,37 @@ def new_chat():
 
     print(f"get_single_config result: {config_row}")
     
+    # Pull relevant config fields
+    config_id = config_row.get("id")
     company_name = config_row.get("company_name", "our company")
     interview_name = config_row.get("interview_name", name)
     question_type = config_row.get("question_type", "")
     job_description = config_row.get("job_description", "")
-    
+    language = config_row.get("language", "English").strip()
+
     # Extract user profile information from request
     user_profile = data.get("userProfile", {})
-    
+
+    # --------------------------------------------------
+    # Format the user's resume info into a single string
+    # --------------------------------------------------
     resume_text = ""
     if user_profile:
-
+        # Personal info
         full_name = f"{user_profile.get('first_name', '')} {user_profile.get('last_name', '')}".strip()
         if full_name:
             resume_text += f"Name: {full_name}\n"
-        
+
         job_title = user_profile.get('job_title', '')
         if job_title:
             resume_text += f"Current Title: {job_title}\n"
-        
+
         skills = user_profile.get('key_skills', [])
         if skills:
             if isinstance(skills, str):
                 skills = [s.strip() for s in skills.split(',')]
             resume_text += f"Skills: {', '.join(skills)}\n"
-        
+
         education = user_profile.get('education_history', [])
         if education:
             resume_text += "\nEducation:\n"
@@ -488,7 +497,7 @@ def new_chat():
                     dates = edu.get('dates', '')
                     if institution or degree:
                         resume_text += f"- {institution}, {degree} {dates}\n"
-        
+
         experience = user_profile.get('resume_experience', [])
         if experience:
             resume_text += "\nWork Experience:\n"
@@ -502,20 +511,28 @@ def new_chat():
                         resume_text += f"- {position} at {company} {dates}\n"
                         if description:
                             resume_text += f"  {description}\n"
-    
+
+    # -------------------------------------------
+    # Build the Interviewer object
+    # -------------------------------------------
     interviewer = Interviewer(
         age=config_row.get("interviewer_age", ""),
-        language=config_row.get("interviewer_language", "English"),
+        language=language,
         job_description=job_description,
         company_name=company_name,
         interviewee_resume=resume_text,
     )
 
+    # -------------------------------------------
+    # Create a new LLMInterviewAgent session
+    # -------------------------------------------
     thread_id = str(uuid.uuid4())
-    
-    agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5, thread_id=thread_id)  
+    agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5, thread_id=thread_id)
     agent.initialize(interviewer)
 
+    # -------------------------------------------
+    # Build the initial welcome message
+    # -------------------------------------------
     welcome_message = ""
     if question_type == "behavioral":
         welcome_message = f"Welcome to your behavioral interview for {interview_name} at {company_name}. I'll be asking questions about how you've handled various situations in your past experiences. Let's start by having you introduce yourself briefly."
@@ -554,53 +571,60 @@ CONVERSATIONAL TECHNIQUES:
 
 The candidate's resume contains these experiences:"""
         
-        # Add formatted work experience for reference
+
         if user_profile and user_profile.get('resume_experience'):
-            experiences = user_profile.get('resume_experience', [])
-            if experiences:
-                for i, exp in enumerate(experiences):
-                    if isinstance(exp, dict):
-                        company = exp.get('company', '')
-                        position = exp.get('position', '')
-                        dates = exp.get('dates', '')
-                        description = exp.get('description', '')
-                        
-                        tech_skills_prompt += f"\n\nExperience {i+1}:"
-                        if company:
-                            tech_skills_prompt += f"\nCompany: {company}"
-                        if position:
-                            tech_skills_prompt += f"\nPosition: {position}"
-                        if dates:
-                            tech_skills_prompt += f"\nDates: {dates}"
-                        if description:
-                            tech_skills_prompt += f"\nDetails: {description}"
-        
-        tech_skills_prompt += """
+            experiences = user_profile['resume_experience']
+            for i, exp in enumerate(experiences):
+                if isinstance(exp, dict):
+                    company = exp.get('company', '')
+                    position = exp.get('position', '')
+                    dates = exp.get('dates', '')
+                    description = exp.get('description', '')
 
-EXAMPLE QUESTION FLOW:
+                    tech_skills_prompt += f"\n\nExperience {i+1}:"
+                    if company:
+                        tech_skills_prompt += f"\nCompany: {company}"
+                    if position:
+                        tech_skills_prompt += f"\nPosition: {position}"
+                    if dates:
+                        tech_skills_prompt += f"\nDates: {dates}"
+                    if description:
+                        tech_skills_prompt += f"\nDetails: {description}"
 
-Based on resume: "Built a microservice architecture using Node.js and Docker"
-
-Initial question:
-"I see you implemented microservices with Node.js at ABC Company. Could you walk me through the architecture and how services communicated with each other?"
-
-After their response:
-[ANALYSIS: Candidate mentioned using REST APIs but didn't explain service discovery]
-
-Follow-up questions:
-"You mentioned REST APIs for service communication. How did you handle service discovery in this architecture?"
-"If one of your microservices failed, what recovery mechanisms did you implement?"
-"Given that you used Docker, what was your approach to orchestration and scaling?"
-
-Remember: Each question should show you've carefully listened to their previous answer. Structure the interview as a deep technical conversation, not an interrogation."""
-        
-        # Inform LLM this is a technical interview with specific focus areas
         agent.llm_graph.invoke(HumanMessage(content=tech_skills_prompt), thread_id=thread_id)
     else:
-        welcome_message = f"Welcome to your interview for {interview_name} at {company_name}. I'm excited to learn more about your skills and experience. Could you please start by telling me a bit about yourself and your background?"
+        welcome_message = (
+            f"Welcome to your interview for {interview_name} at {company_name}. "
+            "I'm excited to learn more about your skills and experience. "
+            "Could you please start by telling me a bit about yourself and your background?"
+        )
 
+    # -------------------------------------------
+    # If not English, translate the welcome message
+    # AND instruct the LLM to continue in that language
+    # -------------------------------------------
+    if language.lower() != "english":
+        # 1) Translate the welcome message
+        translation_resp = agent.llm_graph.invoke(
+            HumanMessage(content=f"Translate the following text to {language}:\n\n{welcome_message}"),
+            thread_id=thread_id
+        )
+        welcome_translated = translation_resp["messages"][-1].content.strip()
+        if welcome_translated:
+            welcome_message = welcome_translated
+
+        # 2) Tell the LLM to continue the entire interview in that language
+        agent.llm_graph.invoke(
+            HumanMessage(content=f"IMPORTANT: Please conduct the entire interview in {language}."),
+            thread_id=thread_id
+        )
+
+    # -------------------------------------------
+    # Store the agent in active_interviews
+    # -------------------------------------------
     active_interviews[thread_id] = agent
 
+    # Return the thread_id + the final welcome message
     return jsonify({
         "thread_id": thread_id,
         "response": welcome_message
@@ -722,9 +746,17 @@ def get_interview_config(email):
 def create_interview_config():
     try:
         data = request.json
-        config_id = config_service.create_config(data) 
+        
+        # Ensure we have the language key, or set a default if missing
+        language = data.get("language", "english")
+        data["language"] = language
+        
+        config_id = config_service.create_config(data)
         if config_id:
-            return jsonify({'message': 'Interview configuration saved successfully!', 'id': config_id}), 201
+            return jsonify({
+                'message': 'Interview configuration saved successfully!',
+                'id': config_id
+            }), 201
         else:
             return jsonify({'message': 'Failed to save interview configuration.'}), 500
     except Exception as e:
@@ -735,11 +767,15 @@ def create_interview_config():
 def update_interview_config(id):
     try:
         data = request.json
-        print(data)
+
+        # Same approach: make sure "language" is in data
+        language = data.get("language", "english")
+        data["language"] = language
 
         result = config_service.update_config(id, data)
         if result:
-            return jsonify({'message': 'Interview configuration updated successfully!', 'data': result}), 200
+            return jsonify({'message': 'Interview configuration updated successfully!',
+                            'data': result}), 200
         else:
             return jsonify({'message': 'Configuration not found.'}), 404
     except Exception as e:
@@ -791,6 +827,8 @@ def get_interview_logs(email):
                             log['interview_name'] = config.get('interview_name', 'Unknown')
                         if not log.get('job_description'):
                             log['job_description'] = config.get('job_description', '')
+                        if not log.get('language'):
+                            log['language'] = config.get('language', 'English')
             
             enhanced_logs.append(log)
             
@@ -800,6 +838,7 @@ def get_interview_logs(email):
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
+
 
 
 @app.route('/api/chat_history/<id>', methods=['DELETE'])
@@ -1000,6 +1039,7 @@ def generate_good_response():
     data = request.get_json()
     user_message = data.get('message', '')
     ai_question = data.get('ai_question', '')
+    target_language = data.get('language', 'English') 
     
     if not user_message:
          return jsonify({"error": "Missing message"}), 400
@@ -1103,6 +1143,12 @@ Your response:"""
     
     for pattern in patterns:
         good_response = re.sub(pattern, '', good_response, flags=re.IGNORECASE)
+
+    if target_language.lower() != 'english':
+        translation_prompt = f"Translate the following interview answer into {target_language}:\n\n{good_response}"
+        translation_response = llm_interface.invoke([HumanMessage(content=translation_prompt)])
+        translated_response = translation_response[-1].content.strip()
+        return jsonify({"response": translated_response})
     
     return jsonify({"response": good_response.strip()})
 

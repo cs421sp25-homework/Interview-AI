@@ -147,13 +147,31 @@ class LLMInterviewAgent:
 
     def end_interview(self) -> str:
         """
-        Returns a final statement from the AI or a generic end-of-interview message.
+        Returns a final statement from the AI or a generic end-of-interview message,
+        translated if the chosen language is not English.
         """
-        # You could also ask the LLM to produce a final closing statement
-        # For simplicity, we'll do a static message
         closing_remarks = "Thank you for your time. The interview has concluded."
+
+        # If the interviewer's language is not English, try to translate the closing remarks
+        if self.interviewer and self.interviewer.language and self.interviewer.language.lower() != "english":
+            
+
+            # Ask the model to translate the final remarks
+            translation_resp = self.llm_graph.invoke(
+                HumanMessage(content=f"Translate the following text to {self.interviewer.language}:\n\n{closing_remarks}"),
+                thread_id=self.thread_id
+            )
+            translated = translation_resp["messages"][-1].content.strip()
+            if translated:
+                closing_remarks = translated
+
+        # Record the final closing message in the conversation
         self.conversation.append({"role": "assistant", "content": closing_remarks})
         return closing_remarks
+
+
+
+    # Example usage (not part of the library code)
 
 if __name__ == "__main__":
     """
