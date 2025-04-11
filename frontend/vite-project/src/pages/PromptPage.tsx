@@ -13,6 +13,7 @@ interface InterviewConfig {
   job_description: string;
   question_type: string;
   interview_type: string;
+  language: string;
 }
 
 const PromptPage = () => {
@@ -25,6 +26,7 @@ const PromptPage = () => {
   const [job_description, setJobDescription] = useState('');
   const [question_type, setQuestionType] = useState('behavioral');
   const [interview_type, setInterviewType] = useState('text');
+  const [language, setLanguage] = useState('english'); 
   
   // Existing configs
   const [savedInterviewConfigs, setSavedInterviewConfigs] = useState<InterviewConfig[]>([]);
@@ -58,7 +60,6 @@ const PromptPage = () => {
       } catch (error: any) {
         console.error("Error fetching interview configs:", error);
 
-        // Distinguish network vs. server errors
         if (error.response) {
           const { status, data } = error.response;
           if (status === 401) {
@@ -143,10 +144,17 @@ const PromptPage = () => {
       job_description,
       question_type,
       interview_type,
+      language,
       email
     };
 
-    if (!interviewConfig.interview_name || !interviewConfig.company_name || !interviewConfig.question_type || !interviewConfig.interview_type) {
+    if (
+      !interviewConfig.interview_name || 
+      !interviewConfig.company_name || 
+      !interviewConfig.question_type || 
+      !interviewConfig.interview_type ||
+      !interviewConfig.language
+    ) {
       message.error("Please fill in all required fields marked with *");
       return;
     }
@@ -193,6 +201,7 @@ const PromptPage = () => {
       setJobDescription('');
       setQuestionType('behavioral');
       setInterviewType('text');
+      setLanguage('english');
     } catch (error: any) {
       console.error("Error saving interview configuration:", error);
 
@@ -227,6 +236,7 @@ const PromptPage = () => {
     setJobDescription(selected.job_description || '');
     setQuestionType(selected.question_type);
     setInterviewType(selected.interview_type);
+    setLanguage(selected.language || 'english');
     setIsEditing(true);
     setIsModalOpen(true);
   };
@@ -280,6 +290,7 @@ const PromptPage = () => {
     setJobDescription('');
     setQuestionType('behavioral');
     setInterviewType('text');
+    setLanguage('english');
     setIsModalOpen(true);
   };
 
@@ -309,13 +320,15 @@ const PromptPage = () => {
           <p>Select a configuration and click "Start Interview"</p>
         </div>
 
-        <button
-          className={styles.buttonPrimary}
-          onClick={openCreateModal}
-          disabled={loading}
-        >
-          <Plus size={20} /> Create Custom Interview Configuration
-        </button>
+        <div className={styles.createButtonContainer}>
+          <button
+            className={styles.createButton}
+            onClick={openCreateModal}
+            disabled={loading}
+          >
+            <Plus size={20} /> Create Custom Interview Configuration
+          </button>
+        </div>
 
         <div className={styles.interviewList}>
           {savedInterviewConfigs.map((interview, index) => (
@@ -336,6 +349,8 @@ const PromptPage = () => {
                     <p><strong>Company:</strong> {interview.company_name}</p>
                     <p><strong>Question Type:</strong> {interview.question_type}</p>
                     <p><strong>Interview Type:</strong> {interview.interview_type}</p>
+                    {/* Display the Language here */}
+                    <p><strong>Language:</strong> {interview.language}</p>
                   </div>
                 </div>
 
@@ -343,6 +358,7 @@ const PromptPage = () => {
                   <MoreVertical
                     className={styles.menuIcon}
                     data-testid="config-menu-button"
+                    size={24}
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(menuOpen === index ? null : index);
@@ -469,10 +485,29 @@ const PromptPage = () => {
                   value={interview_type}
                   onChange={(e) => setInterviewType(e.target.value)}
                   required
-                  disabled={isEditing} // Can't change type while editing
+                  disabled={isEditing}
                 >
                   <option value="text">Text</option>
                   <option value="voice">Voice</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Language <span className={styles.required}>*</span>
+                </label>
+                <select
+                  className={styles.formInput}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  required
+                  data-testid="language-input"
+                >
+                  <option value="english">English</option>
+                  <option value="french">French</option>
+                  <option value="spanish">Spanish</option>
+                  <option value="mandarin">Mandarin</option>
+                  {/* Add more languages as needed */}
                 </select>
               </div>
 
