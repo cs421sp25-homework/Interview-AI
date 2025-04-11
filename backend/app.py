@@ -813,45 +813,69 @@ def delete_interview_config(id):
 @app.route('/api/interview_logs/<email>', methods=['GET'])
 def get_interview_logs(email):
     """
-    Retrieves all interview logs for a specific user by email.
+    Retrieves all interview logs for a specific user by email,
+    then merges missing language info from the interview_config table 
+    using the interview_logs.config_id -> interview_config.id relationship.
     """
     try:
         if not email:
             return jsonify({"error": "Email is required"}), 400
             
-        result = supabase.table('interview_logs').select('*').eq('email', email).order('created_at', desc=True).execute()
+        # 1) Fetch all logs for this user
+        result = supabase.table('interview_logs') \
+            .select('*') \
+            .eq('email', email) \
+            .order('created_at', desc=True) \
+            .execute()
         
         if not result.data:
             return jsonify({"data": []}), 200
         
+        logs = result.data
+        
+        # 2) We'll create a map of { config_id -> language } 
+        #    by collecting all the config_ids that appear in the logs
+        config_ids = set()
+        for log in logs:
+            if log.get('config_id'):
+                config_ids.add(log['config_id'])
+        
+        # If no logs have config_id, we can skip the next step
+        config_map = {}
+        if config_ids:
+            # 3) Fetch all needed configs in a single query
+            config_result = supabase.table('interview_config') \
+                .select('*') \
+                .in_('id', list(config_ids)) \
+                .execute()
+            
+            if config_result.data:
+                for cfg in config_result.data:
+                    config_map[cfg['id']] = cfg  # entire config row
+
+        # 4) Merge any missing 'language' field from the config
         enhanced_logs = []
-        for log in result.data:
-            # Use stored values if available, otherwise try to get from config
-            if not log.get('company_name') or not log.get('interview_type'):
-                config_id = log.get('config_id')
-                if config_id:
-                    config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
-                    if config_result.data and len(config_result.data) > 0:
-                        config = config_result.data[0]
-                        if not log.get('company_name'):
-                            log['company_name'] = config.get('company_name', 'Unknown')
-                        if not log.get('interview_type'):
-                            log['interview_type'] = config.get('interview_type', 'Unknown')
-                        if not log.get('question_type'):
-                            log['question_type'] = config.get('question_type', 'Unknown')
-                        if not log.get('interview_name'):
-                            log['interview_name'] = config.get('interview_name', 'Unknown')
-                        if not log.get('job_description'):
-                            log['job_description'] = config.get('job_description', '')
+        for log in logs:
+            # If the log does not have language, or it's null/empty, 
+            # or we specifically want to override with config’s language:
+            if (not log.get('language')) and log.get('config_id'):
+                cfg_id = log.get('config_id')
+                if cfg_id in config_map:
+                    # Pull the language from the config record
+                    config_language = config_map[cfg_id].get('language')
+                    if config_language:
+                        log['language'] = config_language
             
             enhanced_logs.append(log)
-            
+        
         return jsonify({"data": enhanced_logs}), 200
+    
     except Exception as e:
         print(f"Error fetching interview logs: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
+
 
 
 @app.route('/api/chat_history/<id>', methods=['DELETE'])

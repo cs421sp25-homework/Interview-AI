@@ -65,6 +65,7 @@ interface InterviewLog {
   job_description?: string;
   config_company_name?: string;
   interview_name?: string;
+  language?: string; 
 }
 
 const InterviewHistoryPage: React.FC = () => {
@@ -158,6 +159,7 @@ const InterviewHistoryPage: React.FC = () => {
             interview_name: log.interview_name || '',
             interview_type: log.interview_type || 'Unknown',
             question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
+            language: log.language || 'english', 
           };
         });
         
@@ -969,9 +971,9 @@ const InterviewHistoryPage: React.FC = () => {
               )}
               
               <div className={styles.detailItem}>
-                <Text strong>Thread ID:</Text>
-                <Text>{selectedLog.thread_id || 'N/A'}</Text>
-              </div>
+               <Text strong>Language:</Text>
+               <Text>{selectedLog.language || 'english'}</Text>
+             </div>
             </div>
             
             {selectedLog.job_description && (
