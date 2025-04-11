@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
-import { SearchOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, LeftOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './FavoriteQuestionsPage.module.css';
@@ -461,6 +461,14 @@ const FavoritesPage: React.FC = () => {
           Back to Interview History
         </button>
         <h1>Favorite Questions</h1>
+        <Button
+          type="primary"
+          icon={<FileTextOutlined />}
+          onClick={() => navigate('/flashcards/favorites')}
+          className={styles.flashcardsButton}
+        >
+          View Flashcards
+        </Button>
       </div>
       {contextHolder}
       <div className={styles.historyContent}>

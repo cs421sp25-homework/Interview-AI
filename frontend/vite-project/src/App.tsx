@@ -9,14 +9,14 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
 import OAuthSignUpForm from './pages/OAuthSignUpForm';
-// import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
-// import OnGoingVoice from './pages/OnGoingVoice';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
 import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
 import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
+import FlashcardsPage from './pages/FlashcardsPage';
+
 function App() {
   return (
     <Routes>
@@ -37,6 +37,10 @@ function App() {
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
+      
+      <Route path="/flashcards/favorites" element={<FlashcardsPage mode="favorites" />} />
+      <Route path="/flashcards/weakest" element={<FlashcardsPage mode="weakest" />} />
+      <Route path="/flashcards" element={<FlashcardsPage mode="favorites" />} />
     </Routes>
   );
 }

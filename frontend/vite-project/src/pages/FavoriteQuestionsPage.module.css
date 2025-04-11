@@ -74,6 +74,25 @@
     color: #ff69b4;
   }
   
+  .flashcardsButton {
+    margin-left: auto;
+    background-color: #ec4899;
+    border-color: #ec4899;
+    color: white;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .flashcardsButton:hover {
+    background-color: #db2777;
+    border-color: #db2777;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(236, 72, 153, 0.1);
+  }
+  
   .spacer {
     width: 120px; 
   }
