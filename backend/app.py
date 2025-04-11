@@ -1482,6 +1482,126 @@ def get_chat_history_by_id(chat_id):
     except Exception as e:
         print(f"Error retrieving chat history {chat_id}: {e}")
         return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
+    
+@app.route('/api/weak_questions/<email>', methods=['GET'])
+def get_weak_questions(email):
+    """
+    Retrieves all weak questions for a specific user (where is_weak = True).
+    Optionally filters by session_id if provided in query parameters.
+    """
+    try:
+        if not email:
+            return jsonify({"data": []}), 200
+
+        print(f"Fetching weak questions for email: {email}")
+
+        # Build the base query
+        query = supabase.table('interview_questions').select('*').eq('email', email).eq('is_weak', True)
+        
+        # Check if session_id is provided in query parameters
+        session_id = request.args.get('session_id')
+        if session_id:
+            print(f"Filtering by session_id: {session_id}")
+            query = query.eq('session_id', session_id)
+        
+        print(f"Final query: {query}")
+        result = query.execute()
+        
+        print(f"Query result: {result}")
+        # Always return a 200 status code with data array (empty if none found)
+        return jsonify({"data": result.data if result.data else []}), 200
+
+    except Exception as e:
+        print(f"Error in get_weak_questions: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        # Return empty array instead of error for better UX
+        return jsonify({"data": []}), 200
+
+@app.route('/api/weak_questions', methods=['POST'])
+def add_weak_question():
+    """
+    Marks a question as 'weak' (is_weak = True).
+    If the question doesn't exist, creates a new record.
+    If it already exists, updates that record.
+    """
+    try:
+        data = request.json
+        print("Received data for weak question:", data)
+        
+        # Validate required fields
+        required_fields = ['question_text', 'session_id', 'email']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Force is_weak to True if not provided
+        if 'is_weak' not in data:
+            data['is_weak'] = True
+        
+        # Set created_at if not provided
+        if 'created_at' not in data:
+            data['created_at'] = datetime.utcnow().isoformat()
+        
+        # session_id must be included
+        data['session_id'] = data['session_id']
+        
+        # Optionally set a question_type
+        if 'question_type' not in data:
+            data['question_type'] = 'weak_question'
+        
+        # If a thread_id is provided, keep it
+        if 'thread_id' in data:
+            data['thread_id'] = data['thread_id']
+        
+        print("Attempting to insert/update data into Supabase:", data)
+        
+        # Check if question already exists for this session/email
+        existing = supabase.table('interview_questions') \
+            .select('*') \
+            .eq('question_text', data['question_text']) \
+            .eq('session_id', data['session_id']) \
+            .eq('email', data['email']) \
+            .execute()
+        
+        if existing.data and len(existing.data) > 0:
+            # Update existing record
+            result = supabase.table('interview_questions').update({
+                'is_weak': True,  # Mark as weak
+                'updated_at': datetime.utcnow().isoformat(),
+                'thread_id': data.get('thread_id'),
+                'session_id': data['session_id'],
+                'question_type': data['question_type']
+            }).eq('id', existing.data[0]['id']).execute()
+        else:
+            # Insert new record
+            result = supabase.table('interview_questions').insert(data).execute()
+        
+        if not result.data:
+            return jsonify({"error": "Failed to insert/update data"}), 500
+        
+        return jsonify({"data": result.data[0]}), 201
+    
+    except Exception as e:
+        print("Error in add_weak_question:", str(e))
+        import traceback
+        print("Traceback:", traceback.format_exc())
+        return jsonify({"error": "Failed to add weak question", "message": str(e)}), 500
+
+@app.route('/api/weak_questions/<id>', methods=['DELETE'])
+def remove_weak_question(id):
+    """
+    Removes a question from 'weak' status (actually deletes the record 
+    if that is the desired functionality).
+    Alternatively, you could just set is_weak = False 
+    instead of removing the record entirely.
+    """
+    try:
+        result = supabase.table('interview_questions').delete().eq('id', id).execute()
+        return jsonify({"message": "Weak question removed"}), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to remove weak question", "message": str(e)}), 500
+
 
 
 if __name__ == '__main__':
