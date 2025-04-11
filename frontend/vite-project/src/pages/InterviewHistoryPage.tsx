@@ -65,6 +65,7 @@ interface InterviewLog {
   job_description?: string;
   config_company_name?: string;
   interview_name?: string;
+  language?: string; 
 }
 
 const InterviewHistoryPage: React.FC = () => {
@@ -120,7 +121,6 @@ const InterviewHistoryPage: React.FC = () => {
   const fetchInterviewLogs = async () => {
     setLoading(true);
     try {
-
       const userEmail = localStorage.getItem('user_email') || '';
       
       if (!userEmail) {
@@ -129,7 +129,6 @@ const InterviewHistoryPage: React.FC = () => {
         return;
       }
       
-
       const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
       
       if (!response.ok) {
@@ -142,7 +141,37 @@ const InterviewHistoryPage: React.FC = () => {
       if (data && Array.isArray(data.data)) {
         
         const transformedLogs = data.data.map((log: any) => {
-          console.log(`Log ID: ${log.id}, updated_at: ${log.updated_at}, created_at: ${log.created_at}`);
+          // 详细记录每个日志的关键字段，帮助调试
+          console.log(`Log ID: ${log.id}, Type: ${log.interview_type || log.type}, full log:`, log);
+          
+          // 检查各种可能的 job_description 字段名
+          const possibleJobDescFields = ['job_description', 'config_job_description', 'description', 'job_desc', 'jobDescription'];
+          let jobDescription = '';
+          
+          for (const field of possibleJobDescFields) {
+            if (log[field]) {
+              console.log(`Found job description in field: ${field}`, log[field]);
+              jobDescription = log[field];
+              break;
+            }
+          }
+          
+          // 为语音面试类型特别检查
+          if ((log.interview_type?.toLowerCase() === 'voice' || log.form?.toLowerCase() === 'voice') && !jobDescription) {
+            console.log('Voice interview without job description, checking additional fields', log);
+            // 查找配置数据中的 job_description
+            if (log.config_data && typeof log.config_data === 'string') {
+              try {
+                const configData = JSON.parse(log.config_data);
+                if (configData.job_description) {
+                  console.log('Found job description in config_data', configData.job_description);
+                  jobDescription = configData.job_description;
+                }
+              } catch (e) {
+                console.error('Error parsing config_data:', e);
+              }
+            }
+          }
           
           return {
             id: log.id,
@@ -154,12 +183,19 @@ const InterviewHistoryPage: React.FC = () => {
             form: log.form || 'text',
             log: typeof log.log === 'string' ? JSON.parse(log.log) : log.log,
             question_type: log.question_type || 'Unknown',
-            job_description: log.job_description || '',
+            job_description: jobDescription, // 使用我们找到的 job description
             interview_name: log.interview_name || '',
             interview_type: log.interview_type || 'Unknown',
             question_count: log.log ? countQuestionsInConversation(typeof log.log === 'string' ? JSON.parse(log.log) : log.log) : 0,
+            language: log.language || 'English', 
           };
         });
+        
+        console.log('Transformed logs with job descriptions:', transformedLogs.map((log: InterviewLog) => ({
+          id: log.id,
+          type: log.interview_type,
+          has_job_desc: !!log.job_description
+        })));
         
         setLogs(transformedLogs);
         setFilteredLogs(transformedLogs);
@@ -424,7 +460,7 @@ const InterviewHistoryPage: React.FC = () => {
           type: log.interview_type || 'N/A',
           questionType: log.question_type || 'N/A',
           interviewName: log.interview_name || 'N/A',
-          threadId: log.thread_id || 'N/A',
+          language: log.language || 'English',
           job_description: log.job_description || ''
         },
         conversation: conversationData,
@@ -454,6 +490,13 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewDetails = async (log: InterviewLog) => {
+    console.log("Selected log for details view:", {
+      id: log.id,
+      type: log.interview_type,
+      job_description: log.job_description,
+      thread_id: log.thread_id
+    });
+    
     setSelectedLog(log);
     setDetailModalVisible(true);
     
@@ -961,19 +1004,23 @@ const InterviewHistoryPage: React.FC = () => {
                 <Text>{selectedLog.interview_name || 'N/A'}</Text>
               </div>
               
-              {selectedLog.job_description && (
-                <div className={styles.detailItem}>
-                  <Text strong>Job Description Available:</Text>
-                  <Text>Yes</Text>
-                </div>
-              )}
+              <div className={styles.detailItem}>
+                <Text strong>Job Description Available:</Text>
+                <Text>{selectedLog.job_description ? 'Yes' : 'No'}</Text>
+              </div>
               
               <div className={styles.detailItem}>
-                <Text strong>Thread ID:</Text>
-                <Text>{selectedLog.thread_id || 'N/A'}</Text>
-              </div>
+               <Text strong>Language:</Text>
+               <Text>
+                 {selectedLog.language 
+                   ? selectedLog.language.charAt(0).toUpperCase() + selectedLog.language.slice(1).toLowerCase() 
+                   : 'English'}
+               </Text>
+             </div>
             </div>
             
+            {/* Job Description Section */}
+            {console.log("Job description rendering:", selectedLog.job_description) /* 打印调试信息 */}
             {selectedLog.job_description && (
               <div className={styles.detailSection}>
                 <Title level={5}>Job Description</Title>
