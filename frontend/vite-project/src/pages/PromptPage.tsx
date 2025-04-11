@@ -320,13 +320,15 @@ const PromptPage = () => {
           <p>Select a configuration and click "Start Interview"</p>
         </div>
 
-        <button
-          className={styles.buttonPrimary}
-          onClick={openCreateModal}
-          disabled={loading}
-        >
-          <Plus size={20} /> Create Custom Interview Configuration
-        </button>
+        <div className={styles.createButtonContainer}>
+          <button
+            className={styles.createButton}
+            onClick={openCreateModal}
+            disabled={loading}
+          >
+            <Plus size={20} /> Create Custom Interview Configuration
+          </button>
+        </div>
 
         <div className={styles.interviewList}>
           {savedInterviewConfigs.map((interview, index) => (
@@ -356,6 +358,7 @@ const PromptPage = () => {
                   <MoreVertical
                     className={styles.menuIcon}
                     data-testid="config-menu-button"
+                    size={24}
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(menuOpen === index ? null : index);

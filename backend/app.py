@@ -529,30 +529,44 @@ def new_chat():
     # -------------------------------------------
     # Build the initial welcome message
     # -------------------------------------------
+    welcome_message = ""
     if question_type == "behavioral":
-        welcome_message = (
-            f"Welcome to your behavioral interview for {interview_name} at {company_name}. "
-            "I'll be asking questions about how you've handled various situations in your past experiences. "
-            "Let's start by having you introduce yourself briefly."
-        )
-        # Signal the LLM to focus on behavioral (STAR) questions
-        agent.llm_graph.invoke(
-            HumanMessage(content="This is a BEHAVIORAL interview. Focus on asking behavioral questions following the STAR format."),
-            thread_id=thread_id
-        )
+        welcome_message = f"Welcome to your behavioral interview for {interview_name} at {company_name}. I'll be asking questions about how you've handled various situations in your past experiences. Let's start by having you introduce yourself briefly."
+        # Inform LLM this is a behavioral interview
+        agent.llm_graph.invoke(HumanMessage(content=f"This is a BEHAVIORAL interview. Focus on asking behavioral questions following the STAR format."), thread_id=thread_id)
     elif question_type == "technical":
-        welcome_message = (
-            f"Welcome to your technical interview for {interview_name} at {company_name}. "
-            "I'll be focusing on your technical expertise based on your background and experience. "
-            "Let's begin with a brief introduction about yourself."
-        )
-        # Additional guidelines for technical interviews
+        welcome_message = f"Welcome to your technical interview for {interview_name} at {company_name}. I'll be focusing on your technical expertise based on your background and experience. Let's begin with a brief introduction about yourself."
+        
+        # Create experience-focused prompt
         tech_skills_prompt = """TECHNICAL INTERVIEW GUIDELINES:
 
 CORE APPROACH - TWO-PHASE QUESTIONING:
-1. ANALYSIS PHASE ...
-(You can paste your entire content from above)
-"""
+1. ANALYSIS PHASE - First analyze the candidate's response:
+   - Identify key technical concepts, technologies, and methodologies mentioned
+   - Note experience level and depth of understanding shown in their explanation
+   - Find areas that need deeper exploration or clarification
+   
+2. FOLLOW-UP PHASE - Then formulate targeted follow-up questions:
+   - Ask for specific implementation details ("How exactly did you implement that authentication system?")
+   - Request explanations of technical decisions ("Why did you choose PostgreSQL over MongoDB for this use case?")
+   - Challenge them to compare approaches ("What tradeoffs did you consider between these architectures?")
+   - Probe for deeper technical knowledge ("What would happen if this system needed to scale 10x?")
+
+INTERVIEW STRATEGY:
+- Build questions directly from the candidate's resume experiences
+- Focus on technologies they've actually used, not theoretical knowledge
+- Ask them to solve problems similar to what they've solved before, but with new challenges
+- Follow threads of conversation rather than jumping between unrelated topics
+- Gradually increase technical depth to assess their expertise level
+
+CONVERSATIONAL TECHNIQUES:
+- Acknowledge their answers: "That's a good point about scalability..."
+- Bridge to follow-ups: "Based on your implementation of X, how would you approach..."
+- Create scenarios from their experience: "Imagine your Redis cache suddenly fails in production..."
+- Ask for comparisons: "You've worked with both React and Angular - how would you compare their state management?"
+
+The candidate's resume contains these experiences:"""
+        
 
         if user_profile and user_profile.get('resume_experience'):
             experiences = user_profile['resume_experience']
@@ -782,7 +796,6 @@ def create_interview_config():
 def update_interview_config(id):
     try:
         data = request.json
-        print(data)
 
         # Same approach: make sure "language" is in data
         language = data.get("language", "english")
@@ -813,63 +826,42 @@ def delete_interview_config(id):
 @app.route('/api/interview_logs/<email>', methods=['GET'])
 def get_interview_logs(email):
     """
-    Retrieves all interview logs for a specific user by email,
-    then merges missing language info from the interview_config table 
-    using the interview_logs.config_id -> interview_config.id relationship.
+    Retrieves all interview logs for a specific user by email.
     """
     try:
         if not email:
             return jsonify({"error": "Email is required"}), 400
             
-        # 1) Fetch all logs for this user
-        result = supabase.table('interview_logs') \
-            .select('*') \
-            .eq('email', email) \
-            .order('created_at', desc=True) \
-            .execute()
+        result = supabase.table('interview_logs').select('*').eq('email', email).order('created_at', desc=True).execute()
         
         if not result.data:
             return jsonify({"data": []}), 200
         
-        logs = result.data
-        
-        # 2) We'll create a map of { config_id -> language } 
-        #    by collecting all the config_ids that appear in the logs
-        config_ids = set()
-        for log in logs:
-            if log.get('config_id'):
-                config_ids.add(log['config_id'])
-        
-        # If no logs have config_id, we can skip the next step
-        config_map = {}
-        if config_ids:
-            # 3) Fetch all needed configs in a single query
-            config_result = supabase.table('interview_config') \
-                .select('*') \
-                .in_('id', list(config_ids)) \
-                .execute()
-            
-            if config_result.data:
-                for cfg in config_result.data:
-                    config_map[cfg['id']] = cfg  # entire config row
-
-        # 4) Merge any missing 'language' field from the config
         enhanced_logs = []
-        for log in logs:
-            # If the log does not have language, or it's null/empty, 
-            # or we specifically want to override with config’s language:
-            if (not log.get('language')) and log.get('config_id'):
-                cfg_id = log.get('config_id')
-                if cfg_id in config_map:
-                    # Pull the language from the config record
-                    config_language = config_map[cfg_id].get('language')
-                    if config_language:
-                        log['language'] = config_language
+        for log in result.data:
+            # Use stored values if available, otherwise try to get from config
+            if not log.get('company_name') or not log.get('interview_type'):
+                config_id = log.get('config_id')
+                if config_id:
+                    config_result = supabase.table('interview_config').select('*').eq('id', config_id).execute()
+                    if config_result.data and len(config_result.data) > 0:
+                        config = config_result.data[0]
+                        if not log.get('company_name'):
+                            log['company_name'] = config.get('company_name', 'Unknown')
+                        if not log.get('interview_type'):
+                            log['interview_type'] = config.get('interview_type', 'Unknown')
+                        if not log.get('question_type'):
+                            log['question_type'] = config.get('question_type', 'Unknown')
+                        if not log.get('interview_name'):
+                            log['interview_name'] = config.get('interview_name', 'Unknown')
+                        if not log.get('job_description'):
+                            log['job_description'] = config.get('job_description', '')
+                        if not log.get('language'):
+                            log['language'] = config.get('language', 'English')
             
             enhanced_logs.append(log)
-        
+            
         return jsonify({"data": enhanced_logs}), 200
-    
     except Exception as e:
         print(f"Error fetching interview logs: {str(e)}")
         import traceback
