@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button, message } from 'antd';
+import { Button, message, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './FlashcardsPage.module.css';
 
@@ -11,6 +11,7 @@ interface Flashcard {
   answer: string;
   created_at: string;
   ideal_answer?: string;
+  question_type?: string;
 }
 
 interface ApiFlashcard {
@@ -18,10 +19,20 @@ interface ApiFlashcard {
   question_text: string;
   answer?: string;
   created_at: string;
+  question_type?: string;
 }
 
 interface FlashcardsPageProps {
   mode: 'favorites' | 'weakest';
+}
+
+interface LocationState {
+  questions?: {
+    id: number;
+    question: string;
+    created_at: string;
+    question_type: string;
+  }[];
 }
 
 const parseQuestion = (text: string): string => {
@@ -43,12 +54,16 @@ const parseQuestion = (text: string): string => {
   };
 
 const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
-  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [allCards, setAllCards] = useState<Flashcard[]>([]);
+  const [filteredCards, setFilteredCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
   const [loadingIdealAnswer, setLoadingIdealAnswer] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState;
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -64,6 +79,22 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
         let response;
         
         if (mode === 'favorites') {
+          if (locationState?.questions) {
+            // Use the selected questions passed from favorites page
+            const transformedCards = locationState.questions.map(question => ({
+              id: question.id,
+              question: parseQuestion(question.question),
+              answer: 'No answer available',
+              created_at: question.created_at,
+              question_type: question.question_type
+            }));
+            console.log('Transformed cards from favorites:', transformedCards);
+            setAllCards(transformedCards);
+            setFilteredCards(transformedCards);
+            setLoading(false);
+            return;
+          }
+          
           response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}`);
         } else {
           // TODO: Implement weakest questions endpoint
@@ -80,9 +111,12 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             id: card.id,
             question: parseQuestion(card.question_text),
             answer: card.answer || 'No answer available',
-            created_at: card.created_at
+            created_at: card.created_at,
+            question_type: card.question_type
           }));
-          setCards(transformedCards);
+          console.log('Transformed cards from API:', transformedCards);
+          setAllCards(transformedCards);
+          setFilteredCards(transformedCards);
         }
       } catch (error) {
         console.error('Error fetching cards:', error);
@@ -93,7 +127,28 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
     };
 
     fetchCards();
-  }, [mode, navigate]);
+  }, [mode, navigate, locationState]);
+
+  useEffect(() => {
+    console.log('Active tab changed:', activeTab);
+    console.log('All cards:', allCards);
+    
+    // Filter cards based on active tab
+    if (activeTab === 'all') {
+      setFilteredCards(allCards);
+    } else {
+      const filtered = allCards.filter(card => {
+        const cardType = card.question_type;
+        const targetType = activeTab;
+        console.log(`Comparing card type "${cardType}" with target type "${targetType}"`);
+        return cardType === targetType;
+      });
+      console.log('Filtered cards:', filtered);
+      setFilteredCards(filtered);
+    }
+    setCurrentIndex(0);
+    setIsFlipped(false);
+  }, [activeTab, allCards]);
 
   const fetchIdealAnswer = async (question: string) => {
     try {
@@ -123,9 +178,9 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   };
 
   const handleFlip = async () => {
-    if (!isFlipped && !cards[currentIndex].ideal_answer) {
-      const idealAnswer = await fetchIdealAnswer(cards[currentIndex].question);
-      setCards(prevCards => {
+    if (!isFlipped && !filteredCards[currentIndex].ideal_answer) {
+      const idealAnswer = await fetchIdealAnswer(filteredCards[currentIndex].question);
+      setFilteredCards(prevCards => {
         const newCards = [...prevCards];
         newCards[currentIndex] = {
           ...newCards[currentIndex],
@@ -138,7 +193,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   };
 
   const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
+    if (currentIndex < filteredCards.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
     }
@@ -152,8 +207,8 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   };
 
   const handleShuffle = () => {
-    const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
-    setCards(shuffledCards);
+    const shuffledCards = [...filteredCards].sort(() => Math.random() - 0.5);
+    setFilteredCards(shuffledCards);
     setCurrentIndex(0);
     setIsFlipped(false);
   };
@@ -178,7 +233,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
     );
   }
 
-  if (cards.length === 0) {
+  if (filteredCards.length === 0) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -188,15 +243,25 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           </button>
           <h1>{mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} Flashcards</h1>
         </div>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'all', label: 'All' },
+            { key: 'technical', label: 'Technical' },
+            { key: 'behavioral', label: 'Behavioral' }
+          ]}
+          className={styles.tabs}
+        />
         <div className={styles.emptyState}>
           <h2>No Flashcards Available</h2>
-          <p>You don't have any {mode === 'favorites' ? 'favorite questions' : 'weakest questions'} to study yet.</p>
+          <p>You don't have any {activeTab === 'all' ? '' : activeTab} {mode === 'favorites' ? 'favorite questions' : 'weakest questions'} to study yet.</p>
         </div>
       </div>
     );
   }
 
-  const currentCard = cards[currentIndex];
+  const currentCard = filteredCards[currentIndex];
 
   return (
     <div className={styles.container}>
@@ -207,6 +272,17 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
         </button>
         <h1>{mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} Flashcards</h1>
       </div>
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: 'all', label: 'All' },
+          { key: 'technical', label: 'Technical' },
+          { key: 'behavioral', label: 'Behavioral' }
+        ]}
+        className={styles.tabs}
+      />
 
       <div className={styles.flashcardContainer}>
         <div 
@@ -249,13 +325,13 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           <Button onClick={handleShuffle}>
             Shuffle
           </Button>
-          <Button onClick={handleNext} disabled={currentIndex === cards.length - 1}>
+          <Button onClick={handleNext} disabled={currentIndex === filteredCards.length - 1}>
             Next
           </Button>
         </div>
 
         <div className={styles.progress}>
-          Card {currentIndex + 1} of {cards.length}
+          Card {currentIndex + 1} of {filteredCards.length}
         </div>
       </div>
     </div>
