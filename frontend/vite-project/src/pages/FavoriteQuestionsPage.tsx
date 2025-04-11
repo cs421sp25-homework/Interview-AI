@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
 import { SearchOutlined, DeleteOutlined, LeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { BookOpenIcon } from 'lucide-react';
 import API_BASE_URL from '../config/api';
 import styles from './FavoriteQuestionsPage.module.css';
 
@@ -372,6 +373,10 @@ const FavoritesPage: React.FC = () => {
     }
   };
 
+  const handleGoToFlashcards = () => {
+    navigate('/flashcards', { state: { fromFavorites: true } });
+  };
+
   const columns = [
     {
       title: 'Question',
@@ -505,7 +510,17 @@ const FavoritesPage: React.FC = () => {
         </button>
         <h1>Favorite Questions</h1>
       </div>
+
+      <button 
+        className={styles.flashcardsCornerButton}
+        onClick={handleGoToFlashcards}
+      >
+        <BookOpenIcon size={18} />
+        Practice with Flashcards
+      </button>
+
       {contextHolder}
+      
       <div className={styles.historyContent}>
         <div className={styles.filterSection}>
           <div className={styles.filterLeft}>
@@ -529,8 +544,6 @@ const FavoritesPage: React.FC = () => {
             >
               <Option value="technical">Technical</Option>
               <Option value="behavioral">Behavioral</Option>
-              <Option value="voice">Voice Interview</Option>
-              <Option value="text">Text Interview</Option>
             </Select>
           </div>
         </div>

@@ -392,10 +392,10 @@ const UserDashboard = () => {
                 <div className={styles.performanceHeader}>
                   <h3>Performance Analysis</h3>
                   <button 
-                    className={`${styles.button} ${styles.buttonPrimary}`}
+                    className={styles.linkStyle}
                     onClick={() => navigate('/graph')}
                   >
-                    Access More Graph
+                    More Graphs
                   </button>
                 </div>
 
