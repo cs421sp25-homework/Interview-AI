@@ -42,7 +42,7 @@ importers:
         specifier: ^7.2.0
         version: 7.5.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       recharts:
-        specifier: ^2.15.1
+        specifier: ^2.15.2
         version: 2.15.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       uploadthing:
         specifier: ^7.5.2
