@@ -1,0 +1,833 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tabButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.activeTab {
+  background-color: #f3e8ff;
+  color: #ec4899;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 #ec4899;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #6b7280;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(236, 72, 153, 0.2);
+  border-top-color: #ec4899;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Overview tab */
+.overviewContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .overviewContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eloCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid #e9d5ff;
+}
+
+.eloCardHeader {
+  padding: 20px;
+  background: linear-gradient(45deg, #f3e8ff, #e0e7ff);
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #ec4899;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.defaultUserAvatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.userDetails h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+.userDetails p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.eloCardBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eloScoreDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.eloScoreDisplay h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.scoreValue {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 8px 0;
+}
+
+.scoreChange {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.positive {
+  color: #047857;
+  background-color: #d1fae5;
+}
+
+.negative {
+  color: #be123c;
+  background-color: #fee2e2;
+}
+
+.neutral {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.miniChartContainer {
+  height: 100px;
+  margin-top: 8px;
+}
+
+.eloCardFooter {
+  padding: 12px 20px;
+  background-color: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: right;
+}
+
+.statsCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid #e9d5ff;
+}
+
+.statsCard h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.statItem:last-child {
+  border-bottom: none;
+}
+
+.statLabel {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.statValue {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+/* Leaderboard tab */
+.leaderboardContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboardCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid #e9d5ff;
+}
+
+.leaderboardTitle {
+  padding: 20px;
+  margin: 0;
+  background: linear-gradient(45deg, #f3e8ff, #e0e7ff);
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.leaderboardHeader {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  padding: 12px 20px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.rankHeader, .userHeader, .scoreHeader {
+  display: flex;
+  align-items: center;
+}
+
+.leaderboardBody {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.leaderboardRow {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.leaderboardRow:hover {
+  background-color: #f9fafb;
+}
+
+.leaderboardRow:last-child {
+  border-bottom: none;
+}
+
+.currentUser {
+  background-color: #fdf2f8;
+}
+
+.currentUser:hover {
+  background-color: #fce7f3;
+}
+
+.rankCell {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.topRank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+}
+
+.rank1 {
+  background-color: #fbbf24;
+}
+
+.rank2 {
+  background-color: #94a3b8;
+}
+
+.rank3 {
+  background-color: #b45309;
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.leaderAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ec4899;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+}
+
+.userName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.scoreCell {
+  font-weight: 600;
+  color: #1f2937;
+  text-align: right;
+}
+
+/* History tab */
+.historyContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid #e9d5ff;
+}
+
+.chartTitle {
+  padding: 20px;
+  margin: 0;
+  background: linear-gradient(45deg, #f3e8ff, #e0e7ff);
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.chartContainer {
+  padding: 20px;
+  height: 400px;
+}
+
+.historyDetails {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+  background-color: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.detailLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.detailValue {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+@media (max-width: 640px) {
+  .historyDetails {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dashboard Layout */
+.dashboardContainer {
+  padding: 1.5rem;
+  max-width: 100%;
+}
+
+.dashboardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.dashboardTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refreshButton:hover {
+  background-color: #e2e8f0;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.fullWidthCard {
+  grid-column: span 3;
+}
+
+@media (max-width: 1024px) {
+  .dashboardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fullWidthCard {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .fullWidthCard {
+    grid-column: span 1;
+  }
+}
+
+/* Dashboard Cards */
+.dashboardCard {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+}
+
+.cardHeader {
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.cardContent {
+  padding: 1rem;
+  flex: 1;
+}
+
+/* ELO Summary Card */
+.eloSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.eloMain {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.eloMainValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.eloChange {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.changeIcon {
+  margin-right: 0.125rem;
+}
+
+.positive {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.negative {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.neutral {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.eloDetails {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+}
+
+.eloDetailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.eloDetailLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.eloDetailValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* User Profile Card */
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userAvatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background-color: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.defaultUserAvatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userProfileDetails {
+  flex: 1;
+}
+
+.userName {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.75rem 0;
+}
+
+.userStats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.statBadge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background-color: #f1f5f9;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.statValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Recent Activity Card */
+.miniChart {
+  height: 140px;
+  margin-bottom: 1rem;
+}
+
+.recentStatsRow {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.recentStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.recentStatLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.recentStatValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.positiveText {
+  color: #059669;
+}
+
+.negativeText {
+  color: #dc2626;
+}
+
+/* ELO History Chart */
+.eloHistoryChart {
+  height: 300px;
+  width: 100%;
+}
+
+/* Leaderboard */
+.leaderboardTable {
+  width: 100%;
+}
+
+.leaderboardHeader {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  padding: 0.75rem 1rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.leaderboardBody {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.leaderboardRow {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+
+.leaderboardRow:last-child {
+  border-bottom: none;
+}
+
+.currentUserRow {
+  background-color: #f1f5f9;
+}
+
+.leaderboardRank {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.topRankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.rank1 {
+  background-color: #eab308;
+}
+
+.rank2 {
+  background-color: #94a3b8;
+}
+
+.rank3 {
+  background-color: #b45309;
+}
+
+.leaderboardUser {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.leaderboardAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background-color: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.leaderboardName {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.leaderboardScore {
+  font-weight: 600;
+  color: #1e293b;
+  text-align: right;
+} 

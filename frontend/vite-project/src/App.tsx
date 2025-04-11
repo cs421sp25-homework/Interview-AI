@@ -17,8 +17,11 @@ import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
 import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
 import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
+
+import EloScorePage from './pages/EloScorePage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import GraphPage from './pages/GraphPage';
+
 
 function App() {
   return (
@@ -40,6 +43,7 @@ function App() {
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
+      <Route path="/elo" element={<EloScorePage />} />
       <Route path="/flashcards" element={<FlashcardsPage />} />
       <Route path="/graph" element={<GraphPage />} />
     </Routes>
