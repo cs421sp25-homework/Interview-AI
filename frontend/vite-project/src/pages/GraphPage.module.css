@@ -1,0 +1,106 @@
+.pageWrapper {
+    min-height: 100vh;
+    background-color: #ffffff;
+  }
+  
+  /* NAV BAR */
+  .nav {
+    background-color: #fafafa;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 2rem;
+  }
+  
+  .navContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  
+  .navLinks {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .navButton {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0.5rem 0.8rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #4b5563;
+    transition: background-color 0.2s;
+  }
+  
+  .navButton:hover {
+    background-color: #f3f4f6;
+    border-radius: 4px;
+  }
+  
+  /* MAIN CONTAINER */
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* PAGE TITLE */
+  .pageTitle {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #111827;
+  }
+  
+  /* CARD GRID */
+  .cardGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  /* CARD STYLE */
+  .profileCard {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .profileCard h2 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #1f2937;
+  }
+  
+  /* LEADERBOARD TABLE */
+  .leaderboardTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  .leaderboardTable th,
+  .leaderboardTable td {
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    text-align: left;
+  }
+  
+  .leaderboardTable th {
+    background-color: #f3f4f6;
+    color: #374151;
+  }
+  

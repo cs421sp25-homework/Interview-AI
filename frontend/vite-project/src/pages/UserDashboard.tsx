@@ -171,8 +171,6 @@ const UserDashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching user scores:', error);
-        // We choose not to set an overarching error or redirect here, 
-        // since it's not critical and the user can still see the rest of the page.
       }
     };
     
@@ -389,9 +387,18 @@ const UserDashboard = () => {
                 </div>
               </div>
 
-              {/* Radar Chart */}
+              {/* Radar Chart with Button in the top-right corner */}
               <div className={styles.profileCard}>
-                <h3 style={{ marginBottom: '1.5rem' }}>Performance Analysis</h3>
+                <div className={styles.performanceHeader}>
+                  <h3>Performance Analysis</h3>
+                  <button 
+                    className={`${styles.button} ${styles.buttonPrimary}`}
+                    onClick={() => navigate('/graph')}
+                  >
+                    Access More Graph
+                  </button>
+                </div>
+
                 <ResponsiveContainer width="100%" height={400}>
                   <RadarChart data={skillStats}>
                     <PolarGrid stroke="#e5e7eb" />
