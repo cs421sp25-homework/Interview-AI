@@ -7,7 +7,8 @@ import {
   Award,
   Star,
   Settings,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react';
 import {
   RadarChart, 
@@ -302,6 +303,22 @@ const UserDashboard = () => {
                     onClick={() => navigate('/interview/history')}
                   >
                     View
+                  </button>
+                </div>
+                
+                <div className={styles.actionCard}>
+                  <div className={styles.actionIcon}>
+                    <BookOpen size={24} color="#ec4899" />
+                  </div>
+                  <h3>Flashcards</h3>
+                  <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
+                    Practice with interview flashcards
+                  </p>
+                  <button 
+                    className={`${styles.button} ${styles.buttonPrimary}`} 
+                    onClick={() => navigate('/flashcards')}
+                  >
+                    Study
                   </button>
                 </div>
               </div>

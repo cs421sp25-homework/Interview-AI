@@ -17,6 +17,8 @@ import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
 import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
 import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
+import FlashcardsPage from './pages/FlashcardsPage';
+
 function App() {
   return (
     <Routes>
@@ -37,6 +39,7 @@ function App() {
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
+      <Route path="/flashcards" element={<FlashcardsPage />} />
     </Routes>
   );
 }
