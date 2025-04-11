@@ -14,7 +14,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
 } from 'recharts';
-import { Bot, LogOut } from 'lucide-react';
+import { Bot, Home } from 'lucide-react';
 import axios from 'axios';
 
 // Adjust these imports to your actual context/API locations
@@ -25,7 +25,7 @@ import styles from './GraphPage.module.css';
 
 const GraphPage = () => {
   const navigate = useNavigate();
-  const { userEmail, logout } = useAuth();
+  const { userEmail } = useAuth();
 
   // Radar chart (hexagon) data (real data from API)
   const [skillStats, setSkillStats] = useState([
@@ -106,9 +106,8 @@ const GraphPage = () => {
     setLeaderboard(dummyLeaderboardData);
   }, [userEmail, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleBack = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -123,17 +122,11 @@ const GraphPage = () => {
           </div>
           <div className={styles.navLinks}>
             <button
-              className={styles.navButton}
-              onClick={() => navigate('/dashboard')}
+              className={styles.backButton}
+              onClick={handleBack}
             >
+              <Home size={18} />
               Back to Dashboard
-            </button>
-            <button
-              className={styles.navButton}
-              onClick={handleLogout}
-            >
-              <LogOut size={20} color="#4b5563" />
-              <span>Logout</span>
             </button>
           </div>
         </div>
