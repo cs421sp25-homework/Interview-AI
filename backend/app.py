@@ -32,6 +32,7 @@ from utils.audio_conversion import convert_to_wav
 import json
 from llm.llm_interface import LLMInterface
 import time
+from services.elo_calculator import SupabaseEloService
 
 
 # Load environment variables
@@ -57,6 +58,9 @@ llm_graph = LLMGraph()
 supabase = create_client(supabase_url, supabase_key)
 
 active_interviews = {}
+
+# Initialize the ELO service
+elo_service = SupabaseEloService()
 
 @app.route('/api/profile', methods=['GET'])
 def profile():
@@ -1483,6 +1487,172 @@ def get_chat_history_by_id(chat_id):
         print(f"Error retrieving chat history {chat_id}: {e}")
         return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
 
+@app.route('/api/elo/update', methods=['POST'])
+def update_elo_score():
+    """
+    Update a user's ELO score based on interview performance
+    
+    Required fields:
+    - email: User's email address
+    - score: Interview score (0-100)
+    
+    Optional fields:
+    - name: User's name (defaults to "Anonymous User" if not provided)
+    - difficulty: Interview difficulty ("easy", "medium", "hard")
+    - interview_type: Type of interview
+    """
+    data = request.json
+    
+    # Validate required fields
+    if not data or 'email' not in data or 'score' not in data:
+        return jsonify({
+            "success": False,
+            "message": "Email and score are required"
+        }), 400
+    
+    try:
+        # Get parameters
+        email = data['email']
+        score = int(data['score'])
+        name = data.get('name', "Anonymous User")
+        difficulty = data.get('difficulty', 'medium')
+        interview_type = data.get('interview_type', 'general')
+        
+        # Validate score range
+        if score < 0 or score > 100:
+            return jsonify({
+                "success": False,
+                "message": "Score must be between 0 and 100"
+            }), 400
+        
+        # Update ELO score
+        result = elo_service.update_elo_score(
+            email=email,
+            interview_score=score,
+            name=name,
+            difficulty=difficulty,
+            interview_type=interview_type
+        )
+        
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error updating ELO score: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error updating ELO score: {str(e)}"
+        }), 500
+
+@app.route('/api/elo/history/<email>', methods=['GET'])
+def get_elo_history(email):
+    """
+    Get a user's ELO history sorted by time
+    
+    Parameters:
+    - email: User's email address (path parameter)
+    - limit: Maximum number of history entries to return (query parameter)
+    """
+    try:
+        # Get optional limit parameter
+        limit = request.args.get('limit', default=90, type=int)
+        print(f"Getting ELO history for email: {email} with limit: {limit}")
+        
+        # Get user's ELO history
+        history = elo_service.get_user_elo_history(email, limit)
+        
+        return jsonify({
+            "success": True,
+            "data": history
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error fetching ELO history: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error fetching ELO history: {str(e)}"
+        }), 500
+
+@app.route('/api/elo/current/<email>', methods=['GET'])
+def get_current_elo(email):
+    """
+    Get a user's current ELO score and change from the previous score
+    
+    Parameters:
+    - email: User's email address (path parameter)
+    """
+    try:
+        # Get current ELO score
+        current_elo = elo_service.get_user_elo(email)
+        
+        # Get user's ELO history to determine change
+        history = elo_service.get_user_elo_history(email, limit=2)
+        
+        # Calculate change
+        change = 0
+        previous_elo = None
+        
+        if len(history) >= 2:
+            # The history is ordered with oldest first, so index 0 is earlier than index 1
+            previous_elo = history[1]['score']  # Second to last entry
+            print(f"history: {history}")
+            change = current_elo - previous_elo
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "email": email,
+                "current_elo": current_elo,
+                "previous_elo": previous_elo,
+                "change": change
+            }
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error fetching current ELO: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error fetching current ELO: {str(e)}"
+        }), 500
+
+@app.route('/api/elo/leaderboard', methods=['GET'])
+def get_leaderboard():
+    """
+    Get the top ELO scores
+    
+    Parameters:
+    - limit: Maximum number of users to return (query parameter)
+    - offset: Number of users to skip (query parameter)
+    """
+    try:
+        # Get optional parameters
+        limit = request.args.get('limit', default=10, type=int)
+        offset = request.args.get('offset', default=0, type=int)
+        
+        # Get leaderboard
+        leaderboard = elo_service.get_leaderboard(limit, offset)
+        
+        return jsonify({
+            "success": True,
+            "data": leaderboard
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error fetching leaderboard: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error fetching leaderboard: {str(e)}"
+        }), 500
+
+# Add a health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "message": "ELO API is running"
+    })
 
 if __name__ == '__main__':
     import os
