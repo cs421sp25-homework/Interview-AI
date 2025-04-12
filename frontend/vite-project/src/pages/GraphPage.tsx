@@ -37,13 +37,14 @@ const GraphPage = () => {
     { subject: 'Confidence', A: 0 }
   ]);
 
-  // Dummy ELO scores
+  // ELO history data
   const [eloData, setEloData] = useState<{ timestamp: string; elo: number }[]>([]);
+  const [isLoadingElo, setIsLoadingElo] = useState(true);
+  const [eloError, setEloError] = useState<string | null>(null);
 
-  // Dummy leaderboard
-  const [leaderboard, setLeaderboard] = useState<{ rank: number; name: string; elo: number }[]>(
-    []
-  );
+  // Leaderboard data
+  const [leaderboard, setLeaderboard] = useState<{ rank: number; name: string; elo: number }[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
 
   useEffect(() => {
     // Fetch real skill data from the 'overall_scores' endpoint
@@ -78,36 +79,115 @@ const GraphPage = () => {
       }
     };
 
+    // Fetch ELO history from the API
+    const fetchEloHistory = async () => {
+      setIsLoadingElo(true);
+      setEloError(null);
+      
+      try {
+        const currentEmail = userEmail || localStorage.getItem('user_email');
+        if (!currentEmail) {
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5001/api/elo/history/${currentEmail}`);
+        
+        if (response.data && response.data.success && response.data.data) {
+          // Map the data to match our component's expected format
+          const formattedData = response.data.data.map((item: any) => ({
+            timestamp: item.date,
+            elo: item.score
+          }));
+          
+          setEloData(formattedData);
+        } else {
+          setEloError('Invalid data format received from server');
+        }
+      } catch (error) {
+        console.error('Error fetching ELO history:', error);
+        setEloError('Failed to load ELO history. Please try again later.');
+        
+        // Fallback to dummy data if API fails
+        const dummyEloScores = [
+          { timestamp: '2025-04-01', elo: 1200 },
+          { timestamp: '2025-04-02', elo: 1250 },
+          { timestamp: '2025-04-03', elo: 1300 },
+          { timestamp: '2025-04-04', elo: 1275 },
+          { timestamp: '2025-04-05', elo: 1350 },
+        ];
+        setEloData(dummyEloScores);
+      } finally {
+        setIsLoadingElo(false);
+      }
+    };
+
+    // Fetch leaderboard data
+    const fetchLeaderboard = async () => {
+      setIsLoadingLeaderboard(true);
+      try {
+        const response = await axios.get('http://localhost:5001/api/elo/leaderboard?limit=10');
+        
+        if (response.data && response.data.success && response.data.data) {
+          // Map the data to match our component's expected format
+          const formattedData = response.data.data.map((item: any) => ({
+            rank: item.rank,
+            name: item.name,
+            elo: item.eloscore // Note: using lowercase as per our Supabase schema
+          }));
+          
+          setLeaderboard(formattedData);
+        } else {
+          // Fallback to dummy data if API response format is unexpected
+          const dummyLeaderboardData = [
+            { rank: 1, name: 'Alice', elo: 1500 },
+            { rank: 2, name: 'Bob', elo: 1450 },
+            { rank: 3, name: 'Charlie', elo: 1420 },
+            { rank: 4, name: 'David', elo: 1400 },
+            { rank: 5, name: 'Eve', elo: 1390 },
+            { rank: 6, name: 'Frank', elo: 1375 },
+            { rank: 7, name: 'Grace', elo: 1360 },
+            { rank: 8, name: 'Heidi', elo: 1350 },
+            { rank: 9, name: 'Ivan', elo: 1340 },
+            { rank: 10, name: 'Judy', elo: 1330 },
+          ];
+          setLeaderboard(dummyLeaderboardData);
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        
+        // Fallback to dummy data if API fails
+        const dummyLeaderboardData = [
+          { rank: 1, name: 'Alice', elo: 1500 },
+          { rank: 2, name: 'Bob', elo: 1450 },
+          { rank: 3, name: 'Charlie', elo: 1420 },
+          { rank: 4, name: 'David', elo: 1400 },
+          { rank: 5, name: 'Eve', elo: 1390 },
+          { rank: 6, name: 'Frank', elo: 1375 },
+          { rank: 7, name: 'Grace', elo: 1360 },
+          { rank: 8, name: 'Heidi', elo: 1350 },
+          { rank: 9, name: 'Ivan', elo: 1340 },
+          { rank: 10, name: 'Judy', elo: 1330 },
+        ];
+        setLeaderboard(dummyLeaderboardData);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
+    };
+
+    // Execute all fetch operations
     fetchSkills();
-
-    // Dummy ELO scores (static)
-    const dummyEloScores = [
-      { timestamp: '2025-04-01', elo: 1200 },
-      { timestamp: '2025-04-02', elo: 1250 },
-      { timestamp: '2025-04-03', elo: 1300 },
-      { timestamp: '2025-04-04', elo: 1275 },
-      { timestamp: '2025-04-05', elo: 1350 },
-    ];
-    setEloData(dummyEloScores);
-
-    // Dummy leaderboard (static)
-    const dummyLeaderboardData = [
-      { rank: 1, name: 'Alice', elo: 1500 },
-      { rank: 2, name: 'Bob', elo: 1450 },
-      { rank: 3, name: 'Charlie', elo: 1420 },
-      { rank: 4, name: 'David', elo: 1400 },
-      { rank: 5, name: 'Eve', elo: 1390 },
-      { rank: 6, name: 'Frank', elo: 1375 },
-      { rank: 7, name: 'Grace', elo: 1360 },
-      { rank: 8, name: 'Heidi', elo: 1350 },
-      { rank: 9, name: 'Ivan', elo: 1340 },
-      { rank: 10, name: 'Judy', elo: 1330 },
-    ];
-    setLeaderboard(dummyLeaderboardData);
+    fetchEloHistory();
+    fetchLeaderboard();
   }, [userEmail, navigate]);
 
   const handleBack = () => {
     navigate('/dashboard');
+  };
+
+  // Format date for better display in the chart
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -164,41 +244,76 @@ const GraphPage = () => {
           {/* Line Chart (ELO Over Time) Card */}
           <div className={styles.profileCard}>
             <h2>ELO Progress</h2>
-            <div style={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer>
-                <LineChart data={eloData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-                  <XAxis dataKey="timestamp" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="elo" stroke="#ec4899" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {isLoadingElo ? (
+              <div className={styles.loadingContainer}>Loading ELO data...</div>
+            ) : eloError ? (
+              <div className={styles.errorContainer}>{eloError}</div>
+            ) : eloData.length === 0 ? (
+              <div className={styles.emptyContainer}>No ELO history available</div>
+            ) : (
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <LineChart 
+                    data={[...eloData].reverse()} 
+                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
+                    <XAxis 
+                      dataKey="timestamp" 
+                      tickFormatter={formatDate}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      domain={['dataMin - 50', 'dataMax + 50']} 
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}`}
+                      formatter={(value) => [`ELO: ${value}`, '']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="elo" 
+                      stroke="#a855f7" 
+                      strokeWidth={2}
+                      activeDot={{ r: 6, fill: '#a855f7', stroke: '#fff' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Leaderboard */}
         <div className={styles.profileCard} style={{ marginTop: '2rem' }}>
           <h2>Top 10 Leaderboard</h2>
-          <table className={styles.leaderboardTable}>
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>ELO Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((user) => (
-                <tr key={user.rank}>
-                  <td>{user.rank}</td>
-                  <td>{user.name}</td>
-                  <td>{user.elo}</td>
+          {isLoadingLeaderboard ? (
+            <div className={styles.loadingContainer}>Loading leaderboard...</div>
+          ) : (
+            <table className={styles.leaderboardTable}>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>ELO Score</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {leaderboard.map((user) => (
+                  <tr key={user.rank}>
+                    <td>{user.rank}</td>
+                    <td>{user.name}</td>
+                    <td>{user.elo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
