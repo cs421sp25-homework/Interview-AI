@@ -214,11 +214,17 @@ class SupabaseEloService:
             # User exists, update their ELO score
             user_id = user_response.data[0]["id"]
             
+            print(f"User ID: {user_id}")
+            print(f"New ELO: {new_elo}")
+            print(f"Current ELO: {current_elo}")
+
             try:
                 # Update the user's ELO in the database
                 self.supabase.table("elo_scores").update({
                     "eloscore": new_elo,
                 }).eq("id", user_id).execute()
+
+                print(f"Updated ELO score for user {email} to {new_elo}")
 
                 self.supabase.table("elo_history").insert({
                     "name": name,
@@ -226,6 +232,8 @@ class SupabaseEloService:
                     "eloscore": new_elo,
                     "created_at": timestamp.isoformat()
                 }).execute()
+
+                print(f"Inserted ELO history for user {email}")
                 
                 # Update all ranks
                 self._update_all_ranks()
