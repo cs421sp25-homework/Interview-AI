@@ -488,21 +488,13 @@ const FavoritesPage: React.FC = () => {
         <h1>Favorite Questions</h1>
         <Button
           type="primary"
-          icon={<FileTextOutlined />}
+          icon={<BookOpenIcon />}
           onClick={handleViewFlashcards}
           className={styles.flashcardsButton}
         >
-          {selectedRowKeys.length > 0 ? `View ${selectedRowKeys.length} Selected Flashcards` : 'View All Flashcards'}
+          {selectedRowKeys.length > 0 ? `Practice ${selectedRowKeys.length} Selected Flashcards` : 'Practice All Flashcards'}
         </Button>
       </div>
-
-      <button 
-        className={styles.flashcardsCornerButton}
-        onClick={handleGoToFlashcards}
-      >
-        <BookOpenIcon size={18} />
-        Practice with Flashcards
-      </button>
 
       {contextHolder}
       
