@@ -6,6 +6,7 @@ import datetime
 import logging
 from openai import OpenAI
 from pydantic import BaseModel
+from services.elo_calculator import SupabaseEloService as EloCalculator
 
 class ChatHistoryService:
     def __init__(self, supabase_url, supabase_key):
@@ -86,7 +87,7 @@ class ChatHistoryService:
                     "sender": msg.get('sender')
                 })
                 
-                # Store “audioUrl” and "storagePath" in audio metadata
+                # Store "audioUrl" and "storagePath" in audio metadata
                 if msg.get('audioUrl') or msg.get('storagePath'):
                     audio_metadata.append({
                         "audioUrl": msg.get('audioUrl'),
@@ -234,7 +235,7 @@ class ChatHistoryService:
             ]
 
             response = client.beta.chat.completions.parse(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4.5-preview",
                 response_format=ScoreRubrics,
                 messages=analysis_prompt 
             )
@@ -422,6 +423,20 @@ class ChatHistoryService:
                 'specific_feedback': specific_feedback_text,
                 'created_at': datetime.datetime.now().isoformat()
             }).execute()
+
+            total_score = response.choices[0].message.parsed.technical + response.choices[0].message.parsed.communication + response.choices[0].message.parsed.confidence + response.choices[0].message.parsed.problem_solving + response.choices[0].message.parsed.resume_strength + response.choices[0].message.parsed.leadership
+            total_score = total_score / 6
+
+            # Get name from user_email
+            name = self.supabase.table('profiles').select('first_name, last_name').eq('email', user_email).execute()
+            name = name.data[0].get('first_name') + " " + name.data[0].get('last_name')
+
+            # Update ELO score
+            elo_service = EloCalculator()
+            print(f"Updating ELO score for {user_email} with score {total_score} and name {name}")
+            elo_service.update_elo_score(user_email, total_score, name)
+
+
             
             self.logger.info(f"Analysis saved for interview_id: {interview_id}")
             return {"success": True}
