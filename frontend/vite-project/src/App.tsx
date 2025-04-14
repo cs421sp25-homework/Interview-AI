@@ -9,7 +9,9 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
 import OAuthSignUpForm from './pages/OAuthSignUpForm';
+// import SignUpFormOauth from './pages/SignUpFormOauth';
 import 'antd/dist/reset.css';
+// import OnGoingVoice from './pages/OnGoingVoice';
 import VoiceInterviewPage from './pages/VoiceInterviewPage';
 import InterviewHistoryPage from './pages/InterviewHistoryPage';
 import InterviewLogViewPage from './pages/InterviewLogViewPage';
@@ -19,7 +21,6 @@ import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
 import EloScorePage from './pages/EloScorePage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import GraphPage from './pages/GraphPage';
-
 
 function App() {
   return (
@@ -41,11 +42,9 @@ function App() {
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
-      
+      <Route path="/elo" element={<EloScorePage />} />
       <Route path="/flashcards/favorites" element={<FlashcardsPage mode="favorites" />} />
       <Route path="/flashcards/weakest" element={<FlashcardsPage mode="weakest" />} />
-      <Route path="/flashcards" element={<FlashcardsPage mode="favorites" />} />
-      <Route path="/elo" element={<EloScorePage />} />
       <Route path="/graph" element={<GraphPage />} />
     </Routes>
   );
