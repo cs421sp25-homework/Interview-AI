@@ -183,7 +183,7 @@ class ChatHistoryService:
             return False 
         
         
-    def save_analysis(self, interview_id: int, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None) -> Dict[str, Any]:
+    def save_analysis(self, interview_id: int, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None, session_id: str = "Test") -> Dict[str, Any]:
         """
         Analyze interview conversation and save performance metrics
         
@@ -450,13 +450,14 @@ class ChatHistoryService:
                 # Prepare data to insert or update
                 upsert_data = {
                     'question_text': question_text,
-                    'session_id': config_id,  # whichever session identifier you use
+                    'session_id': session_id,  # whichever session identifier you use
                     'email': user_email,
                     'is_weak': True,
                     'created_at': datetime.datetime.utcnow().isoformat()
                     # If you want a question_type, set it to e.g. 'weak_question'
                     # If you store thread_id or anything else, set them here
                 }
+
                 
                 # Check if question already exists for this user/session
                 existing = self.supabase.table('interview_questions') \

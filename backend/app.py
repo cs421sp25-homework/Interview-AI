@@ -683,7 +683,7 @@ def save_chat_history():
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
-    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
+    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name)
     
     
     if not chat_history_result.get('success'):
@@ -693,7 +693,7 @@ def save_chat_history():
     if not interview_id:
         return jsonify({"error": "Failed to get interview ID"}), 500
     
-    analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id)
+    analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id, session_id=thread_id)
     
     if not analysis_result.get('success'):
         print(f"Warning: Failed to save analysis for interview {interview_id}: {analysis_result.get('error', 'Unknown error')}")
