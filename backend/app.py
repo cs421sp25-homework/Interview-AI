@@ -706,7 +706,7 @@ def save_chat_history():
     except Exception as e:
         print(f"Error checking existing log: {e}")
     
-    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name)
+    chat_history_result = chat_history_service.save_chat_history(thread_id, user_email, messages, config_name, config_id)
     
     
     if not chat_history_result.get('success'):
