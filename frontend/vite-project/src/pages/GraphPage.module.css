@@ -1,13 +1,30 @@
 .pageWrapper {
     min-height: 100vh;
-    background-color: #ffffff;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding-bottom: 2rem;
   }
   
   /* NAV BAR */
   .nav {
-    background-color: #fafafa;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(236, 72, 153, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    animation: slideDown 0.5s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
   
   .navContent {
@@ -15,6 +32,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 90%;
   }
   
   .logo {
@@ -22,7 +42,23 @@
     align-items: center;
     gap: 0.5rem;
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+    background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: fadeIn 0.8s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
   .navLinks {
@@ -125,5 +161,100 @@
   .leaderboardTable th {
     background-color: #f3f4f6;
     color: #374151;
+  }
+  
+  /* 当前用户行高亮 */
+  .currentUser {
+    background-color: rgba(236, 72, 153, 0.1) !important;
+    font-weight: 600;
+    position: relative;
+  }
+  
+  .currentUser::after {
+    content: 'You';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    background-color: #ec4899;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    opacity: 0.8;
+  }
+  
+  /* 排行榜行效果增强 */
+  .leaderboardTable tbody tr td {
+    transition: all 0.2s ease;
+  }
+  
+  .leaderboardTable tbody tr:hover td {
+    background-color: #fdf2f8;
+  }
+  
+  /* 排名列样式 */
+  .leaderboardTable td:first-child {
+    font-weight: 600;
+    color: #4b5563;
+  }
+  
+  /* 得分列样式 */
+  .leaderboardTable td:last-child {
+    font-weight: 600;
+    color: #a855f7;
+  }
+  
+  /* 为前三名添加特殊颜色 */
+  .leaderboardTable tbody tr:nth-child(1) td:first-child {
+    color: gold;
+  }
+  
+  .leaderboardTable tbody tr:nth-child(2) td:first-child {
+    color: silver;
+  }
+  
+  .leaderboardTable tbody tr:nth-child(3) td:first-child {
+    color: #cd7f32; /* 铜色 */
+  }
+  
+  /* 图表容器 */
+  .chartContainer {
+    height: 300px;
+    width: 100%;
+    margin-top: 1rem;
+    position: relative;
+  }
+  
+  /* 确保ResponsiveContainer正常工作 */
+  .chartContainer > div {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    top: 0;
+    left: 0;
+  }
+  
+  /* 空数据状态 */
+  .emptyContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #6b7280;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    text-align: center;
+    border: 1px dashed #e5e7eb;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .emptyContainer button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(236, 72, 153, 0.3);
+    background: #db2777;
   }
   

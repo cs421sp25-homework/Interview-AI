@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bot, 
   User, 
@@ -25,9 +25,29 @@ import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../config/api';
 import styles from './UserDashboard.module.css';
 
+// 定义接口
+interface LeaderboardItem {
+  rank: number;
+  name: string;
+  elo: number;
+  email?: string;
+}
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { userEmail, logout } = useAuth();
+  const [debug, setDebug] = useState(false);
+
+  const logInfo = (message: string, data: any = null) => {
+    if (debug) {
+      console.log(`[DEBUG] ${message}`, data || '');
+    }
+  };
+
+  const userIdentifierRef = useRef({
+    email: '',
+    name: ''
+  });
 
   // Store user profile data
   const [userData, setUserData] = useState({
@@ -48,6 +68,18 @@ const UserDashboard = () => {
     { subject: 'Confidence', A: 0 }
   ]);
 
+  // Leaderboard data state
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState('');
+
+  // User ranking in leaderboard
+  const [userRanking, setUserRanking] = useState({
+    rank: -1,
+    username: '',
+    score: 0
+  });
+
   // Error state for display if any API call fails
   const [error, setError] = useState('');
   
@@ -59,25 +91,31 @@ const UserDashboard = () => {
       try {
         setError(''); // reset error before each fetch
 
-        // If we have userEmail from context, otherwise fallback to localStorage
+        // 获取用户邮箱
         const currentEmail = userEmail || localStorage.getItem('user_email');
         if (!currentEmail) {
-          // If absolutely no email is found, force login
+          // 未找到邮箱，重定向到登录页
           navigate('/login');
           return;
         }
 
-        console.log('Fetching profile for email:', currentEmail);
+        // 保存用户邮箱以供后续使用
+        userIdentifierRef.current.email = currentEmail;
+        logInfo('User email set:', currentEmail);
+
+        // 获取用户资料
         const response = await axios.get(`${API_BASE_URL}/api/profile/${currentEmail}`);
+        logInfo('Profile API response:', response.data);
 
         if (response.data.data) {
           const profile = response.data.data;
 
-          // Save photo in local storage if desired
+          // 保存照片URL
           if (profile.photo_url) {
             localStorage.setItem('user_photo_url', profile.photo_url);
           }
 
+          // 处理加入日期
           let joinedDate = '';
           try {
             if (profile.created_at) {
@@ -102,25 +140,35 @@ const UserDashboard = () => {
             joinedDate = 'Date error';
           }
 
-          // Create initial user data with profile info
+          // 保存用户名供后续使用
+          const fullName = `${profile.first_name} ${profile.last_name}`.trim();
+          userIdentifierRef.current.name = fullName;
+          logInfo('User name set:', fullName);
+
+          // 创建用户资料对象
           const initialUserData = {
-            name: `${profile.first_name} ${profile.last_name}`.trim(),
+            name: fullName,
             email: profile.email,
-            interviews: profile.interviews_completed || 0, // Initial count from profile
+            interviews: profile.interviews_completed || 0,
             joined: joinedDate,
             photoUrl: profile.photo_url || null
           };
           
           setUserData(initialUserData);
+          logInfo('User data set:', initialUserData);
 
-          // Fetch user's interview scores after we have an ID or email
+          // 获取用户技能评分
           const userId = profile.id || profile.email;
           fetchUserScores(userId);
           
-          // Fetch actual interview count
+          // 获取面试次数
           fetchInterviewCount(initialUserData.email);
+          
+          // 获取排行榜数据
+          // 移到最后确保用户标识符已经设置好
+          fetchLeaderboard();
         } else {
-          // If data is null or missing, show an error
+          // 数据为空，显示错误
           setError('Profile data not found. Please complete your profile or contact support.');
         }
       } catch (err: any) {
@@ -128,7 +176,7 @@ const UserDashboard = () => {
         if (err.response) {
           const { status, data } = err.response;
           if (status === 401) {
-            // Unauthorized -> force re-login
+            // 未授权，强制重新登录
             logout();
             navigate('/login');
           } else if (status === 404) {
@@ -139,7 +187,7 @@ const UserDashboard = () => {
             setError(data.error || 'An error occurred fetching profile data.');
           }
         } else {
-          // Possibly a network error
+          // 可能是网络错误
           setError('Network error. Please check your connection or try again later.');
         }
       }
@@ -199,24 +247,157 @@ const UserDashboard = () => {
       }
     };
 
+    // 独立的排行榜获取函数
+    const fetchLeaderboard = async () => {
+      try {
+        logInfo('Starting leaderboard fetch');
+        setLoadingLeaderboard(true);
+        setLeaderboardError('');
+        
+        // 获取排行榜数据
+        const response = await axios.get('http://localhost:5001/api/elo/leaderboard?limit=10');
+        logInfo('Leaderboard API response:', response.data);
+        
+        if (response.data && response.data.success && response.data.data) {
+          // 格式化排行榜数据
+          const formattedData = response.data.data.map((item: any) => ({
+            rank: item.rank || 0,
+            name: item.name || '',
+            elo: item.eloscore || 0,
+            email: item.email || ''
+          }));
+          
+          logInfo('Formatted leaderboard data:', formattedData);
+          
+          // 只取前5名显示
+          const top5Data = formattedData.slice(0, 5);
+          setLeaderboardData(top5Data);
+          
+          // 尝试在完整排行榜(10名)中查找当前用户
+          const userEmail = userIdentifierRef.current.email;
+          const userName = userIdentifierRef.current.name;
+          
+          logInfo('Searching for user in full leaderboard with:', { userEmail, userName });
+          
+          // 首先尝试通过邮箱匹配
+          let userInLeaderboard = formattedData.find((item: LeaderboardItem) => 
+            item.email && item.email.toLowerCase() === userEmail.toLowerCase()
+          );
+          
+          // 如果邮箱没找到，尝试通过名字匹配
+          if (!userInLeaderboard) {
+            userInLeaderboard = formattedData.find((item: LeaderboardItem) => 
+              item.name && item.name.toLowerCase() === userName.toLowerCase()
+            );
+          }
+          
+          // 如果在排行榜中找到用户
+          if (userInLeaderboard) {
+            logInfo('User found in leaderboard:', userInLeaderboard);
+            
+            // 使用排行榜中的数据设置用户排名
+            setUserRanking({
+              rank: userInLeaderboard.rank,
+              username: userInLeaderboard.name,
+              score: userInLeaderboard.elo
+            });
+          } else {
+            // 用户不在前10名，获取单独的排名
+            logInfo('User not in top 10, fetching separate rank data');
+            await fetchUserRank();
+          }
+        } else {
+          throw new Error('Invalid leaderboard data format from server');
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        setLeaderboardError('Failed to load leaderboard data');
+        
+        // 回退到静态数据
+        setLeaderboardData([
+          { rank: 1, name: "SophieCoder", elo: 98 },
+          { rank: 2, name: "AlexTechGuru", elo: 95 },
+          { rank: 3, name: "MikeDevMaster", elo: 92 },
+          { rank: 4, name: "EmilyJavaPro", elo: 89 },
+          { rank: 5, name: "RyanFullStack", elo: 85 }
+        ]);
+        
+        // 尝试单独获取用户排名
+        try {
+          await fetchUserRank();
+        } catch (e) {
+          // 如果用户排名也获取失败，设置默认排名
+          logInfo('Using fallback user ranking');
+          setUserRanking({
+            rank: 8,
+            username: userData.name || "You",
+            score: 82
+          });
+        }
+      } finally {
+        setLoadingLeaderboard(false);
+      }
+    };
+    
+    // 单独获取用户排名的函数
+    const fetchUserRank = async () => {
+      const email = userIdentifierRef.current.email;
+      if (!email) {
+        logInfo('No email available for user rank fetch');
+        return;
+      }
+      
+      try {
+        logInfo('Fetching user rank for email:', email);
+        const response = await axios.get(`http://localhost:5001/api/elo/user/${email}`);
+        logInfo('User rank API response:', response.data);
+        
+        // 检查响应中是否有有效数据
+        if (response.data && response.data.success && response.data.data) {
+          const rankData = response.data.data;
+          
+          // 确保排名是有效值（大于0）
+          if (rankData.rank && rankData.rank > 0) {
+            logInfo('Valid rank found in API response:', rankData.rank);
+            setUserRanking({
+              rank: rankData.rank,
+              username: rankData.name || userIdentifierRef.current.name || 'You',
+              score: rankData.eloscore || 0
+            });
+          } else if (rankData.eloscore && rankData.eloscore > 0) {
+            // 有分数但没有排名的情况，设置为排名中
+            logInfo('User has ELO score but no rank, using default rank');
+            setUserRanking({
+              rank: 99, // 使用一个大数字表示"排名中"
+              username: rankData.name || userIdentifierRef.current.name || 'You',
+              score: rankData.eloscore
+            });
+          } else {
+            // 用户存在但无分数和排名
+            logInfo('User exists but has no valid ELO score or rank');
+            setUserRanking({
+              rank: -1,
+              username: userIdentifierRef.current.name || 'You',
+              score: 0
+            });
+          }
+        } else {
+          // API返回但没有有效数据
+          logInfo('No valid user rank data returned');
+          setUserRanking({
+            rank: -1,
+            username: userIdentifierRef.current.name || 'You',
+            score: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user rank:', error);
+        // 在错误情况下不改变用户排名，保留之前的值
+      }
+    };
+
     fetchUserProfile();
   }, [userEmail, navigate, logout]);
-
-  // Static leaderboard data
-  const leaderboardData = [
-    { username: "SophieCoder", score: 98 },
-    { username: "AlexTechGuru", score: 95 },
-    { username: "MikeDevMaster", score: 92 },
-    { username: "EmilyJavaPro", score: 89 },
-    { username: "RyanFullStack", score: 85 }
-  ];
-
-  // Static user ranking data
-  const userRanking = {
-    rank: 8,
-    username: userData.name || "You",
-    score: 82
-  };
 
   const handleLogout = () => {
     logout();
@@ -298,40 +479,106 @@ const UserDashboard = () => {
               </div>
 
               <div style={{ marginTop: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem' }}>Leaderboard</h3>
-                <div className={styles.leaderboard}>
-                  {leaderboardData.map((user, index) => (
-                    <div key={index} className={styles.leaderboardItem}>
-                      <div className={styles.leaderboardRank}>
-                        {index === 0 ? <Trophy size={16} color="gold" /> : `#${index + 1}`}
-                      </div>
-                      <div className={styles.leaderboardUser}>
-                        {user.username}
-                      </div>
-                      <div className={styles.leaderboardScore}>
-                        {user.score}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Divider between top users and current user */}
-                  <div className={styles.leaderboardDivider}>
-                    <span>• • •</span>
+                <h3 style={{ marginBottom: '1rem' }}>
+                  Leaderboard
+                  <span 
+                    onClick={() => setDebug(!debug)} 
+                    style={{ 
+                      marginLeft: '8px', 
+                      fontSize: '14px', 
+                      color: debug ? '#ec4899' : '#e5e7eb',
+                      cursor: 'pointer',
+                      userSelect: 'none'
+                    }}
+                  >
+                    •
+                  </span>
+                </h3>
+                {loadingLeaderboard ? (
+                  <div className={styles.loadingContainer}>
+                    <div className={styles.loadingSpinner}></div>
+                    <p>Loading leaderboard...</p>
                   </div>
-                  
-                  {/* Current user ranking */}
-                  <div className={`${styles.leaderboardItem} ${styles.currentUserRank}`}>
-                    <div className={styles.leaderboardRank}>
-                      #{userRanking.rank}
+                ) : leaderboardError ? (
+                  <div className={styles.errorMessage}>{leaderboardError}</div>
+                ) : (
+                  <>
+                    {/* 添加排名提示信息 */}
+                    <div className={styles.rankingInfo}>
+                      <div className={styles.yourRank}>
+                        <Trophy size={16} color="#ec4899" />
+                        {debug && (
+                          <button 
+                            onClick={() => console.log({
+                              userRanking,
+                              leaderboardData,
+                              userIdentifiers: userIdentifierRef.current
+                            })}
+                            style={{marginRight: '10px', fontSize: '10px'}}
+                          >
+                            Debug
+                          </button>
+                        )}
+                        {userRanking.rank > 0 && userRanking.rank < 99 ? (
+                          <span>Your current rank: <strong>#{userRanking.rank}</strong></span>
+                        ) : userRanking.rank === 99 ? (
+                          <span>You have an ELO score but your exact rank is still being calculated.</span>
+                        ) : loadingLeaderboard ? (
+                          <span>Loading your rank...</span>
+                        ) : (
+                          <span>You're not ranked yet. Complete at least one interview to get your first ELO score.</span>
+                        )}
+                      </div>
                     </div>
-                    <div className={styles.leaderboardUser}>
-                      {userRanking.username}
+                    
+                    <div className={styles.leaderboard}>
+                      {leaderboardData.map((user, index) => (
+                        <div 
+                          key={index} 
+                          className={`
+                            ${styles.leaderboardItem} 
+                            ${user.name === userRanking.username ? styles.currentUserRank : ''}
+                          `}
+                        >
+                          <div className={styles.leaderboardRank}>
+                            {index === 0 ? <Trophy size={16} color="gold" /> : `#${user.rank}`}
+                          </div>
+                          <div className={styles.leaderboardUser}>
+                            {user.name}
+                            {user.name === userRanking.username && (
+                              <span className={styles.youBadge}>You</span>
+                            )}
+                          </div>
+                          <div className={styles.leaderboardScore}>
+                            {user.elo}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* 如果用户不在前5名，显示分隔线和用户排名 */}
+                      {userRanking.rank > 5 && (
+                        <>
+                          <div className={styles.leaderboardDivider}>
+                            <span>• • •</span>
+                          </div>
+                          
+                          <div className={`${styles.leaderboardItem} ${styles.currentUserRank}`}>
+                            <div className={styles.leaderboardRank}>
+                              #{userRanking.rank}
+                            </div>
+                            <div className={styles.leaderboardUser}>
+                              {userRanking.username}
+                              <span className={styles.youBadge}>You</span>
+                            </div>
+                            <div className={styles.leaderboardScore}>
+                              {userRanking.score}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className={styles.leaderboardScore}>
-                      {userRanking.score}
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             </div>
 
