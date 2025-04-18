@@ -55,9 +55,9 @@ const Home = () => {
             <span className={styles.logoText}>InterviewAI</span>
           </div>
           <div className={styles.navLinks}>
-            <Button variant="ghost">About</Button>
-            <Button variant="ghost">Features</Button>
-            <Button variant="ghost">Pricing</Button>
+            
+            
+           
             <Button
             onClick={() => navigate('/signup')}
             >Get Started</Button>
@@ -142,9 +142,7 @@ const Home = () => {
             <div className={styles.footerLinks}>
               <h4>Product</h4>
               <ul>
-                <li>Features</li>
-                <li>Pricing</li>
-                <li>Enterprise</li>
+                
               </ul>
             </div>
           </div>

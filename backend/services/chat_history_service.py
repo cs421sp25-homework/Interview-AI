@@ -183,7 +183,7 @@ class ChatHistoryService:
             return False 
         
         
-    def save_analysis(self, interview_id: int, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None) -> Dict[str, Any]:
+    def save_analysis(self, interview_id: int, user_email: str, messages: List[Dict[str, Any]], config_name: str = "Interview Session", config_id: str = None, session_id: str = "Test") -> Dict[str, Any]:
         """
         Analyze interview conversation and save performance metrics
         
@@ -399,6 +399,86 @@ class ChatHistoryService:
             except Exception as e:
                 self.logger.error(f"Error getting specific feedback: {str(e)}")
                 specific_feedback_text = "Overall satisfactory performance with room for improvement in specific areas."
+
+            weak_questions_prompt = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert interview analyzer. The conversation below "
+                        "is from an interview session. Identify up to three (0–3) questions "
+                        "that the candidate responded to weakly or insufficiently. "
+                        "Output a valid JSON array of objects with exactly these two keys per object:\n\n"
+                        "1) \"question\": The text of the question asked.\n"
+                        "Do not include any additional keys or explanation."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Conversation:\n{json.dumps(conversation, indent=2)}"
+                    ),
+                }
+            ]
+
+            try:
+                # --- The new prompt for identifying weak questions ---
+                weak_questions_response = client.chat.completions.create(
+                    model="gpt-4o-mini", 
+                    # If you have a custom response format, define it or parse raw JSON
+                    messages=weak_questions_prompt
+                )
+                
+                weak_questions_text = weak_questions_response.choices[0].message.content
+                weak_questions_data = json.loads(weak_questions_text)
+                
+                # Validate that weak_questions_data is a list
+                if not isinstance(weak_questions_data, list):
+                    # If the LLM did not return a JSON list, fallback or handle gracefully:
+                    weak_questions_data = []
+                    
+            except Exception as e:
+                self.logger.error(f"Error getting weak questions: {str(e)}")
+                # Fallback to empty list if LLM call fails
+                weak_questions_data = []
+
+            for item in weak_questions_data:
+                question_text = item.get('question', '').strip()
+                # Basic validation
+                if not question_text:
+                    continue  # skip empty
+
+                # Prepare data to insert or update
+                upsert_data = {
+                    'question_text': question_text,
+                    'session_id': session_id,  # whichever session identifier you use
+                    'email': user_email,
+                    'is_weak': True,
+                    'created_at': datetime.datetime.utcnow().isoformat()
+                    # If you want a question_type, set it to e.g. 'weak_question'
+                    # If you store thread_id or anything else, set them here
+                }
+
+                
+                # Check if question already exists for this user/session
+                existing = self.supabase.table('interview_questions') \
+                    .select('*') \
+                    .eq('question_text', question_text) \
+                    .eq('session_id', upsert_data['session_id']) \
+                    .eq('email', user_email) \
+                    .execute()
+                
+                if existing.data and len(existing.data) > 0:
+                    # Update existing record
+                    existing_id = existing.data[0]['id']
+                    self.supabase.table('interview_questions').update({
+                        'is_weak': True,
+                    }).eq('id', existing_id).execute()
+                else:
+                    # Insert a new record
+                    self.supabase.table('interview_questions').insert(upsert_data).execute()
+
+
+
 
             print("Analysis:")
             print(response.choices[0].message.parsed)

@@ -98,8 +98,8 @@
   }
   
   .formCard {
-    padding: 2rem;
-    margin: 1rem;
+    padding: 1.5rem;
+    margin: 0.5rem;
   }
 }
 
@@ -434,15 +434,20 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
   animation: fadeIn 0.3s ease-out;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  inset: 0;
 }
 
 .modal {
@@ -454,10 +459,12 @@
               0 0 0 1px rgba(236, 72, 153, 0.1);
   width: 100%;
   max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
   animation: modalZoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid rgba(236, 72, 153, 0.1);
-  z-index: 9999!important;
+  z-index: 10001 !important;
   background: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
   box-sizing: border-box;
 }
@@ -475,12 +482,12 @@
 
 .closeButton {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
+  top: 0.75rem;
+  right: 0.75rem;
   background: #f3f4f6;
   border: none;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -797,24 +804,49 @@
   }
 
   .modal {
-    padding: 2.5rem 1.75rem;
-    max-width: 90%;
-    margin: 1rem;
+    padding: 2rem 1.5rem;
+    max-width: 95%;
+    max-height: 80vh;
+    margin: 0.5rem;
+    overflow-y: auto;
+    border-radius: 1rem;
+  }
+  
+  .modalOverlay {
+    padding: 0;
+    align-items: center;
   }
   
   .modal h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .modal h2::after {
+    width: 50px;
+    height: 2px;
   }
   
   .formGroup {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .formLabel {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .formInput {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
   }
   
   .modalActions {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
+    margin-top: 1rem;
   }
   
   .modalActions button {
@@ -825,6 +857,20 @@
   .buttonSecondary,
   .buttonPrimary {
     width: 100%;
+  }
+
+  /* 调整textarea高度，防止过高 */
+  .modal textarea.formInput {
+    min-height: 80px;
+    max-height: 150px;
+  }
+
+  /* 调整关闭按钮位置和大小 */
+  .closeButton {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
   }
 }
 
