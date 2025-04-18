@@ -1,30 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Button, message } from 'antd';
-import { LeftOutlined } from '@ant-design/icons';
+import { Button, Input, Tooltip, message } from 'antd';
+import {
+  LeftOutlined,
+  SaveOutlined,
+  BulbOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 import styles from './FlashcardsPage.module.css';
 
+const { TextArea } = Input;
+
+/* ──────────────────────────  types  ────────────────────────── */
+
 interface Flashcard {
   id: number;
   question: string;
-  answer: string;
+  human_answer?: string;  // 👈 user‑typed answer
+  ideal_answer?: string;  // 👈 AI answer
   created_at: string;
-  ideal_answer?: string;
   question_type?: string;
 }
 
 interface ApiFlashcard {
   id: number;
   question_text: string;
-  answer?: string;
+  answer?: string;        // ← existing human answer stored on server (may be undefined)
   created_at: string;
   question_type?: string;
-}
-
-interface Question {
-  question_text: string;
-  ideal_answer?: string;
 }
 
 interface FlashcardsPageProps {
@@ -40,319 +44,317 @@ interface LocationState {
   }[];
 }
 
-const parseQuestion = (text: string): string => {
-    const sentences = text.split(/[.!?]+/);
-    
-    const questions = sentences.filter((sentence) => {
-      const trimmedSentence = sentence.trim();
-      if (!trimmedSentence) return false;
-      
-      const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
-      return textAfterSentence.startsWith('?');
-    });
-    
-    if (questions.length === 0) {
-      return sentences[sentences.length - 1].trim() + '?';
-    }
-    
-    return questions.map(q => q.trim() + '?').join('\n');
-  };
+/* ──────────────────────────  helpers  ────────────────────────── */
 
-const renderAnswer = (answer: string | undefined) => {
-  if (!answer) return 'Click to generate ideal answer';
-  
-  // Split the answer into bullet points and render as list
-  const bulletPoints = answer.split('\n').filter(point => point.trim().startsWith('•'));
-  
+const parseQuestion = (txt: string): string => {
+  const parts = txt.split(/[.!?]+/);
+  const qs = parts.filter(p => {
+    const t = p.trim();
+    if (!t) return false;
+    const rest = txt.slice(txt.indexOf(t) + t.length);
+    return rest.startsWith('?');
+  });
+  if (!qs.length) return parts.at(-1)!.trim() + '?';
+  return qs.map(q => q.trim() + '?').join('\n');
+};
+
+const renderBullet = (ans = '') => {
+  const lines = ans
+    .split('\n')
+    .filter(l => l.trim().startsWith('•'))
+    .map(l => l.replace(/^•/, '').trim());
   return (
-    <ul>
-      {bulletPoints.map((point, index) => (
-        <li key={index}>{point.trim().substring(1).trim()}</li>
+    <ul className={styles.bulletList}>
+      {lines.map((l, i) => (
+        <li key={i}>{l}</li>
       ))}
     </ul>
   );
 };
 
-const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
-  const [cards, setCards] = useState<Flashcard[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const locationState = location.state as LocationState;
+/* ──────────────────────────  component  ────────────────────────── */
 
+const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const locationState = state as LocationState;
+
+  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [aiIdx, setAiIdx] = useState<number | null>(null); // which row is generating
+
+  /* ─────  fetch questions  ───── */
   useEffect(() => {
-    const fetchCards = async () => {
+    const load = async () => {
       try {
         const email = localStorage.getItem('user_email');
         if (!email) {
-          message.error('Please log in to view flashcards');
+          message.error('Please log in first');
           navigate('/login');
           return;
         }
 
-        setLoading(true);
-        let response;
-        
-        if (mode === 'favorites') {
-          if (locationState?.questions) {
-            const transformedCards = locationState.questions.map(question => ({
-              id: question.id,
-              question: parseQuestion(question.question),
-              answer: 'No answer available',
-              created_at: question.created_at,
-              question_type: question.question_type
-            }));
-            setCards(transformedCards);
-            setLoading(false);
-            return;
-          }
-          
-          response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}`);
-        } else {
-          response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}`);
-        }
+        let raw: ApiFlashcard[] = [];
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch cards');
-        }
-
-        const data = await response.json();
-        if (data && Array.isArray(data.data)) {
-          const transformedCards = data.data.map((card: ApiFlashcard) => ({
-            id: card.id,
-            question: parseQuestion(card.question_text),
-            answer: card.answer || 'No answer available',
-            created_at: card.created_at,
-            question_type: card.question_type
+        // 1. came from “favorites” page with pre‑loaded questions?
+        if (mode === 'favorites' && locationState?.questions) {
+          raw = locationState.questions.map(q => ({
+            id: q.id,
+            question_text: q.question,
+            created_at: q.created_at,
+            question_type: q.question_type,
+            answer: undefined,
           }));
-          setCards(transformedCards);
+        } else {
+          // 2. normal fetch
+          const end =
+            mode === 'favorites'
+              ? `/api/favorite_questions/${email}`
+              : `/api/weak_questions/${email}`;
+          const res = await fetch(`${API_BASE_URL}${end}`);
+          if (!res.ok) throw new Error('fetch failed');
+          const { data } = await res.json();
+          raw = data;
         }
-      } catch (error) {
-        console.error('Error fetching cards:', error);
-        message.error('Failed to load flashcards');
+
+        const mapped: Flashcard[] = raw.map(r => ({
+          id: r.id,
+          question: parseQuestion(r.question_text),
+          human_answer: r.answer ?? '',
+          created_at: r.created_at,
+          question_type: r.question_type,
+        }));
+        setCards(mapped);
+      } catch (e) {
+        console.error(e);
+        message.error('Unable to load flashcards');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchCards();
+    load();
   }, [mode, navigate, locationState]);
 
-  const fetchIdealAnswer = async (question: string) => {
-    try {
-      setLoading(true);
-      const userEmail = localStorage.getItem('user_email');
-      
-      if (!userEmail) {
-        throw new Error('User not logged in');
-      }
+  /* ─────  navigation helpers  ───── */
 
-      // First check if we already have an ideal answer in the database
-      const checkResponse = await fetch(`${API_BASE_URL}/api/weak_questions/${userEmail}`);
-      const checkData = await checkResponse.json();
-      
-      if (checkData.data) {
-        const existingQuestion = checkData.data.find((q: Question) => q.question_text === question);
-        if (existingQuestion && existingQuestion.ideal_answer) {
-          return existingQuestion.ideal_answer;
+  const shuffle = () => {
+    setCards(prev => [...prev].sort(() => Math.random() - 0.5));
+    setIdx(0);
+    setFlipped(false);
+  };
+
+  const next = () => {
+    if (idx < cards.length - 1) {
+      setIdx(i => i + 1);
+      setFlipped(false);
+    }
+  };
+
+  const prev = () => {
+    if (idx > 0) {
+      setIdx(i => i - 1);
+      setFlipped(false);
+    }
+  };
+
+  /* ─────  save human answer  ───── */
+
+  const saveHuman = async (i: number) => {
+    try {
+      const email = localStorage.getItem('user_email');
+      if (!email) return;
+      const c = cards[i];
+      await fetch(`${API_BASE_URL}/api/store_human_answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: c.id,
+          question: c.question,
+          answer: c.human_answer,
+          email,
+        }),
+      });
+      message.success('Saved');
+    } catch {
+      message.error('Save failed');
+    }
+  };
+
+  /* ─────  AI answer generation  ───── */
+
+  const genAI = async (i: number) => {
+    const q = cards[i].question;
+    try {
+      setAiIdx(i);
+
+      // try cache first
+      const email = localStorage.getItem('user_email')!;
+      const cache = await fetch(
+        `${API_BASE_URL}/api/ideal_answer?question=${encodeURIComponent(
+          q
+        )}&email=${email}`
+      );
+      if (cache.ok) {
+        const j = await cache.json();
+        if (j.ideal_answer) {
+          setCards(prev => {
+            const copy = [...prev];
+            copy[i].ideal_answer = j.ideal_answer;
+            return copy;
+          });
+          return;
         }
       }
 
-      // If no existing answer, generate a new one
-      const response = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
+      // otherwise generate
+      const res = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: question,
-          language: 'English'
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, language: 'English' }),
       });
+      if (!res.ok) throw new Error('gen');
+      const { ideal_answer } = await res.json();
 
-      if (!response.ok) {
-        throw new Error('Failed to generate ideal answer');
-      }
-
-      const data = await response.json();
-      const idealAnswer = data.ideal_answer;
-
-      // Store the generated answer in the database
+      // store on server
       await fetch(`${API_BASE_URL}/api/store_ideal_answer`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: question,
-          ideal_answer: idealAnswer,
-          email: userEmail
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, ideal_answer, email }),
       });
 
-      return idealAnswer;
-    } catch (error) {
-      console.error('Error generating ideal answer:', error);
-      return 'Failed to generate ideal answer. Please try again later.';
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFlip = async () => {
-    if (!isFlipped && cards[currentIndex] && !cards[currentIndex].ideal_answer) {
-      const idealAnswer = await fetchIdealAnswer(cards[currentIndex].question);
       setCards(prev => {
-        const newCards = [...prev];
-        newCards[currentIndex] = { ...newCards[currentIndex], ideal_answer: idealAnswer };
-        return newCards;
+        const copy = [...prev];
+        copy[i].ideal_answer = ideal_answer;
+        return copy;
       });
-    }
-    setIsFlipped(!isFlipped);
-  };
-
-  const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsFlipped(false);
+    } catch {
+      message.error('AI generation failed');
+    } finally {
+      setAiIdx(null);
     }
   };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setIsFlipped(false);
-    }
-  };
-
-  const handleShuffle = () => {
-    const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
-    setCards(shuffledCards);
-    setCurrentIndex(0);
-    setIsFlipped(false);
-  };
-
-  const handleBack = () => {
-    if (mode === 'favorites') {
-      navigate('/favorites');
-    } if (mode === 'weakest') {
-      navigate('/weakest');
-    } else {
-      navigate('/dashboard');
-    }
-  };
+  /* ─────  UI  ───── */
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <button className={styles.backButton} onClick={handleBack}>
-            <LeftOutlined />
-            Back
-          </button>
-          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
-        </div>
-        <div className={styles.flashcardContainer}>
-          <div className={styles.flashcard}>
-            <div className={styles.cardFront}>
-              <div className={styles.cardHeader}>
-                <span>Question</span>
-              </div>
-              <div className={styles.questionText}>
-                <div className={styles.loadingSpinner}>
-                  <div className={styles.spinner}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className={styles.loaderPane}>
+        <LoadingOutlined spin style={{ fontSize: 42 }} />
       </div>
     );
   }
 
-  if (cards.length === 0) {
+  if (!cards.length) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <button className={styles.backButton} onClick={handleBack}>
-            <LeftOutlined />
-            Back
-          </button>
-          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
-        </div>
-        <div className={styles.emptyState}>
-          <h2>No Flashcards Available</h2>
-          <p>You don't have any {mode === 'favorites' ? 'favorite questions' : 'weakest questions'} to study yet.</p>
-        </div>
+      <div className={styles.emptyPane}>
+        No {mode === 'favorites' ? 'favourite' : 'weak'} questions yet.
       </div>
     );
   }
 
-  const currentCard = cards[currentIndex];
+  const card = cards[idx];
 
   return (
-    <div className={styles.container}>
+    <div className={styles.page}>
+      {/* header */}
       <div className={styles.header}>
-        <button className={styles.backButton} onClick={handleBack}>
-          <LeftOutlined />
-          Back
+        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <LeftOutlined /> Back
         </button>
-        <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
+        <h1>
+          Flashcards – {mode === 'favorites' ? 'Favourite' : 'Weakest'} Questions
+        </h1>
       </div>
 
-      <div className={styles.flashcardContainer}>
-        <div 
-          className={`${styles.flashcard} ${isFlipped ? styles.flipped : ''}`}
-          onClick={handleFlip}
+      {/* central flip card */}
+      <div className={styles.stage}>
+        <div
+          className={`${styles.card} ${flipped ? styles.flipped : ''}`}
+          onClick={() => setFlipped(f => !f)}
         >
-          <div className={styles.cardFront}>
-            <div className={styles.cardHeader}>
-              <span>Question</span>
-            </div>
-            <div className={styles.questionText}>
-              {currentCard.question}
-            </div>
+          {/* front */}
+          <div className={styles.face}>
+            <span className={styles.tag}>Question</span>
+            <p className={styles.qText}>{card.question}</p>
           </div>
-          <div className={styles.cardBack}>
-            <div className={styles.cardHeader}>
-              <span>Ideal Answer</span>
-            </div>
-            <div className={styles.answerText}>
-              {loading ? (
-                <div className={styles.loadingSpinner}>
-                  <div className={styles.spinner}></div>
-                </div>
-              ) : (
-                renderAnswer(currentCard.ideal_answer)
-              )}
-            </div>
-          </div>
-        </div>
 
-        <div className={styles.flipHint}>
-          Click the card to flip
+          {/* back */}
+          <div className={`${styles.face} ${styles.back}`}>
+            <span className={styles.tag}>Your Answer</span>
+            <p className={styles.aText}>
+              {card.human_answer?.trim()
+                ? card.human_answer
+                : 'No human answer yet.'}
+            </p>
+          </div>
         </div>
 
         <div className={styles.controls}>
-          <Button onClick={handlePrevious} disabled={currentIndex === 0}>
+          <Button onClick={prev} disabled={idx === 0}>
             Previous
           </Button>
-          <Button onClick={handleShuffle}>
-            Shuffle
-          </Button>
-          <Button onClick={handleNext} disabled={currentIndex === cards.length - 1}>
+          <Button onClick={shuffle}>Shuffle</Button>
+          <Button onClick={next} disabled={idx === cards.length - 1}>
             Next
           </Button>
         </div>
 
-        <div className={styles.progress}>
-          Card {currentIndex + 1} of {cards.length}
-        </div>
+        <p className={styles.progress}>
+          Card {idx + 1} / {cards.length} – click to flip
+        </p>
+      </div>
+
+      {/* editable list */}
+      <div className={styles.list}>
+        {cards.map((c, i) => (
+          <div key={c.id} className={styles.item}>
+            <div className={styles.question}>{c.question}</div>
+
+            <TextArea
+              placeholder="Type your answer..."
+              autoSize={{ minRows: 2, maxRows: 6 }}
+              value={c.human_answer}
+              onChange={e =>
+                setCards(prev => {
+                  const copy = [...prev];
+                  copy[i].human_answer = e.target.value;
+                  return copy;
+                })
+              }
+              className={styles.area}
+            />
+
+            <div className={styles.itemBtns}>
+              <Tooltip title="Save my answer">
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={() => saveHuman(i)}
+                />
+              </Tooltip>
+
+              <Tooltip title="Generate AI answer">
+                <Button
+                  icon={<BulbOutlined />}
+                  loading={aiIdx === i}
+                  onClick={() => genAI(i)}
+                />
+              </Tooltip>
+            </div>
+
+            {c.ideal_answer && (
+              <div className={styles.aiBlock}>
+                <span className={styles.aiLabel}>AI Answer</span>
+                {renderBullet(c.ideal_answer)}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-export default FlashcardsPage; 
+export default FlashcardsPage;
