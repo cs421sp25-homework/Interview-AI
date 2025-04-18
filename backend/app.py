@@ -11,10 +11,10 @@ import os
 import secrets
 import hashlib
 import base64
-from services.profile_service import ProfileService
+from services.profile_service import ProfileService, ProfileServiceError
 from services.resume_service import ResumeService
 from services.storage_service import StorageService
-from services.config_service import ConfigService
+from services.config_service import ConfigService, ConfigServiceError
 from services.chat_history_service import ChatHistoryService
 from utils.error_handlers import handle_bad_request
 from utils.validation_utils import validate_file
@@ -23,7 +23,7 @@ from models.profile_model import Profile
 from models.resume_model import ResumeData
 from llm.llm_graph import LLMGraph
 from langchain.schema.messages import HumanMessage
-from services.authorization_service import AuthorizationService
+from services.authorization_service import AuthorizationService, AuthorizationServiceError
 from supabase import create_client
 from services.config_service import ConfigService
 from utils.text_2_speech import text_to_speech
@@ -1814,6 +1814,28 @@ def health_check():
         "status": "healthy",
         "message": "ELO API is running"
     })
+
+@app.errorhandler(ConfigServiceError)
+def handle_config_error(err: ConfigServiceError):
+    """Convert `ConfigServiceError` → JSON response."""
+    payload = {"error": err.message}
+    # Optionally expose `err.detail` in DEBUG mode only
+    return jsonify(payload), err.status_code
+
+@app.errorhandler(ProfileServiceError)
+def handle_profile_error(err: ProfileServiceError):
+    resp = {"error": err.message}
+    # Optionally append err.detail in debug mode only
+    return jsonify(resp), err.status_code
+
+@app.errorhandler(AuthorizationServiceError)
+def handle_authz_error(err: AuthorizationServiceError):
+    body = {"error": err.message}
+    return jsonify(body), err.status_code
+
+@app.errorhandler(ChatHistoryServiceError)
+def chat_history_error(err: ChatHistoryServiceError):
+    return jsonify({"error": err.message}), err.status_code
 
 if __name__ == '__main__':
     import os
