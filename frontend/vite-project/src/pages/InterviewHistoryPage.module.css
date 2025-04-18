@@ -12,6 +12,7 @@
   position: relative;
   box-sizing: border-box;
   animation: fadeIn 0.6s ease-out forwards;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @keyframes fadeIn {
@@ -257,47 +258,48 @@
 }
 
 .interviewHeader {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 1rem 0;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 2rem;
+  position: relative;
+  gap: 20px;
 }
 
 .interviewHeader h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 2.5rem;
+  font-weight: 700;
   margin: 0;
+  color: #111827;
+  white-space: nowrap;
+  text-align: center;
+  grid-column: 2;
 }
 
 .backButton {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: transparent;
-  color: #4b5563;
+  gap: 0.35rem;
+  background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  color: #4b5563;
   font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  grid-column: 1;
+  justify-self: start;
+  font-size: 0.9rem;
 }
 
-.backButton:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
-
-.backButton .anticon {
-  color: #ff69b4;
-}
-
-.backButton span {
-  color: #ff69b4;
+.headerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  grid-column: 3;
+  justify-self: end;
 }
 
 .spacer {
@@ -338,49 +340,73 @@
 }
 
 .filterSection {
-  margin-bottom: 2rem;
-  padding: 1.5rem 2rem;
-  background-color: #f9fafb;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.filterLeft {
+.filterLeft, .filterRight {
   display: flex;
   align-items: center;
-}
-
-.filterRight {
-  display: flex;
-  align-items: center;
+  gap: 1rem;
 }
 
 .searchInput {
-  width: 450px;
+  min-width: 280px;
+  border-radius: 8px;
 }
 
-.datePicker {
-  width: 450px;
+.searchInput input {
+  padding: 0.75rem 1rem;
 }
 
-.typeFilter {
-  width: 250px;
+.datePicker, .typeFilter {
+  min-width: 200px;
 }
 
 .historyTable {
-  background-color: white;
-  border-radius: 0.75rem;
+  margin-top: 1rem;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.historyTable :global(.ant-table) {
+  border-radius: 12px;
+  background: white;
+}
+
+.historyTable :global(.ant-table-thead > tr > th) {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+  padding: 1rem;
+}
+
+.historyTable :global(.ant-table-tbody > tr > td) {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+.historyTable :global(.ant-table-tbody > tr:hover > td) {
+  background-color: #f9fafb;
+}
+
+.historyTable :global(.ant-pagination) {
+  margin: 1.5rem 0;
 }
 
 .interviewTitle {
   font-weight: 600;
   color: #111827;
   margin-bottom: 0.25rem;
+  font-size: 1.05rem;
 }
 
 .interviewCompany {
@@ -389,100 +415,11 @@
 }
 
 .companyName {
-  color: #4b5563;
-  font-size: 0.95rem;
   font-weight: 500;
-}
-
-.detailContent {
-  background-color: #fff;
-  border-radius: 0.75rem;
-  padding: 2rem;
-}
-
-.detailSection {
-  margin-bottom: 2rem;
-}
-
-.detailSection:last-child {
-  margin-bottom: 0;
-}
-
-.detailGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.detailItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background-color: #f9fafb;
-  padding: 1.25rem;
-  border-radius: 0.75rem;
-  border: 1px solid #f3f4f6;
-  transition: all 0.2s ease;
-}
-
-.detailItem:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  transform: translateY(-3px);
-}
-
-.performanceStats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.statItem {
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  text-align: center;
-  border: 1px solid #e5e7eb;
-}
-
-.statValue {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #ec4899;
-  margin-bottom: 0.25rem;
-}
-
-.statLabel {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.insightsList {
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-.insightsList li {
-  margin-bottom: 0.5rem;
   color: #4b5563;
-}
-
-.insightsList li:last-child {
-  margin-bottom: 0;
-}
-
-.interviewName {
-  color: #6b7280;
-  font-size: 0.8rem;
-  font-style: italic;
-  margin-top: 0.125rem;
 }
 
 .dateInfo {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.95rem;
   color: #4b5563;
 }
 
@@ -492,6 +429,8 @@
 
 .tagContainer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .questionTypeTag {
@@ -503,69 +442,51 @@
 }
 
 .actionButton {
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.actionButton:hover {
+  color: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 /* 操作按钮容器样式 */
 .actionButtonsContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  min-width: 420px; 
+  gap: 0.5rem;
 }
 
-/* 带文字的操作按钮样式 */
 .actionButtonWithLabel {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  height: auto;
-  padding: 6px 10px;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid transparent;
   transition: all 0.2s;
-  margin: 0 2px;
-}
-
-/* 覆盖Ant Design默认样式 */
-.actionButtonWithLabel:global(.ant-btn-link) {
-  color: inherit;
-  padding: 6px 10px;
-}
-
-.actionButtonWithLabel:global(.ant-btn-link):hover {
-  color: inherit;
-  background-color: transparent;
-}
-
-.actionButtonWithLabel:global(.ant-btn-link):focus {
-  color: inherit;
-}
-
-/* 确保danger属性不影响文字颜色 */
-.actionButtonWithLabel:global(.ant-btn-dangerous) {
-  color: inherit;
-}
-
-.actionButtonWithLabel:hover {
-  background-color: #f9f0f6;
-  border-color: #f3d4e4;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  height: auto;
 }
 
 .actionIcon {
-  font-size: 18px;
-  margin-bottom: 4px;
+  font-size: 1rem;
 }
 
 .actionText {
-  font-size: 12px;
-  line-height: 1;
+  font-size: 0.85rem;
   font-weight: 500;
-  transition: all 0.2s;
 }
 
 /* 特定操作按钮样式 */
@@ -578,8 +499,8 @@
 }
 
 .viewButton:hover {
-  background-color: #e6f7ff;
-  border-color: #91d5ff;
+  background: #f0f9ff;
+  color: #0284c7;
 }
 
 .detailsButton .actionIcon {
@@ -591,8 +512,8 @@
 }
 
 .detailsButton:hover {
-  background-color: #f9f0ff;
-  border-color: #a5ffc6;
+  background: #f0fdfa;
+  color: #0d9488;
 }
 
 .exportButton .actionIcon {
@@ -604,8 +525,8 @@
 }
 
 .exportButton:hover {
-  background-color: #f9f0ff;
-  border-color: #c9b3ff;
+  background: #fdf2f8;
+  color: #db2777;
 }
 
 .favoritesButton .actionIcon {
@@ -617,8 +538,8 @@
 }
 
 .favoritesButton:hover {
-  background-color: #f6ffed;
-  border-color: #ffaad4;
+  background: #fff7ed;
+  color: #ea580c;
 }
 
 .deleteButton .actionIcon {
@@ -630,8 +551,8 @@
 }
 
 .deleteButton:hover {
-  background-color: #fff1f0;
-  border-color: #ffa39e;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .historyTable :global(.ant-table-tbody > tr:hover) {
@@ -690,31 +611,80 @@
   border-top: 1px solid #f3f4f6;
 }
 
-@media (max-width: 768px) {
-  .detailGrid {
-    grid-template-columns: 1fr;
+@media (max-width: 1100px) {
+  .interviewHeader {
+    grid-template-columns: auto;
+    grid-template-rows: auto auto auto;
+    justify-items: center;
+    gap: 1rem;
   }
   
-  .performanceStats {
-    grid-template-columns: repeat(2, 1fr);
+  .interviewHeader h1 {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 2rem;
+  }
+  
+  .backButton {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  
+  .headerActions {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: center;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .interviewContainer {
+    padding: 1rem;
+  }
+  
+  .interviewHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .interviewHeader h1 {
+    font-size: 1.75rem;
+    text-align: left;
+    width: 100%;
+  }
+  
+  .headerActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .filterSection {
+    flex-direction: column;
+  }
+  
+  .filterLeft, .filterRight {
+    width: 100%;
+  }
+  
+  .searchInput, .datePicker, .typeFilter {
+    width: 100%;
   }
   
   .actionButtonsContainer {
-    gap: 2px;
+    flex-direction: column;
+    align-items: flex-start;
   }
   
-  .actionButtonWithLabel {
-    padding: 4px 8px;
-    margin: 0 1px;
+  .performanceStats {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
   
-  .actionIcon {
-    font-size: 16px;
-    margin-bottom: 2px;
-  }
-  
-  .actionText {
-    font-size: 10px;
+  .detailGrid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -779,4 +749,72 @@
 .weakestButton:hover {
   background-color: #fff9c4;
   border-color: #ffd700;
+}
+
+/* Modal Styles */
+.detailModal, .favoritesModal {
+  min-width: 50%;
+}
+
+.detailModal :global(.ant-modal-content),
+.favoritesModal :global(.ant-modal-content) {
+  border-radius: 12px;
+  padding: 0;
+}
+
+.detailModal :global(.ant-modal-header),
+.favoritesModal :global(.ant-modal-header) {
+  border-radius: 12px 12px 0 0;
+  background: #f9fafb;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.detailModal :global(.ant-modal-title),
+.favoritesModal :global(.ant-modal-title) {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.detailModal :global(.ant-modal-body),
+.favoritesModal :global(.ant-modal-body) {
+  padding: 1.5rem;
+}
+
+.detailModal :global(.ant-modal-footer),
+.favoritesModal :global(.ant-modal-footer) {
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  border-radius: 0 0 12px 12px;
+}
+
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.favoritesContent {
+  padding: 0.5rem;
+}
+
+.backButton:hover {
+  background: #f9fafb;
+  color: #2563eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.backButton .anticon {
+  color: #ff69b4;
+}
+
+.backButton span {
+  color: #ff69b4;
 }

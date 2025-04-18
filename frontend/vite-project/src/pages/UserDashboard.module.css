@@ -133,6 +133,9 @@
   box-shadow: var(--shadow-md);
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px; /* Set a fixed minimum height for consistency */
 }
 
 .actionCard:hover {
@@ -149,6 +152,12 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 1rem;
+}
+
+.actionDescription {
+  color: var(--text-light);
+  margin: 0.5rem 0;
+  flex-grow: 1;
 }
 
 .button {
@@ -187,6 +196,15 @@
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.buttonContainer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  min-height: 45px;  /* Ensure consistent height */
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
 .achievements {

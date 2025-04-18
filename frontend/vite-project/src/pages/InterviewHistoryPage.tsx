@@ -875,19 +875,21 @@ const InterviewHistoryPage: React.FC = () => {
           Back to Dashboard
         </button>
         <h1>Interview History</h1>
-        <Button 
-          className={styles.actionButton}
-          onClick={() => navigate('/favorites')}
-        >
-          <HeartOutlined /> View All Favorite Questions
-        </Button>
         <div className={styles.headerActions}>
-          <Button
-            icon={<WarningOutlined />}
-            onClick={() => navigate('/weakest')}
+          <Button 
             className={styles.actionButton}
+            onClick={() => navigate('/favorites')}
+            icon={<HeartOutlined />}
           >
-            View Weakest Questions
+            View All Favorite Questions
+          </Button>
+          
+          <Button
+            className={styles.actionButton}
+            onClick={() => navigate('/weakest')}
+            icon={<WarningOutlined />}
+          >
+            View All Weakest Questions
           </Button>
         </div>
       </div>
@@ -906,24 +908,23 @@ const InterviewHistoryPage: React.FC = () => {
           </div>
           
           <div className={styles.filterRight}>
-            <Space size={16}>
-              <RangePicker 
-                onChange={value => setDateRange(value)}
-                className={styles.datePicker}
-              />
-              
-              <Select
-                placeholder="Interview Type"
-                allowClear
-                onChange={value => setTypeFilter(value)}
-                className={styles.typeFilter}
-              >
-                <Option value="technical">Technical</Option>
-                <Option value="behavioral">Behavioral</Option>
-                <Option value="voice">Voice</Option>
-                <Option value="text">Text</Option>
-              </Select>
-            </Space>
+            <RangePicker 
+              onChange={value => setDateRange(value)}
+              className={styles.datePicker}
+              placeholder={['Start Date', 'End Date']}
+            />
+            
+            <Select
+              placeholder="Filter by Type"
+              allowClear
+              onChange={value => setTypeFilter(value)}
+              className={styles.typeFilter}
+            >
+              <Option value="technical">Technical</Option>
+              <Option value="behavioral">Behavioral</Option>
+              <Option value="voice">Voice</Option>
+              <Option value="text">Text</Option>
+            </Select>
           </div>
         </div>
         
@@ -939,12 +940,17 @@ const InterviewHistoryPage: React.FC = () => {
             position: ['bottomCenter']
           }}
           className={styles.historyTable}
-          locale={{ emptyText: 'No interview history found' }}
+          locale={{ 
+            emptyText: <Empty 
+              description="No interview history found" 
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          }}
         />
       </div>
       
       <Modal
-        title="Interview Details"
+        title={<div className={styles.modalTitle}>Interview Details</div>}
         open={detailModalVisible}
         onCancel={() => {
           setDetailModalVisible(false);
@@ -967,6 +973,7 @@ const InterviewHistoryPage: React.FC = () => {
         ]}
         width={1200}
         className={styles.detailModal}
+        centered
       >
         {selectedLog && (
           <div className={styles.detailContent}>
@@ -1042,7 +1049,6 @@ const InterviewHistoryPage: React.FC = () => {
             </div>
             
             {/* Job Description Section */}
-            {console.log("Job description rendering:", selectedLog.job_description) /* 打印调试信息 */}
             {selectedLog.job_description && (
               <div className={styles.detailSection}>
                 <Title level={5}>Job Description</Title>
@@ -1127,7 +1133,7 @@ const InterviewHistoryPage: React.FC = () => {
       </Modal>
       
       <Modal
-        title="Favorite Questions"
+        title={<div className={styles.modalTitle}>Favorite Questions</div>}
         open={favoritesModalVisible}
         onCancel={() => {
           setFavoritesModalVisible(false);
@@ -1140,6 +1146,7 @@ const InterviewHistoryPage: React.FC = () => {
         ]}
         width={800}
         className={styles.favoritesModal}
+        centered
       >
         {selectedLog && (
           <div className={styles.favoritesContent}>
@@ -1170,7 +1177,10 @@ const InterviewHistoryPage: React.FC = () => {
                   ))}
                 </ul>
               ) : (
-                <Empty description="No favorite questions found for this interview" />
+                <Empty 
+                  description="No favorite questions found for this interview" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
               )}
             </div>
           </div>
@@ -1178,7 +1188,7 @@ const InterviewHistoryPage: React.FC = () => {
       </Modal>
       
       <Modal
-        title="Weakest Questions"
+        title={<div className={styles.modalTitle}>Weakest Questions</div>}
         open={weakestModalVisible}
         onCancel={() => {
           setWeakestModalVisible(false);
@@ -1191,6 +1201,7 @@ const InterviewHistoryPage: React.FC = () => {
         ]}
         width={800}
         className={styles.favoritesModal}
+        centered
       >
         {selectedLog && (
           <div className={styles.favoritesContent}>
@@ -1221,7 +1232,10 @@ const InterviewHistoryPage: React.FC = () => {
                   ))}
                 </ul>
               ) : (
-                <Empty description="No weakest questions found for this interview" />
+                <Empty 
+                  description="No weakest questions found for this interview" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
               )}
             </div>
           </div>

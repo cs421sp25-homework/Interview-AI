@@ -20,6 +20,7 @@ import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
 
 import EloScorePage from './pages/EloScorePage';
 import FlashcardsPage from './pages/FlashcardsPage';
+import FlashcardsSelectionPage from './pages/FlashcardsSelectionPage';
 import GraphPage from './pages/GraphPage';
 import WeakestQuestionsPage from './pages/WeakestQuestionsPage';
 
@@ -44,6 +45,7 @@ function App() {
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
       <Route path="/elo" element={<EloScorePage />} />
+      <Route path="/flashcards" element={<FlashcardsSelectionPage />} />
       <Route path="/flashcards/favorites" element={<FlashcardsPage mode="favorites" />} />
       <Route path="/flashcards/weakest" element={<FlashcardsPage mode="weakest" />} />
       <Route path="/graph" element={<GraphPage />} />
