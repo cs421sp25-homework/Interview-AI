@@ -22,6 +22,11 @@ interface ApiFlashcard {
   question_type?: string;
 }
 
+interface Question {
+  question_text: string;
+  ideal_answer?: string;
+}
+
 interface FlashcardsPageProps {
   mode: 'favorites' | 'weakest';
 }
@@ -53,12 +58,26 @@ const parseQuestion = (text: string): string => {
     return questions.map(q => q.trim() + '?').join('\n');
   };
 
+const renderAnswer = (answer: string | undefined) => {
+  if (!answer) return 'Click to generate ideal answer';
+  
+  // Split the answer into bullet points and render as list
+  const bulletPoints = answer.split('\n').filter(point => point.trim().startsWith('•'));
+  
+  return (
+    <ul>
+      {bulletPoints.map((point, index) => (
+        <li key={index}>{point.trim().substring(1).trim()}</li>
+      ))}
+    </ul>
+  );
+};
+
 const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [loadingIdealAnswer, setLoadingIdealAnswer] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as LocationState;
@@ -78,7 +97,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
         
         if (mode === 'favorites') {
           if (locationState?.questions) {
-            // Use the selected questions passed from favorites page
             const transformedCards = locationState.questions.map(question => ({
               id: question.id,
               question: parseQuestion(question.question),
@@ -86,7 +104,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
               created_at: question.created_at,
               question_type: question.question_type
             }));
-            console.log('Transformed cards from favorites:', transformedCards);
             setCards(transformedCards);
             setLoading(false);
             return;
@@ -94,7 +111,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           
           response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}`);
         } else {
-          // Fetch weakest questions
           response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}`);
         }
 
@@ -111,7 +127,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             created_at: card.created_at,
             question_type: card.question_type
           }));
-          console.log('Transformed cards from API:', transformedCards);
           setCards(transformedCards);
         }
       } catch (error) {
@@ -127,14 +142,34 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
   const fetchIdealAnswer = async (question: string) => {
     try {
-      setLoadingIdealAnswer(true);
-      const response = await fetch(`${API_BASE_URL}/api/generate_good_response`, {
+      setLoading(true);
+      const userEmail = localStorage.getItem('user_email');
+      
+      if (!userEmail) {
+        throw new Error('User not logged in');
+      }
+
+      // First check if we already have an ideal answer in the database
+      const checkResponse = await fetch(`${API_BASE_URL}/api/weak_questions/${userEmail}`);
+      const checkData = await checkResponse.json();
+      
+      if (checkData.data) {
+        const existingQuestion = checkData.data.find((q: Question) => q.question_text === question);
+        if (existingQuestion && existingQuestion.ideal_answer) {
+          return existingQuestion.ideal_answer;
+        }
+      }
+
+      // If no existing answer, generate a new one
+      const response = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          message: '',
-          ai_question: question
-        })
+          question: question,
+          language: 'English'
+        }),
       });
 
       if (!response.ok) {
@@ -142,25 +177,36 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
       }
 
       const data = await response.json();
-      return data.response;
+      const idealAnswer = data.ideal_answer;
+
+      // Store the generated answer in the database
+      await fetch(`${API_BASE_URL}/api/store_ideal_answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question,
+          ideal_answer: idealAnswer,
+          email: userEmail
+        }),
+      });
+
+      return idealAnswer;
     } catch (error) {
       console.error('Error generating ideal answer:', error);
-      message.error('Failed to generate ideal answer');
-      return 'Failed to generate ideal answer';
+      return 'Failed to generate ideal answer. Please try again later.';
     } finally {
-      setLoadingIdealAnswer(false);
+      setLoading(false);
     }
   };
 
   const handleFlip = async () => {
-    if (!isFlipped && !cards[currentIndex].ideal_answer) {
+    if (!isFlipped && cards[currentIndex] && !cards[currentIndex].ideal_answer) {
       const idealAnswer = await fetchIdealAnswer(cards[currentIndex].question);
-      setCards(prevCards => {
-        const newCards = [...prevCards];
-        newCards[currentIndex] = {
-          ...newCards[currentIndex],
-          ideal_answer: idealAnswer
-        };
+      setCards(prev => {
+        const newCards = [...prev];
+        newCards[currentIndex] = { ...newCards[currentIndex], ideal_answer: idealAnswer };
         return newCards;
       });
     }
@@ -200,11 +246,27 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingCard}>
-          <div className={styles.spinner}></div>
-          <h2>Loading Flashcards</h2>
-          <p>Please wait while we prepare your {mode === 'favorites' ? 'favorite questions' : 'weakest questions'}...</p>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.backButton} onClick={handleBack}>
+            <LeftOutlined />
+            Back
+          </button>
+          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
+        </div>
+        <div className={styles.flashcardContainer}>
+          <div className={styles.flashcard}>
+            <div className={styles.cardFront}>
+              <div className={styles.cardHeader}>
+                <span>Question</span>
+              </div>
+              <div className={styles.questionText}>
+                <div className={styles.loadingSpinner}>
+                  <div className={styles.spinner}></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -218,7 +280,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             <LeftOutlined />
             Back
           </button>
-          <h1>{mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} Flashcards</h1>
+          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
         </div>
         <div className={styles.emptyState}>
           <h2>No Flashcards Available</h2>
@@ -237,7 +299,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           <LeftOutlined />
           Back
         </button>
-        <h1>{mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} Flashcards</h1>
+        <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
       </div>
 
       <div className={styles.flashcardContainer}>
@@ -258,13 +320,12 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
               <span>Ideal Answer</span>
             </div>
             <div className={styles.answerText}>
-              {loadingIdealAnswer ? (
-                <div className={styles.loadingAnswer}>
+              {loading ? (
+                <div className={styles.loadingSpinner}>
                   <div className={styles.spinner}></div>
-                  <p>Generating ideal answer...</p>
                 </div>
               ) : (
-                currentCard.ideal_answer || 'Click to generate ideal answer'
+                renderAnswer(currentCard.ideal_answer)
               )}
             </div>
           </div>

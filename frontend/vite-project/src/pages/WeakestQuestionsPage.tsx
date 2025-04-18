@@ -485,7 +485,7 @@ const WeakestQuestionsPage: React.FC = () => {
           <LeftOutlined size={18} />
           Back to Interview History
         </button>
-        <h1>Weak Questions</h1>
+        <h1>Weakest Questions</h1>
         <Button
           type="primary"
           icon={<BookOpenIcon />}

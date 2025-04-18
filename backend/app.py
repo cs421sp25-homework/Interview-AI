@@ -29,6 +29,7 @@ import json
 from llm.llm_interface import LLMInterface
 import time
 from services.elo_calculator import SupabaseEloService
+from openai import OpenAI
 
 load_dotenv()
 
@@ -1669,6 +1670,87 @@ def health_check():
         "status": "healthy",
         "message": "ELO API is running"
     })
+
+@app.route('/api/generate_flashcard_answer', methods=['POST'])
+def generate_flashcard_answer():
+    try:
+        data = request.get_json()
+        question = data.get('question')
+        language = data.get('language', 'English')
+        
+        if not question:
+            return jsonify({'error': 'Question is required'}), 400
+            
+        # Prepare the prompt for generating an ideal answer
+        prompt = f"""You are an expert interviewer. Given the following interview question, provide a concise, structured ideal answer that will fit on a flashcard. The answer should be in bullet points and focus on key points.
+
+Question: {question}
+
+Provide some advice and examples for an ideal answer that:
+1. Is concise and fits on a flashcard (max 5-6 bullet points)
+2. Each bullet point should be 1-2 sentences maximum
+3. Focuses on the most important aspects of a good answer
+4. Includes specific examples or key concepts where relevant
+5. Uses clear, professional language
+
+Format the response as bullet points starting with "•". Do not include any other text or explanations."""
+
+        # Call OpenAI API
+        client = OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are an expert interviewer providing concise, bullet-pointed ideal answers to technical interview questions that will fit on a flashcard."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=300  # Reduced to ensure concise answers
+        )
+        
+        ideal_answer = response.choices[0].message.content.strip()
+        
+        return jsonify({
+            'success': True,
+            'ideal_answer': ideal_answer
+        })
+        
+    except Exception as e:
+        print(f"Error generating flashcard answer: {str(e)}")
+        return jsonify({'error': 'Failed to generate ideal answer'}), 500
+
+@app.route('/api/store_ideal_answer', methods=['POST'])
+def store_ideal_answer():
+    try:
+        data = request.get_json()
+        question = data.get('question')
+        ideal_answer = data.get('ideal_answer')
+        email = data.get('email')
+        
+        if not question or not ideal_answer or not email:
+            return jsonify({'error': 'Question, ideal_answer, and email are required'}), 400
+            
+        # Check if question already has an ideal answer
+        existing = supabase.table('interview_questions').select('*').eq('question_text', question).eq('email', email).execute()
+        
+        if existing.data and len(existing.data) > 0:
+            # Update existing record
+            result = supabase.table('interview_questions').update({
+                'ideal_answer': ideal_answer
+            }).eq('id', existing.data[0]['id']).execute()
+        else:
+            # Create new record
+            result = supabase.table('interview_questions').insert({
+                'question_text': question,
+                'ideal_answer': ideal_answer,
+                'email': email,
+                'created_at': datetime.datetime.now().isoformat()
+            }).execute()
+            
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        print(f"Error storing ideal answer: {str(e)}")
+        return jsonify({'error': 'Failed to store ideal answer'}), 500
 
 if __name__ == '__main__':
     import os
