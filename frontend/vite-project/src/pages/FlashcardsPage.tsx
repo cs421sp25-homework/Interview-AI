@@ -1,275 +1,355 @@
 import React, { useState, useEffect } from 'react';
+import { Button, message } from 'antd';
+import { LeftOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bot, User, ArrowLeft, BookOpen } from 'lucide-react';
-import styles from './FlashcardsPage.module.css';
 import API_BASE_URL from '../config/api';
+import styles from './FlashcardsPage.module.css';
 
 interface Flashcard {
   id: number;
   question: string;
   answer: string;
-  category: string;
+  created_at: string;
+  ideal_answer?: string;
+  question_type?: string;
 }
 
-interface FavoriteQuestion {
+interface ApiFlashcard {
   id: number;
   question_text: string;
-  created_at: string;
-  session_id: string;
-  email: string;
-  question_type: string;
   answer?: string;
-  interview_type?: 'voice' | 'text';
+  created_at: string;
+  question_type?: string;
 }
 
-const FlashcardsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [loading, setLoading] = useState(true);
-  const [favoriteQuestions, setFavoriteQuestions] = useState<FavoriteQuestion[]>([]);
-  const [error, setError] = useState<string | null>(null);
+interface Question {
+  question_text: string;
+  ideal_answer?: string;
+}
 
-  // 标准化问题类型，确保与FavoritesQuestionsPage使用相同的逻辑
-  const normalizeQuestionType = (rawType: string): string => {
-    if (!rawType) return 'Unknown';
+interface FlashcardsPageProps {
+  mode: 'favorites' | 'weakest';
+}
+
+interface LocationState {
+  questions?: {
+    id: number;
+    question: string;
+    created_at: string;
+    question_type: string;
+  }[];
+}
+
+const parseQuestion = (text: string): string => {
+    const sentences = text.split(/[.!?]+/);
     
-    const lowerType = rawType.toLowerCase();
-    if (lowerType === 'technical') {
-      return 'Technical';
-    } else if (lowerType === 'behavioral') {
-      return 'Behavioral';
-    } else {
-      return rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+    const questions = sentences.filter((sentence) => {
+      const trimmedSentence = sentence.trim();
+      if (!trimmedSentence) return false;
+      
+      const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
+      return textAfterSentence.startsWith('?');
+    });
+    
+    if (questions.length === 0) {
+      return sentences[sentences.length - 1].trim() + '?';
     }
+    
+    return questions.map(q => q.trim() + '?').join('\n');
   };
 
+const renderAnswer = (answer: string | undefined) => {
+  if (!answer) return 'Click to generate ideal answer';
+  
+  // Split the answer into bullet points and render as list
+  const bulletPoints = answer.split('\n').filter(point => point.trim().startsWith('•'));
+  
+  return (
+    <ul>
+      {bulletPoints.map((point, index) => (
+        <li key={index}>{point.trim().substring(1).trim()}</li>
+      ))}
+    </ul>
+  );
+};
+
+const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
+  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState;
+
   useEffect(() => {
-    // Fetch favorite questions from the API
-    const fetchFavorites = async () => {
-      setLoading(true);
+    const fetchCards = async () => {
       try {
-        const userEmail = localStorage.getItem('user_email') || '';
-        
-        if (!userEmail) {
-          setError('User not logged in');
+        const email = localStorage.getItem('user_email');
+        if (!email) {
+          message.error('Please log in to view flashcards');
           navigate('/login');
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${userEmail}`);
+        setLoading(true);
+        let response;
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch favorites: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("原始收藏问题数据:", data.data);
-        
-        if (data && Array.isArray(data.data)) {
-          // 使用标准化函数处理问题类型
-          const processedData = data.data.map((fav: FavoriteQuestion) => {
-            const normalizedType = normalizeQuestionType(fav.question_type || '');
-            console.log(`问题类型: "${fav.question_type}" -> "${normalizedType}"`);
-            
-            return {
-              ...fav,
-              question_type: normalizedType,
-              // 如果没有答案字段，添加默认答案
-              answer: fav.answer || '这个问题没有提供示例答案。尝试自己思考一个答案!'
-            };
-          });
+        if (mode === 'favorites') {
+          if (locationState?.questions) {
+            const transformedCards = locationState.questions.map(question => ({
+              id: question.id,
+              question: parseQuestion(question.question),
+              answer: 'No answer available',
+              created_at: question.created_at,
+              question_type: question.question_type
+            }));
+            setCards(transformedCards);
+            setLoading(false);
+            return;
+          }
           
-          console.log("处理后的收藏问题:", processedData);
-          setFavoriteQuestions(processedData);
+          response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}`);
         } else {
-          setFavoriteQuestions([]);
+          response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}`);
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch cards');
+        }
+
+        const data = await response.json();
+        if (data && Array.isArray(data.data)) {
+          const transformedCards = data.data.map((card: ApiFlashcard) => ({
+            id: card.id,
+            question: parseQuestion(card.question_text),
+            answer: card.answer || 'No answer available',
+            created_at: card.created_at,
+            question_type: card.question_type
+          }));
+          setCards(transformedCards);
         }
       } catch (error) {
-        console.error('Error fetching favorites:', error);
-        setError('无法加载收藏的问题');
+        console.error('Error fetching cards:', error);
+        message.error('Failed to load flashcards');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFavorites();
-  }, [navigate]);
-  
-  // 用于显示的类别是固定的: All, Technical, Behavioral
-  const displayCategories = ['All', 'Technical', 'Behavioral'];
-  
-  // 获取实际数据中存在的分类，确保UI更新
-  useEffect(() => {
-    console.log("更新可用的分类，当前收藏问题:", favoriteQuestions.length);
-    const availableTypes = new Set(favoriteQuestions.map(q => q.question_type));
-    console.log("数据中的问题类型:", Array.from(availableTypes));
-  }, [favoriteQuestions]);
-  
-  // 根据选择的分类过滤问题卡片
-  const filteredCards = selectedCategory === 'All' 
-    ? favoriteQuestions 
-    : favoriteQuestions.filter(card => card.question_type === selectedCategory);
-  
-  console.log(`当前分类 "${selectedCategory}" 的问题数量:`, filteredCards.length);
+    fetchCards();
+  }, [mode, navigate, locationState]);
 
-  const handleNextCard = () => {
-    if (filteredCards.length === 0) return;
-    setCurrentCardIndex((prevIndex) => (prevIndex + 1) % filteredCards.length);
-    setShowAnswer(false);
+  const fetchIdealAnswer = async (question: string) => {
+    try {
+      setLoading(true);
+      const userEmail = localStorage.getItem('user_email');
+      
+      if (!userEmail) {
+        throw new Error('User not logged in');
+      }
+
+      // First check if we already have an ideal answer in the database
+      const checkResponse = await fetch(`${API_BASE_URL}/api/weak_questions/${userEmail}`);
+      const checkData = await checkResponse.json();
+      
+      if (checkData.data) {
+        const existingQuestion = checkData.data.find((q: Question) => q.question_text === question);
+        if (existingQuestion && existingQuestion.ideal_answer) {
+          return existingQuestion.ideal_answer;
+        }
+      }
+
+      // If no existing answer, generate a new one
+      const response = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question,
+          language: 'English'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate ideal answer');
+      }
+
+      const data = await response.json();
+      const idealAnswer = data.ideal_answer;
+
+      // Store the generated answer in the database
+      await fetch(`${API_BASE_URL}/api/store_ideal_answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question,
+          ideal_answer: idealAnswer,
+          email: userEmail
+        }),
+      });
+
+      return idealAnswer;
+    } catch (error) {
+      console.error('Error generating ideal answer:', error);
+      return 'Failed to generate ideal answer. Please try again later.';
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePreviousCard = () => {
-    if (filteredCards.length === 0) return;
-    setCurrentCardIndex((prevIndex) => {
-      const newIndex = prevIndex - 1;
-      return newIndex < 0 ? filteredCards.length - 1 : newIndex;
-    });
-    setShowAnswer(false);
+  const handleFlip = async () => {
+    if (!isFlipped && cards[currentIndex] && !cards[currentIndex].ideal_answer) {
+      const idealAnswer = await fetchIdealAnswer(cards[currentIndex].question);
+      setCards(prev => {
+        const newCards = [...prev];
+        newCards[currentIndex] = { ...newCards[currentIndex], ideal_answer: idealAnswer };
+        return newCards;
+      });
+    }
+    setIsFlipped(!isFlipped);
   };
 
-  const handleFlipCard = () => {
-    setShowAnswer(!showAnswer);
+  const handleNext = () => {
+    if (currentIndex < cards.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setIsFlipped(false);
+    }
   };
 
-  const handleCategoryChange = (category: string) => {
-    console.log(`切换分类 从 "${selectedCategory}" 到 "${category}"`);
-    setSelectedCategory(category);
-    setCurrentCardIndex(0);
-    setShowAnswer(false);
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setIsFlipped(false);
+    }
   };
 
-  const handleBackToDashboard = () => {
-    // Check if we came from favorites page
-    if (location.state && location.state.fromFavorites) {
+  const handleShuffle = () => {
+    const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
+    setCards(shuffledCards);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+  };
+
+  const handleBack = () => {
+    if (mode === 'favorites') {
       navigate('/favorites');
+    } if (mode === 'weakest') {
+      navigate('/weakest');
     } else {
       navigate('/dashboard');
     }
   };
 
-  const parseQuestion = (text: string): string => {
-    // Split the text into sentences
-    const sentences = text.split(/[.!?]+/);
-    
-    // Find all sentences that are followed by a question mark
-    const questions = sentences.filter((sentence) => {
-      const trimmedSentence = sentence.trim();
-      if (!trimmedSentence) return false;
-      
-      // Get the text after this sentence
-      const textAfterSentence = text.substring(text.indexOf(trimmedSentence) + trimmedSentence.length);
-      return textAfterSentence.startsWith('?');
-    });
-    
-    // If no questions found, return the last sentence with a question mark
-    if (questions.length === 0) {
-      return sentences[sentences.length - 1].trim() + '?';
-    }
-    
-    // Return all questions joined with line breaks
-    return questions.map(q => q.trim() + '?').join('\n');
-  };
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.backButton} onClick={handleBack}>
+            <LeftOutlined />
+            Back
+          </button>
+          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
+        </div>
+        <div className={styles.flashcardContainer}>
+          <div className={styles.flashcard}>
+            <div className={styles.cardFront}>
+              <div className={styles.cardHeader}>
+                <span>Question</span>
+              </div>
+              <div className={styles.questionText}>
+                <div className={styles.loadingSpinner}>
+                  <div className={styles.spinner}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.backButton} onClick={handleBack}>
+            <LeftOutlined />
+            Back
+          </button>
+          <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
+        </div>
+        <div className={styles.emptyState}>
+          <h2>No Flashcards Available</h2>
+          <p>You don't have any {mode === 'favorites' ? 'favorite questions' : 'weakest questions'} to study yet.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCard = cards[currentIndex];
 
   return (
-    <div>
-      {/* Header Navigation */}
-      <header className={styles.header}>
-        <div className={styles.headerContainer}>
-          <div className={styles.headerLeft}>
-            <div className={styles.logo}>
-              <Bot size={32} color="#ec4899" />
-              <span>InterviewAI</span>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <button className={styles.backButton} onClick={handleBack}>
+          <LeftOutlined />
+          Back
+        </button>
+        <h1>Flashcards - {mode === 'favorites' ? 'Favorite Questions' : 'Weakest Questions'} </h1>
+      </div>
+
+      <div className={styles.flashcardContainer}>
+        <div 
+          className={`${styles.flashcard} ${isFlipped ? styles.flipped : ''}`}
+          onClick={handleFlip}
+        >
+          <div className={styles.cardFront}>
+            <div className={styles.cardHeader}>
+              <span>Question</span>
+            </div>
+            <div className={styles.questionText}>
+              {currentCard.question}
             </div>
           </div>
-          <div className={styles.headerRight}>
-            <button 
-              className={styles.backButton}
-              onClick={handleBackToDashboard}
-            >
-              <ArrowLeft size={20} color="#4b5563" />
-              <span>Back to {location.state && location.state.fromFavorites ? 'Favorites' : 'Dashboard'}</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className={styles.container}>
-        <div className={styles.title}>
-          <BookOpen size={32} color="#ec4899" style={{ marginRight: '12px' }} />
-          Favorite Questions Flashcards
-        </div>
-        
-        {loading ? (
-          <div className={styles.loadingContainer}>
-            <div className={styles.spinner}></div>
-            <p>Loading your favorite questions...</p>
-          </div>
-        ) : error ? (
-          <div className={styles.errorContainer}>
-            <p>{error}</p>
-            <button 
-              className={styles.retryButton}
-              onClick={() => window.location.reload()}
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className={styles.categoryContainer}>
-              {displayCategories.map(category => (
-                <button 
-                  key={category}
-                  className={`${styles.categoryButton} ${selectedCategory === category ? styles.activeCategory : ''}`}
-                  onClick={() => handleCategoryChange(category)}
-                >
-                  {category}
-                </button>
-              ))}
+          <div className={styles.cardBack}>
+            <div className={styles.cardHeader}>
+              <span>Ideal Answer</span>
             </div>
-
-            {filteredCards.length > 0 ? (
-              <>
-                <div className={styles.cardContainer} onClick={handleFlipCard}>
-                  <div className={`${styles.card} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={styles.cardFront}>
-                      <p className={styles.questionNumber}>Card {currentCardIndex + 1} of {filteredCards.length}</p>
-                      <p className={styles.categoryTag}>{filteredCards[currentCardIndex].question_type}</p>
-                      <h2 className={styles.question}>{parseQuestion(filteredCards[currentCardIndex].question_text)}</h2>
-                      <p className={styles.flipHint}>(Click to flip)</p>
-                    </div>
-                    <div className={styles.cardBack}>
-                      <p className={styles.categoryTag}>{filteredCards[currentCardIndex].question_type}</p>
-                      <p className={styles.answer}>{filteredCards[currentCardIndex].answer}</p>
-                    </div>
-                  </div>
+            <div className={styles.answerText}>
+              {loading ? (
+                <div className={styles.loadingSpinner}>
+                  <div className={styles.spinner}></div>
                 </div>
+              ) : (
+                renderAnswer(currentCard.ideal_answer)
+              )}
+            </div>
+          </div>
+        </div>
 
-                <div className={styles.controls}>
-                  <button className={styles.controlButton} onClick={handlePreviousCard}>
-                    Previous
-                  </button>
-                  <button className={styles.controlButton} onClick={handleNextCard}>
-                    Next
-                  </button>
-                </div>
-              </>
-            ) : selectedCategory !== 'All' ? (
-              <div className={styles.noCards}>
-                <p>No favorite questions available for {selectedCategory} category.</p>
-                <p>Go to your interview sessions and mark some {selectedCategory} questions as favorites to see them here.</p>
-              </div>
-            ) : (
-              <div className={styles.noCards}>
-                <p>No favorite questions found.</p>
-                <p>Go to your interview sessions and mark questions as favorites to see them here.</p>
-              </div>
-            )}
-          </>
-        )}
+        <div className={styles.flipHint}>
+          Click the card to flip
+        </div>
+
+        <div className={styles.controls}>
+          <Button onClick={handlePrevious} disabled={currentIndex === 0}>
+            Previous
+          </Button>
+          <Button onClick={handleShuffle}>
+            Shuffle
+          </Button>
+          <Button onClick={handleNext} disabled={currentIndex === cards.length - 1}>
+            Next
+          </Button>
+        </div>
+
+        <div className={styles.progress}>
+          Card {currentIndex + 1} of {cards.length}
+        </div>
       </div>
     </div>
   );

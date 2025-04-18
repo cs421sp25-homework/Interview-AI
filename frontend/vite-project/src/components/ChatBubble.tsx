@@ -66,7 +66,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             )}
           </div>
         </div>
-      
     </div>
   );
 };

@@ -4,11 +4,11 @@ import { SearchOutlined, DeleteOutlined, LeftOutlined, FileTextOutlined } from '
 import { useNavigate } from 'react-router-dom';
 import { BookOpenIcon } from 'lucide-react';
 import API_BASE_URL from '../config/api';
-import styles from './FavoriteQuestionsPage.module.css';
+import styles from './WeakestQuestionsPage.module.css';
 
 const { Option } = Select;
 
-interface FavoriteQuestion {
+interface WeakQuestion {
   id: number;
   question_text: string;
   created_at: string;
@@ -19,9 +19,9 @@ interface FavoriteQuestion {
   interview_type?: 'voice' | 'text';
 }
 
-const FavoritesPage: React.FC = () => {
-  const [favorites, setFavorites] = useState<FavoriteQuestion[]>([]);
-  const [filteredFavorites, setFilteredFavorites] = useState<FavoriteQuestion[]>([]);
+const WeakestQuestionsPage: React.FC = () => {
+  const [weakQuestions, setWeakQuestions] = useState<WeakQuestion[]>([]);
+  const [filteredWeakQuestions, setFilteredWeakQuestions] = useState<WeakQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -40,16 +40,16 @@ const FavoritesPage: React.FC = () => {
         return;
       }
       
-      fetchFavorites();
+      fetchWeakQuestions();
     } catch (error) {
-      console.error('Error in FavoritesPage:', error);
+      console.error('Error in WeakestQuestionsPage:', error);
       navigate('/login');
     }
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [favorites, searchText, typeFilter]);
+  }, [weakQuestions, searchText, typeFilter]);
 
   const parseQuestion = (text: string): string => {
     const sentences = text.split(/[.!?]+/);
@@ -69,7 +69,7 @@ const FavoritesPage: React.FC = () => {
     return questions.map(q => q.trim() + '?').join('\n');
   };
 
-  const fetchFavorites = async () => {
+  const fetchWeakQuestions = async () => {
     setLoading(true);
     try {
       const userEmail = localStorage.getItem('user_email') || '';
@@ -80,17 +80,17 @@ const FavoritesPage: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${userEmail}`);
+      const response = await fetch(`${API_BASE_URL}/api/weak_questions/${userEmail}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch favorites: ${response.status}`);
+        throw new Error(`Failed to fetch weak questions: ${response.status}`);
       }
       
       const data = await response.json();
       
       if (data && Array.isArray(data.data)) {
         // Get a list of session IDs to check
-        const sessionIds = data.data.map((fav: FavoriteQuestion) => fav.session_id);
+        const sessionIds = data.data.map((weak: WeakQuestion) => weak.session_id);
         const uniqueSessionIds = [...new Set(sessionIds)] as string[];
         
         const sessionTypesMap: Record<string, 'voice' | 'text'> = {};
@@ -152,18 +152,18 @@ const FavoritesPage: React.FC = () => {
           }
         }
         
-        const transformedFavorites = data.data.map((favorite: FavoriteQuestion) => {
-          const sessionId = favorite.session_id;
+        const transformedWeakQuestions = data.data.map((weak: WeakQuestion) => {
+          const sessionId = weak.session_id;
           const sessionQuestionType = questionTypesMap[sessionId];
           let finalQuestionType = sessionQuestionType;
           
           // If we don't have a session type, check if the question appears technical
-          if (!finalQuestionType && favorite.question_text) {
+          if (!finalQuestionType && weak.question_text) {
             const technicalKeywords = ['code', 'algorithm', 'function', 'program', 'implementation', 
               'complexity', 'database', 'sql', 'api', 'class', 'object', 'method',
               'interface', 'syntax', 'variable', 'data structure'];
               
-            const questionLower = favorite.question_text.toLowerCase();
+            const questionLower = weak.question_text.toLowerCase();
             const hasTechnicalKeyword = technicalKeywords.some(keyword => questionLower.includes(keyword));
             
             if (hasTechnicalKeyword) {
@@ -173,73 +173,73 @@ const FavoritesPage: React.FC = () => {
           
           // If still no type, use the original saved type
           if (!finalQuestionType) {
-            finalQuestionType = favorite.question_type?.toLowerCase() || 'unknown';
+            finalQuestionType = weak.question_type?.toLowerCase() || 'unknown';
           }
           
           return {
-            id: favorite.id,
-            question_text: favorite.question_text,
-            created_at: favorite.created_at,
-            session_id: favorite.session_id,
-            email: favorite.email,
+            id: weak.id,
+            question_text: weak.question_text,
+            created_at: weak.created_at,
+            session_id: weak.session_id,
+            email: weak.email,
             question_type: finalQuestionType,
-            log: favorite.log,
-            interview_type: sessionTypesMap[favorite.session_id] || 'text'
+            log: weak.log,
+            interview_type: sessionTypesMap[weak.session_id] || 'text'
           };
         });
         
-        setFavorites(transformedFavorites);
-        setFilteredFavorites(transformedFavorites);
+        setWeakQuestions(transformedWeakQuestions);
+        setFilteredWeakQuestions(transformedWeakQuestions);
       }
     } catch (error) {
-      console.error('Error fetching favorites:', error);
-      message.error('Failed to load favorites');
+      console.error('Error fetching weak questions:', error);
+      message.error('Failed to load weak questions');
     } finally {
       setLoading(false);
     }
   };
 
   const applyFilters = () => {
-    let filtered = [...favorites];
+    let filtered = [...weakQuestions];
 
     // Apply search filter
     if (searchText) {
-      filtered = filtered.filter(favorite => 
-        favorite.question_text.toLowerCase().includes(searchText.toLowerCase())
+      filtered = filtered.filter(weak => 
+        weak.question_text.toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
     // Apply question type filter
     if (typeFilter) {
       if (typeFilter === 'technical' || typeFilter === 'behavioral') {
-        filtered = filtered.filter(favorite => 
-          favorite.question_type.toLowerCase() === typeFilter.toLowerCase()
+        filtered = filtered.filter(weak => 
+          weak.question_type.toLowerCase() === typeFilter.toLowerCase()
         );
       } else if (typeFilter === 'voice' || typeFilter === 'text') {
-        filtered = filtered.filter(favorite => 
-          favorite.interview_type === typeFilter
+        filtered = filtered.filter(weak => 
+          weak.interview_type === typeFilter
         );
       }
     }
 
-    setFilteredFavorites(filtered);
+    setFilteredWeakQuestions(filtered);
   };
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/favorite_questions/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/weak_questions/${id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete favorite');
+        throw new Error('Failed to delete weak question');
       }
 
-      message.success('Favorite question deleted successfully');
-      fetchFavorites();
+      message.success('Weak question deleted successfully');
+      fetchWeakQuestions();
     } catch (error) {
-      console.error('Error deleting favorite:', error);
-      message.error('Failed to delete favorite question');
+      console.error('Error deleting weak question:', error);
+      message.error('Failed to delete weak question');
     }
   };
 
@@ -261,7 +261,7 @@ const FavoritesPage: React.FC = () => {
     }
   };
 
-  const handleViewSession = async (record: FavoriteQuestion) => {
+  const handleViewSession = async (record: WeakQuestion) => {
     try {
       setLoadingSession(record.id);
       
@@ -334,10 +334,10 @@ const FavoritesPage: React.FC = () => {
 
   const handleViewFlashcards = () => {
     const selectedQuestions = selectedRowKeys.length > 0 
-      ? favorites.filter(fav => selectedRowKeys.includes(fav.id))
-      : favorites;
+      ? weakQuestions.filter(weak => selectedRowKeys.includes(weak.id))
+      : weakQuestions;
     
-    navigate('/flashcards/favorites', { 
+    navigate('/flashcards/weakest', { 
       state: { 
         questions: selectedQuestions.map(q => ({
           id: q.id,
@@ -361,7 +361,7 @@ const FavoritesPage: React.FC = () => {
       dataIndex: 'question_text',
       key: 'question_text',
       width: '40%',
-      sorter: (a: FavoriteQuestion, b: FavoriteQuestion) => 
+      sorter: (a: WeakQuestion, b: WeakQuestion) => 
         a.question_text.localeCompare(b.question_text),
       render: (text: string) => (
         <div className={styles.questionText}>{parseQuestion(text)}</div>
@@ -371,7 +371,7 @@ const FavoritesPage: React.FC = () => {
       title: 'Type',
       key: 'type',
       width: '15%',
-      render: (text: string, record: FavoriteQuestion) => {
+      render: (text: string, record: WeakQuestion) => {
         // Ensure question_type is properly capitalized, handle any case
         let questionType = 'Unknown';
         if (record.question_type) {
@@ -405,7 +405,7 @@ const FavoritesPage: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: '15%',
-      sorter: (a: FavoriteQuestion, b: FavoriteQuestion) => 
+      sorter: (a: WeakQuestion, b: WeakQuestion) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       render: (date: string) => (
         <div className={styles.dateInfo}>
@@ -417,7 +417,7 @@ const FavoritesPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: '30%',
-      render: (_: unknown, record: FavoriteQuestion) => (
+      render: (_: unknown, record: WeakQuestion) => (
         <Space size="middle" className={styles.actionButtonsContainer}>
           <Button
             type="link"
@@ -446,8 +446,8 @@ const FavoritesPage: React.FC = () => {
             className={`${styles.actionButtonWithLabel} ${styles.deleteButton}`}
             onClick={() => {
               modal.confirm({
-                title: 'Delete Favorite',
-                content: 'Are you sure you want to delete this favorite question?',
+                title: 'Delete Weak Question',
+                content: 'Are you sure you want to delete this weak question?',
                 okText: 'Yes',
                 okType: 'danger',
                 cancelText: 'No',
@@ -485,7 +485,7 @@ const FavoritesPage: React.FC = () => {
           <LeftOutlined size={18} />
           Back to Interview History
         </button>
-        <h1>Favorite Questions</h1>
+        <h1>Weakest Questions</h1>
         <Button
           type="primary"
           icon={<BookOpenIcon />}
@@ -529,20 +529,20 @@ const FavoritesPage: React.FC = () => {
           <Table
             rowSelection={rowSelection}
             columns={columns}
-            dataSource={filteredFavorites}
+            dataSource={filteredWeakQuestions}
             rowKey="id"
             loading={loading}
             pagination={{ 
               pageSize: 10, 
               showSizeChanger: false, 
-              showTotal: (total) => `Total ${total} favorites`,
+              showTotal: (total) => `Total ${total} weak questions`,
               position: ['bottomCenter']
             }}
             className={styles.historyTable}
             locale={{
               emptyText: (
                 <Empty
-                  description="No favorite questions yet"
+                  description="No weak questions yet"
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ),
@@ -554,4 +554,4 @@ const FavoritesPage: React.FC = () => {
   );
 };
 
-export default FavoritesPage; 
+export default WeakestQuestionsPage; 

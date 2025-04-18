@@ -6,7 +6,6 @@ class ConfigService:
     def __init__(self, supabase_url, supabase_key):
         self.supabase = create_client(supabase_url, supabase_key)
 
-
     def get_single_config(self, name: str, email: str):
          """
          Fetch a config row by matching both name and email.
@@ -60,8 +59,6 @@ class ConfigService:
             print(f"Error creating config: {e}")
             return None
 
-
-#TODO might need update and delete operations
     def update_config(self, id: int, updated_data: dict):
         """
         Update an existing config row identified by id.

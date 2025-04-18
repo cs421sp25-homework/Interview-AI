@@ -1,7 +1,6 @@
 from supabase import create_client
 from typing import List, Dict, Any, Optional
 import json
-import time
 import traceback
 import datetime
 import logging
@@ -489,7 +488,6 @@ class ChatHistoryService:
             print(weaknesses_data)
             print("Specific Feedback:")
             print(specific_feedback_text)
-            # Store the analysis in the database
 
             result = self.supabase.table('interview_performance').upsert({
                 'interview_id': interview_id,

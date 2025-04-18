@@ -1,4 +1,3 @@
-/* Modal styles */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -79,7 +78,6 @@
   box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
-/* Custom Select Styling */
 .ant-select-selector {
   border-color: #d1d5db !important;
   border-radius: 0.5rem !important;

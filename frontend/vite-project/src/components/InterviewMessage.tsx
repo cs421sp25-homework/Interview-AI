@@ -4,7 +4,6 @@ import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import API_BASE_URL from '../config/api';
 import styles from './InterviewMessage.module.css';
 
-
 interface InterviewMessageProps {
   message: {
     text: string;

@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Bot, Home, Loader, Save } from 'lucide-react';
+import { Send, X, Home, Loader, Save } from 'lucide-react';
 import styles from './InterviewPage.module.css';
 import { message } from 'antd';
 import API_BASE_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
-import InterviewMessage from '../components/InterviewMessage';
-import { Button } from 'antd';
-import { HeartOutlined } from '@ant-design/icons';
 import ChatBubble from '../components/ChatBubble';
 
-// 添加保存过渡动画组件
 const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
   if (!isVisible) return null;
   
@@ -35,11 +31,8 @@ const InterviewPage: React.FC = () => {
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [isChatReady, setIsChatReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEnding, setIsEnding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  
-  // Record whether the interview has ended and if there is actual conversation
   const hasEndedInterviewRef = useRef(false);
   const hasRealConversationRef = useRef(false);
   const initialLoadRef = useRef(true);
@@ -50,7 +43,6 @@ const InterviewPage: React.FC = () => {
   const config_id = localStorage.getItem('current_config_id') || '';
   const navigate = useNavigate();
   
-  // 添加保存动画状态
   const [showSavingOverlay, setShowSavingOverlay] = useState(false);
   
   useEffect(() => {
@@ -306,20 +298,15 @@ const InterviewPage: React.FC = () => {
       return;
     }
     
-    // 防止多次点击触发多次请求
     if (isSaving) return;
-    
-    // 设置保存状态
+
     setIsSaving(true);
-    
-    // 显示保存动画
+ 
     setShowSavingOverlay(true);
     
-    // 显示加载消息
     message.loading('Saving your interview...', 1);
     
     try {
-      // 执行保存操作
       const saveResult = await saveChatHistory(threadId, messages);
       
       if (saveResult) {
@@ -328,17 +315,13 @@ const InterviewPage: React.FC = () => {
         message.warning('There might be issues saving your responses');
       }
       
-      // 短暂延迟以显示保存动画
       setTimeout(() => {
-        // 隐藏保存动画
         setShowSavingOverlay(false);
-        // 保存后导航到查看页面
         navigate(`/interview/view/${threadId}`, { state: { conversation: messages } });
       }, 800);
     } catch (error) {
       console.error('Error saving chat history:', error);
       message.error('Failed to save your responses');
-      // 如果出错，重置保存状态，让用户可以重试
       setIsSaving(false);
       setShowSavingOverlay(false);
     }
@@ -348,7 +331,6 @@ const InterviewPage: React.FC = () => {
   
 
   const handleBackToDashboard = () => {
-    // 直接调用 handleEndInterview 函数，确保保存逻辑执行
     handleEndInterview();
   };
 
@@ -378,7 +360,6 @@ const InterviewPage: React.FC = () => {
 
   return (
     <div className={styles.interviewContainer}>
-      {/* 保存动画覆盖层 */}
       <SavingOverlay isVisible={showSavingOverlay} />
       
       <div className={styles.interviewHeader}>

@@ -13,13 +13,6 @@ interface Message {
   question_type: string;
 }
 
-interface InterviewLog {
-  id: number;
-  thread_id: string;
-  log: Message[];
-  question_type: string;
-}
-
 interface LocationState {
   conversation: Message[];
   thread_id: string;
@@ -133,9 +126,7 @@ const InterviewLogViewPage: React.FC = () => {
     }
   };
 
-  // ---------------------------------------
   // Load interview log
-  // ---------------------------------------
   useEffect(() => {
     const container = document.getElementById('logViewContainer');
     if (container) {
@@ -199,30 +190,22 @@ const InterviewLogViewPage: React.FC = () => {
     }
   }, [id, location.state, navigate]);
 
-  // ---------------------------------------
   // Scroll to bottom on messages update
-  // ---------------------------------------
   useEffect(() => {
     if (!loading && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  // ---------------------------------------
   // Navigation
-  // ---------------------------------------
   const handleBack = () => {
     navigate('/interview/history');
   };
 
-  // ---------------------------------------
   // Helper to render loading icons
-  // ---------------------------------------
   const antIcon = <LoadingOutlined style={{ fontSize: 20, color: '#ec4899' }} spin />;
 
-  // ---------------------------------------
   // Helper function to render step progress
-  // ---------------------------------------
   const renderLoadingSteps = (index: number) => {
     const currentStep = loadingSteps[index] || 0;
     return (
@@ -316,9 +299,6 @@ const InterviewLogViewPage: React.FC = () => {
     );
   };
 
-  // ---------------------------------------
-  // Render
-  // ---------------------------------------
   return (
     <div className={styles.container}>
       {/* Header */}

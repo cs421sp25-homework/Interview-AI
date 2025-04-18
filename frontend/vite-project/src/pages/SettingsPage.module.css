@@ -16,9 +16,6 @@
   }
 }
 
-/* ================================
-      Navigation
-================================ */
 .nav {
   background: rgba(255, 255, 255, 0.95);
   padding: 1.25rem;
@@ -104,9 +101,6 @@
   border-color: #e5e7eb;
 }
 
-/* ================================
-      Main Section
-================================ */
 .main {
   max-width: 1400px;
   margin: 2rem auto;
@@ -149,18 +143,12 @@
   font-size: 1.1rem;
 }
 
-/* ================================
-      Two-Column Grid
-================================ */
 .grid {
   display: grid;
   grid-template-columns: 2fr 3fr;
   gap: 2.5rem;
 }
 
-/* ================================
-      Column Styling
-================================ */
 .column {
   background: white;
   border-radius: 1.25rem;
@@ -218,9 +206,6 @@
   }
 }
 
-/* ================================
-      Avatar Section
-================================ */
 .avatarSection {
   display: flex;
   flex-direction: column;
@@ -340,9 +325,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* ================================
-      Form Input Fields
-================================ */
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -378,9 +360,6 @@ label {
   border-color: #d1d5db;
 }
 
-/* ================================
-    Full Description Textarea (Auto-expand)
-================================ */
 .textarea {
   padding: 0.75rem 1rem;
   border: 1px solid #e5e7eb;
@@ -406,7 +385,6 @@ label {
   background-color: white;
 }
 
-/* Auto-expand Textarea on Input */
 .autoExpand {
   height: auto;
   overflow-y: hidden;
@@ -414,9 +392,6 @@ label {
   max-height: none;
 }
 
-/* ================================
-      Cards (Experience & Education)
-================================ */
 .card {
   border: 2px solid #e5e7eb;
   border-radius: 0.75rem;
@@ -462,9 +437,6 @@ label {
   transform: rotate(90deg);
 }
 
-/* ================================
-      Add Button
-================================ */
 .addButton {
   display: flex;
   align-items: center;
@@ -488,9 +460,6 @@ label {
   box-shadow: 0 4px 10px rgba(236, 72, 153, 0.15);
 }
 
-/* ================================
-      Save Button Animation
-================================ */
 .saveButton {
   padding: 1.25rem;
   border: none;
@@ -531,9 +500,6 @@ label {
   box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
 }
 
-/* ================================
-      Responsive Design
-================================ */
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: 1fr;
@@ -596,9 +562,6 @@ label {
   100% { transform: rotate(360deg); }
 }
 
-/* ================================
-      Loading Animation
-================================ */
 .loadingContainer {
   display: flex;
   justify-content: center;
@@ -724,9 +687,6 @@ label {
   100% { transform: translateY(0) rotate(0); }
 }
 
-/* ================================
-      Error State
-================================ */
 .errorCard {
   display: flex;
   flex-direction: column;
@@ -843,9 +803,6 @@ label {
   transform: translateY(-1px);
 }
 
-/* ================================
-      Section Dividers
-================================ */
 .sectionDivider {
   display: flex;
   align-items: center;
@@ -891,9 +848,6 @@ label {
   }
 }
 
-/* ================================
-      Form Enhancements
-================================ */
 .avatarImage {
   width: 120px;
   height: 120px;
@@ -908,14 +862,12 @@ label {
   transform: scale(1.05);
 }
 
-/* Focus within for form groups */
 .formGroup:focus-within label {
   color: #ec4899;
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
-/* Improved error styling */
 .error {
   color: #dc2626;
   font-size: 0.875rem;
@@ -949,7 +901,6 @@ label {
   100% { border-color: #dc2626; }
 }
 
-/* Improved card animations */
 .card {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
@@ -973,8 +924,7 @@ label {
 .card:hover::after {
   opacity: 1;
 }
-
-/* Save button enhancements */
+  
 .saveButton {
   position: relative;
   overflow: hidden;

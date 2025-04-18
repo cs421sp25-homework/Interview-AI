@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mic, Bot, Volume2, User } from 'lucide-react';
+import { Mic, Bot, Volume2 } from 'lucide-react';
 import styles from './VoiceBubble.module.css';
 
 interface VoiceBubbleProps {

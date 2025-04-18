@@ -42,7 +42,6 @@ class AuthorizationService:
                 print("No active session found")
                 return None
             
-            # Get user from the session
             user_response = self.supabase.auth.get_user(session_response.session.access_token)
             
             if user_response and hasattr(user_response, 'user'):
@@ -55,7 +54,6 @@ class AuthorizationService:
     def get_user_from_token(self, access_token):
         """Get user information from an access token"""
         try:
-            # Use the token to get user info
             user_response = self.supabase.auth.get_user(access_token)
             return user_response.user if user_response else None
         except Exception as e:

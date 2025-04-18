@@ -8,7 +8,6 @@ class LLMGraph:
     def __init__(self):
         self.llm_interface = LLMInterface()
         self.workflow = StateGraph(state_schema=MessagesState)
-
         self._setup_workflow()
 
     def _setup_workflow(self):

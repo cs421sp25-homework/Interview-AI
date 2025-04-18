@@ -1,32 +1,26 @@
-/* Container for the entire bubble */
 .bubbleContainer {
   display: flex;
   width: 100%;
   margin-bottom: 16px;
 }
 
-/* User message appears on the right */
 .bubbleContainer.user {
   justify-content: flex-end;
 }
 
-/* AI message appears on the left */
 .bubbleContainer.ai {
   justify-content: flex-start;
 }
 
-/* Content wrapper for avatar and bubble */
 .messageContent {
   display: flex;
   max-width: 80%;
 }
 
-/* Reverse order for user messages */
 .bubbleContainer.user .messageContent {
   flex-direction: row-reverse;
 }
 
-/* Avatar styling */
 .avatar {
   width: 36px;
   height: 36px;
@@ -76,14 +70,12 @@
   font-weight: bold;
 }
 
-/* Bubble wrapper */
 .bubbleWrapper {
   display: flex;
   flex-direction: column;
-  max-width: calc(100% - 52px); /* Account for avatar width + margin */
+  max-width: calc(100% - 52px); 
 }
 
-/* Row for the voice bubble to keep it in place */
 .bubbleRow {
   display: flex;
   flex-direction: row;
@@ -93,7 +85,6 @@
   justify-content: flex-end;
 }
 
-/* Voice bubble */
 .voiceBubble {
   display: flex;
   align-items: center;
@@ -108,7 +99,6 @@
   white-space: nowrap;
 }
 
-/* AI bubble styling */
 .voiceBubble.aiVoiceBubble {
   background: linear-gradient(45deg, #f3e8ff, #e0e7ff);
   border: 1px solid #e9d5ff;
@@ -119,7 +109,6 @@
   background: linear-gradient(45deg, #e9d5ff, #c7d2fe);
 }
 
-/* User bubble styling */
 .bubbleContainer.user .voiceBubble {
   background-color: #ec4899;
   color: white;
@@ -132,7 +121,6 @@
   border-top-left-radius: 4px;
 }
 
-/* Playing state */
 .voiceBubble.playing {
   animation: pulse 1.5s infinite;
 }
@@ -160,7 +148,6 @@
   font-size: 0.85rem;
 }
 
-/* Play hint */
 .playHint {
   position: absolute;
   top: -30px;
@@ -183,7 +170,6 @@
   100% { opacity: 0; }
 }
 
-/* Text controls container */
 .textControls {
   display: flex;
   flex-direction: row;
@@ -193,7 +179,6 @@
   justify-content: flex-end;
 }
 
-/* Toggle text button */
 .toggleTextButton {
   background: none;
   border: none;
@@ -212,7 +197,6 @@
   display: inline-block;
 }
 
-/* Message text */
 .messageText {
   margin-top: 8px;
   padding: 8px 12px;

@@ -5,7 +5,6 @@ import {
   Play, 
   FileText,
   Trophy,
-  Star,
   Settings,
   LogOut,
   BookOpen
@@ -590,15 +589,17 @@ const UserDashboard = () => {
                     <Play size={24} color="#ec4899" />
                   </div>
                   <h3>Start Interview</h3>
-                  <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
+                  <p className={styles.actionDescription}>
                     Start With Customized Configuration
                   </p>
-                  <button 
-                    className={`${styles.button} ${styles.buttonPrimary}`} 
-                    onClick={() => navigate('/prompts')}
-                  >
-                    Start Now
-                  </button>
+                  <div className={styles.buttonContainer}>
+                    <button 
+                      className={`${styles.button} ${styles.buttonPrimary}`} 
+                      onClick={() => navigate('/prompts')}
+                    >
+                      Start Now
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.actionCard}>
@@ -606,15 +607,17 @@ const UserDashboard = () => {
                     <FileText size={24} color="#ec4899" />
                   </div>
                   <h3>History</h3>
-                  <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
+                  <p className={styles.actionDescription}>
                     View your past interview sessions
                   </p>
-                  <button 
-                    className={`${styles.button} ${styles.buttonPrimary}`} 
-                    onClick={() => navigate('/interview/history')}
-                  >
-                    View
-                  </button>
+                  <div className={styles.buttonContainer}>
+                    <button 
+                      className={`${styles.button} ${styles.buttonPrimary}`} 
+                      onClick={() => navigate('/interview/history')}
+                    >
+                      View
+                    </button>
+                  </div>
                 </div>
                 
                 <div className={styles.actionCard}>
@@ -622,15 +625,17 @@ const UserDashboard = () => {
                     <BookOpen size={24} color="#ec4899" />
                   </div>
                   <h3>Flashcards</h3>
-                  <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
+                  <p className={styles.actionDescription}>
                     Practice with interview flashcards
                   </p>
-                  <button 
-                    className={`${styles.button} ${styles.buttonPrimary}`} 
-                    onClick={() => navigate('/flashcards')}
-                  >
-                    Study
-                  </button>
+                  <div className={styles.buttonContainer}>
+                    <button 
+                      className={`${styles.button} ${styles.buttonPrimary}`} 
+                      onClick={() => navigate('/flashcards')}
+                    >
+                      Study
+                    </button>
+                  </div>
                 </div>
               </div>
 

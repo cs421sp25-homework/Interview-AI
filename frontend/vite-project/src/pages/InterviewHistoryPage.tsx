@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty, Tooltip, Spin } from 'antd';
-import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty, Tooltip, Spin, List } from 'antd';
+import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined, WarningOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -89,6 +89,10 @@ const InterviewHistoryPage: React.FC = () => {
   const [favoriteQuestions, setFavoriteQuestions] = useState<any[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   
+  const [weakestModalVisible, setWeakestModalVisible] = useState(false);
+  const [weakestQuestions, setWeakestQuestions] = useState<any[]>([]);
+  const [loadingWeakest, setLoadingWeakest] = useState(false);
+  
   useEffect(() => {
     try {
       // Check if user is logged in
@@ -99,7 +103,6 @@ const InterviewHistoryPage: React.FC = () => {
         return;
       }
       
-      // Continue with existing code
       fetchInterviewLogs();
     } catch (error) {
       console.error('Error in InterviewHistoryPage:', error);
@@ -297,7 +300,7 @@ const InterviewHistoryPage: React.FC = () => {
       onOk: async () => {
         try {
           // Show loading message
-          message.loading('Deleting interview and associated favorites...', 1);
+          message.loading('Deleting interview...', 1);
           
           // For voice interviews, explicitly delete favorites by the numeric ID
           // This is needed because favorites might be saved with the numeric ID instead of thread_id
@@ -324,7 +327,7 @@ const InterviewHistoryPage: React.FC = () => {
           }
   
           const result = await response.json();
-          message.success(result.message || 'Interview and associated favorite questions deleted successfully');
+          message.success(result.message || 'Interview deleted successfully');
           setLogs(prevLogs => prevLogs.filter(item => item.id !== log.id));
         } catch (error) {
           console.error('Error deleting interview:', error);
@@ -343,22 +346,18 @@ const InterviewHistoryPage: React.FC = () => {
     try {
       console.log("Export button clicked", log);
       
-      // 检查是否有对话数据
       if (!log.log || (Array.isArray(log.log) && log.log.length === 0)) {
         message.warning('No conversation data found for export');
         return;
       }
       
-      // 确保conversation是数组
       const conversationData = Array.isArray(log.log) ? log.log : 
                               typeof log.log === 'string' ? JSON.parse(log.log) : [];
       
       console.log("Conversation data:", conversationData);
 
-      // 显示加载消息
       message.loading('Preparing export...', 0.5);
 
-      // 获取完整的详细数据（与Details页面相同）
       let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
       let improvementAreas = ["Consider providing more specific examples", "Work on structuring responses"];
       let specificFeedback = "Performance data available for this interview.";
@@ -367,7 +366,6 @@ const InterviewHistoryPage: React.FC = () => {
       try {
         console.log("Fetching complete details for ID:", log.id);
         
-        // 获取分数数据
         const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
         if (scoresResponse.ok) {
           const scoresData = await scoresResponse.json();
@@ -385,7 +383,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取优势数据
         const strengthsResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_strengths/${log.id}`);
         if (strengthsResponse.ok) {
           const strengthsData = await strengthsResponse.json();
@@ -394,7 +391,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取改进领域数据
         const improvementResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_improvement_areas/${log.id}`);
         if (improvementResponse.ok) {
           const improvementData = await improvementResponse.json();
@@ -403,7 +399,6 @@ const InterviewHistoryPage: React.FC = () => {
           }
         }
         
-        // 获取具体反馈数据
         const feedbackResponse = await fetch(`${API_BASE_URL}/api/interview_feedback_specific_feedback/${log.id}`);
         if (feedbackResponse.ok) {
           const feedbackData = await feedbackResponse.json();
@@ -413,10 +408,8 @@ const InterviewHistoryPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to fetch complete details for export:', err);
-        // 继续导出，但使用默认值
       }
 
-      // 创建导出数据对象
       const exportData = {
         interview: {
           title: log.title || 'Unnamed Interview',
@@ -439,7 +432,6 @@ const InterviewHistoryPage: React.FC = () => {
         }
       };
 
-      // 直接导出为PDF
       try {
         console.log("Starting PDF export with complete data");
         exportToPDF(exportData);
@@ -638,6 +630,62 @@ const InterviewHistoryPage: React.FC = () => {
     }
   };
   
+
+  const handleViewWeakest = async (log: InterviewLog) => {
+    setSelectedLog(log);
+    setWeakestModalVisible(true);
+    setLoadingWeakest(true);
+
+    try {
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        message.error('Please log in to view weakest questions');
+        return;
+      }
+
+      console.log('Fetching weakest questions for:', {
+        email,
+        thread_id: log.thread_id,
+        id: log.id,
+        log: log
+      });
+
+      let weakestList = [];
+      
+      // For voice interviews, the session_id might be stored as the log.id
+      if (log.interview_type?.toLowerCase() === 'voice') {
+        // Try fetching using the log.id as session_id
+        const voiceResponse = await fetch(`${API_BASE_URL}/api/weak_questions/${email}?session_id=${log.id}`);
+        
+        if (voiceResponse.ok) {
+          const voiceData = await voiceResponse.json();
+          console.log('Fetched voice favorite questions response:', voiceData);
+          weakestList = Array.isArray(voiceData.data) ? voiceData.data : [];
+        }
+      }
+      
+      // If we didn't get any favorites from the voice method, or this is a text interview
+      // try the standard thread_id method
+      if (weakestList.length === 0) {
+        // Use the full thread_id
+        const response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}?session_id=${log.thread_id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched text weakest questions response:', data);
+          weakestList = Array.isArray(data.data) ? data.data : [];
+        }
+      }
+      
+      setWeakestQuestions(weakestList);
+    } catch (error) {
+      console.error('Error fetching weakest questions:', error);
+      message.error('Failed to load weakest questions');
+    } finally {
+      setLoadingWeakest(false);
+    }
+  };
+  
   const columns = [
     {
       title: 'Interview Config',
@@ -689,9 +737,7 @@ const InterviewHistoryPage: React.FC = () => {
       sortDirections: ['ascend', 'descend', null] as SortOrder[],
       defaultSortOrder: 'descend' as const,
       render: (date: string) => {
-        try {
-          // console.log("Rendering date:", date);
-          
+        try {          
           const formattedTime = formatToEasternTime(date);
           
           return (
@@ -758,12 +804,23 @@ const InterviewHistoryPage: React.FC = () => {
             type="link" 
             className={`${styles.actionButtonWithLabel} ${styles.favoritesButton}`}
             onClick={(e) => {
-              e.stopPropagation(); // 阻止事件冒泡
+              e.stopPropagation(); 
               handleViewFavorites(record);
             }}
           >
             <HeartOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Favorites</span>
+          </Button>
+          <Button 
+            type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.weakestButton}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewWeakest(record);
+            }}
+          >
+            <WarningOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Weakest</span>
           </Button>
           <Button 
             type="link" 
@@ -818,12 +875,23 @@ const InterviewHistoryPage: React.FC = () => {
           Back to Dashboard
         </button>
         <h1>Interview History</h1>
-        <button 
-          className={styles.backButton}
-          onClick={() => navigate('/favorites')}
-        >
-          <HeartOutlined /> View All Favorite Questions
-        </button>
+        <div className={styles.headerActions}>
+          <Button 
+            className={styles.actionButton}
+            onClick={() => navigate('/favorites')}
+            icon={<HeartOutlined />}
+          >
+            View All Favorite Questions
+          </Button>
+          
+          <Button
+            className={styles.actionButton}
+            onClick={() => navigate('/weakest')}
+            icon={<WarningOutlined />}
+          >
+            View All Weakest Questions
+          </Button>
+        </div>
       </div>
 
       <div className={styles.historyContent}>
@@ -840,24 +908,23 @@ const InterviewHistoryPage: React.FC = () => {
           </div>
           
           <div className={styles.filterRight}>
-            <Space size={16}>
-              <RangePicker 
-                onChange={value => setDateRange(value)}
-                className={styles.datePicker}
-              />
-              
-              <Select
-                placeholder="Interview Type"
-                allowClear
-                onChange={value => setTypeFilter(value)}
-                className={styles.typeFilter}
-              >
-                <Option value="technical">Technical</Option>
-                <Option value="behavioral">Behavioral</Option>
-                <Option value="voice">Voice</Option>
-                <Option value="text">Text</Option>
-              </Select>
-            </Space>
+            <RangePicker 
+              onChange={value => setDateRange(value)}
+              className={styles.datePicker}
+              placeholder={['Start Date', 'End Date']}
+            />
+            
+            <Select
+              placeholder="Filter by Type"
+              allowClear
+              onChange={value => setTypeFilter(value)}
+              className={styles.typeFilter}
+            >
+              <Option value="technical">Technical</Option>
+              <Option value="behavioral">Behavioral</Option>
+              <Option value="voice">Voice</Option>
+              <Option value="text">Text</Option>
+            </Select>
           </div>
         </div>
         
@@ -873,16 +940,17 @@ const InterviewHistoryPage: React.FC = () => {
             position: ['bottomCenter']
           }}
           className={styles.historyTable}
-          locale={{ emptyText: 'No interview history found' }}
-          onChange={(pagination, filters, sorter, extra) => {
-            // console.log('Table params changed:', sorter);
-            // 可以在这里添加额外的排序逻辑
+          locale={{ 
+            emptyText: <Empty 
+              description="No interview history found" 
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
           }}
         />
       </div>
       
       <Modal
-        title="Interview Details"
+        title={<div className={styles.modalTitle}>Interview Details</div>}
         open={detailModalVisible}
         onCancel={() => {
           setDetailModalVisible(false);
@@ -905,6 +973,7 @@ const InterviewHistoryPage: React.FC = () => {
         ]}
         width={1200}
         className={styles.detailModal}
+        centered
       >
         {selectedLog && (
           <div className={styles.detailContent}>
@@ -912,15 +981,10 @@ const InterviewHistoryPage: React.FC = () => {
               <Title level={4}>{selectedLog.title}</Title>
               <Text type="secondary">
                 {(() => {
-                  try {
-                    // console.log("Modal date:", selectedLog.updated_at || selectedLog.date);
-                    
-                    // 使用工具函数处理时区
+                  try {                    
                     const dateStr = selectedLog.updated_at || selectedLog.date;
                     const formattedTime = formatToEasternTime(dateStr);
-                    
-                    // 对于模态框，我们希望月份为完整名称
-                    // 重新格式化日期部分为带有完整月份名称的形式
+
                     const dateObj = new Date(dateStr);
                     if (!isNaN(dateObj.getTime())) {
                       const fullFormatter = new Intl.DateTimeFormat('en-US', {
@@ -985,7 +1049,6 @@ const InterviewHistoryPage: React.FC = () => {
             </div>
             
             {/* Job Description Section */}
-            {console.log("Job description rendering:", selectedLog.job_description) /* 打印调试信息 */}
             {selectedLog.job_description && (
               <div className={styles.detailSection}>
                 <Title level={5}>Job Description</Title>
@@ -1070,7 +1133,7 @@ const InterviewHistoryPage: React.FC = () => {
       </Modal>
       
       <Modal
-        title="Favorite Questions"
+        title={<div className={styles.modalTitle}>Favorite Questions</div>}
         open={favoritesModalVisible}
         onCancel={() => {
           setFavoritesModalVisible(false);
@@ -1083,6 +1146,7 @@ const InterviewHistoryPage: React.FC = () => {
         ]}
         width={800}
         className={styles.favoritesModal}
+        centered
       >
         {selectedLog && (
           <div className={styles.favoritesContent}>
@@ -1113,7 +1177,65 @@ const InterviewHistoryPage: React.FC = () => {
                   ))}
                 </ul>
               ) : (
-                <Empty description="No favorite questions found for this interview" />
+                <Empty 
+                  description="No favorite questions found for this interview" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+      
+      <Modal
+        title={<div className={styles.modalTitle}>Weakest Questions</div>}
+        open={weakestModalVisible}
+        onCancel={() => {
+          setWeakestModalVisible(false);
+          setWeakestQuestions([]);
+        }}
+        footer={[
+          <Button key="back" onClick={() => setWeakestModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+        width={800}
+        className={styles.favoritesModal}
+        centered
+      >
+        {selectedLog && (
+          <div className={styles.favoritesContent}>
+            <div className={styles.favoritesList}>
+              {loadingWeakest ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.spinner}></div>
+                  <div className={styles.loadingText}>Loading weakest questions...</div>
+                  <div className={styles.loadingIndicator}>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                  </div>
+                </div>
+              ) : weakestQuestions.length > 0 ? (
+                <ul className={styles.questionsList}>
+                  {weakestQuestions.map((question, index) => (
+                    <li key={index} className={styles.questionItem}>
+                      <Title level={5}>Question {index + 1}</Title>
+                      <Text>{parseQuestion(question.question_text)}</Text>
+                      {question.answer && (
+                        <div className={styles.answerSection}>
+                          <Text type="secondary" strong>Answer:</Text>
+                          <Text>{question.answer}</Text>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty 
+                  description="No weakest questions found for this interview" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
               )}
             </div>
           </div>

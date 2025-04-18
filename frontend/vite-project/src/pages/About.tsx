@@ -8,7 +8,6 @@ const About = () => {
         <p className={styles.text}>
           InterviewAI is your personal interview preparation assistant, powered by advanced artificial intelligence.
         </p>
-        {/* Add more content as needed */}
       </div>
     </div>
   );

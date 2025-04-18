@@ -1,4 +1,3 @@
-/* Container with a lighter animated gradient background */
 .container {
   min-height: 100vh;
   display: flex;
@@ -6,10 +5,9 @@
   background: linear-gradient(45deg, #fde2e8, #ffffff, #fde2e8);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
-  padding-top: 64px; /* Height of fixed nav */
+  padding-top: 64px;
 }
 
-/* Keyframes for the animated gradient */
 @keyframes gradientShift {
   0% {
     background-position: 0% 50%;
@@ -22,7 +20,6 @@
   }
 }
 
-/* Navigation bar with slide down animation */
 .nav {
   position: fixed;
   top: 0;
@@ -55,7 +52,6 @@
   align-items: center;
 }
 
-/* Logo styling */
 .logo {
   display: flex;
   align-items: center;
@@ -74,13 +70,11 @@
   color: #1f2937;
 }
 
-/* Navigation links */
 .navLinks {
   display: flex;
   gap: 1rem;
 }
 
-/* Button styling with smooth transition */
 .button {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
@@ -108,7 +102,6 @@
   color: #ec4899;
 }
 
-/* Card styling with hover effect */
 .card {
   background: white;
   border-radius: 0.75rem;
@@ -122,7 +115,6 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
 }
 
-/* Hero section with background image (no dark overlay) */
 .hero {
   position: relative;
   flex: 1;
@@ -133,8 +125,6 @@
   align-items: center;
   padding: 2rem 1rem;
   animation: fadeInUp 1s ease-out;
-
-  /* Adjust hero background image here */
   background-image: url('/background.png');
   background-size: cover;
   background-position: center;
@@ -151,7 +141,6 @@
   }
 }
 
-/* Hero title and text with subtle text-shadow for contrast */
 .heroTitle {
   font-size: 3rem;
   font-weight: bold;
@@ -165,7 +154,6 @@
   margin-bottom: 2rem;
 }
 
-/* Hero button with subtle scale on hover */
 .heroButton {
   font-size: 1.125rem;
   padding: 1.5rem 2rem;
@@ -176,7 +164,6 @@
   transform: scale(1.05);
 }
 
-/* Features and Stats sections remain similar */
 .features,
 .stats {
   min-height: 100vh;
@@ -212,7 +199,6 @@
   color: #4b5563;
 }
 
-/* Stats section styling */
 .statsGrid {
   max-width: 1200px;
   margin: 0 auto;
@@ -240,7 +226,6 @@
   color: #4b5563;
 }
 
-/* Footer styling */
 .footer {
   background: white;
   border-top: 1px solid #f3f4f6;
@@ -305,7 +290,6 @@
   font-size: 0.875rem;
 }
 
-/* Responsive tweaks */
 @media (max-width: 768px) {
   .navLinks {
     display: none;
