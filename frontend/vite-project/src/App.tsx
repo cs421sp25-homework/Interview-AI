@@ -21,6 +21,7 @@ import VoiceInterviewLogPage from './pages/VoiceInterviewLogPage';
 import EloScorePage from './pages/EloScorePage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import GraphPage from './pages/GraphPage';
+import WeakestQuestionsPage from './pages/WeakestQuestionsPage';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
       <Route path="/flashcards/favorites" element={<FlashcardsPage mode="favorites" />} />
       <Route path="/flashcards/weakest" element={<FlashcardsPage mode="weakest" />} />
       <Route path="/graph" element={<GraphPage />} />
+      <Route path="/weakest" element={<WeakestQuestionsPage />} />
     </Routes>
   );
 }

@@ -182,7 +182,13 @@
 .buttonSecondary:hover {
   background: #d1d5db;
 }
-  
+
+.flashcardButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .achievements {
   display: flex;
   flex-wrap: wrap;

@@ -1383,52 +1383,6 @@ def delete_favorite_questions_by_session(session_id):
         return jsonify({"error": "Failed to delete favorite questions", "message": str(e)}), 500
     
 
-
-@app.route('/api/chat_history/<int:chat_id>', methods=['GET'])
-def get_chat_history_by_id(chat_id):
-    """
-    Retrieves a single interview log record from Supabase
-    by its numeric primary key (id), then merges 'log' + 'audio_metadata'
-    into a single list of messages.
-    """
-    try:
-        # 1) Query your 'interview_logs' table in Supabase
-        result = supabase.table('interview_logs').select('*').eq('id', chat_id).execute()
-        if not result.data or len(result.data) == 0:
-            return jsonify({"error": "Interview log not found"}), 404
-        
-        row = result.data[0]
-
-        # 2) Parse the "log" column (text messages)
-        text_messages = []
-        if row.get('log'):
-            text_messages = json.loads(row['log'])  # e.g., a list of { text, sender, ... }
-
-        # 3) Parse the "audio_metadata" column (audio info)
-        audio_metadata = []
-        if row.get('audio_metadata'):
-            audio_metadata = json.loads(row['audio_metadata'])
-            # e.g. [ { "audioUrl": "https://...", "storagePath": "..." }, ... ]
-
-        # 4) Merge them by index, if they line up 1-to-1
-        combined_messages = []
-        for i, txt_msg in enumerate(text_messages):
-            audio_info = audio_metadata[i] if i < len(audio_metadata) else {}
-            combined_messages.append({
-                **txt_msg,
-                "audioUrl": audio_info.get("audioUrl", txt_msg.get("audioUrl")),
-                "storagePath": audio_info.get("storagePath", txt_msg.get("storagePath"))
-            })
-
-        return jsonify({
-            "id": row["id"],
-            "messages": combined_messages
-        }), 200
-
-    except Exception as e:
-        print(f"Error retrieving chat history {chat_id}: {e}")
-        return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
-    
 @app.route('/api/weak_questions/<email>', methods=['GET'])
 def get_weak_questions(email):
     """

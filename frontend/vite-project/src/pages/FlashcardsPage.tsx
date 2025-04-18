@@ -97,8 +97,8 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           
           response = await fetch(`${API_BASE_URL}/api/favorite_questions/${email}`);
         } else {
-          // TODO: Implement weakest questions endpoint
-          response = await fetch(`${API_BASE_URL}/api/weakest_questions/${email}`);
+          // Fetch weakest questions
+          response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}`);
         }
 
         if (!response.ok) {
@@ -216,6 +216,8 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   const handleBack = () => {
     if (mode === 'favorites') {
       navigate('/favorites');
+    } if (mode === 'weakest') {
+      navigate('/weakest');
     } else {
       navigate('/dashboard');
     }

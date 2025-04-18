@@ -5,7 +5,6 @@ import {
   Play, 
   FileText,
   Trophy,
-  Star,
   Settings,
   LogOut,
   BookOpen
@@ -625,12 +624,20 @@ const UserDashboard = () => {
                   <p style={{ color: 'var(--text-light)', margin: '0.5rem 0' }}>
                     Practice with interview flashcards
                   </p>
-                  <button 
-                    className={`${styles.button} ${styles.buttonPrimary}`} 
-                    onClick={() => navigate('/flashcards')}
-                  >
-                    Study
-                  </button>
+                  <div className={styles.flashcardButtons}>
+                    <button 
+                      className={`${styles.button} ${styles.buttonPrimary}`} 
+                      onClick={() => navigate('/flashcards/favorites')}
+                    >
+                      Study Favorites
+                    </button>
+                    <button 
+                      className={`${styles.button} ${styles.buttonPrimary}`} 
+                      onClick={() => navigate('/flashcards/weakest')}
+                    >
+                      Study Weakest
+                    </button>
+                  </div>
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty, Tooltip, Spin } from 'antd';
-import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Input, DatePicker, Select, message, Modal, Typography, Empty, Tooltip, Spin, List } from 'antd';
+import { SearchOutlined, DeleteOutlined, HeartOutlined, EyeOutlined, BarChartOutlined, ExclamationCircleOutlined, ExportOutlined, WarningOutlined } from '@ant-design/icons';
 import { Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -88,6 +88,10 @@ const InterviewHistoryPage: React.FC = () => {
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
   const [favoriteQuestions, setFavoriteQuestions] = useState<any[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
+  
+  const [weakestModalVisible, setWeakestModalVisible] = useState(false);
+  const [weakestQuestions, setWeakestQuestions] = useState<any[]>([]);
+  const [loadingWeakest, setLoadingWeakest] = useState(false);
   
   useEffect(() => {
     try {
@@ -296,7 +300,7 @@ const InterviewHistoryPage: React.FC = () => {
       onOk: async () => {
         try {
           // Show loading message
-          message.loading('Deleting interview and associated favorites...', 1);
+          message.loading('Deleting interview...', 1);
           
           // For voice interviews, explicitly delete favorites by the numeric ID
           // This is needed because favorites might be saved with the numeric ID instead of thread_id
@@ -323,7 +327,7 @@ const InterviewHistoryPage: React.FC = () => {
           }
   
           const result = await response.json();
-          message.success(result.message || 'Interview and associated favorite questions deleted successfully');
+          message.success(result.message || 'Interview deleted successfully');
           setLogs(prevLogs => prevLogs.filter(item => item.id !== log.id));
         } catch (error) {
           console.error('Error deleting interview:', error);
@@ -626,6 +630,62 @@ const InterviewHistoryPage: React.FC = () => {
     }
   };
   
+
+  const handleViewWeakest = async (log: InterviewLog) => {
+    setSelectedLog(log);
+    setWeakestModalVisible(true);
+    setLoadingWeakest(true);
+
+    try {
+      const email = localStorage.getItem('user_email');
+      if (!email) {
+        message.error('Please log in to view weakest questions');
+        return;
+      }
+
+      console.log('Fetching weakest questions for:', {
+        email,
+        thread_id: log.thread_id,
+        id: log.id,
+        log: log
+      });
+
+      let weakestList = [];
+      
+      // For voice interviews, the session_id might be stored as the log.id
+      if (log.interview_type?.toLowerCase() === 'voice') {
+        // Try fetching using the log.id as session_id
+        const voiceResponse = await fetch(`${API_BASE_URL}/api/weak_questions/${email}?session_id=${log.id}`);
+        
+        if (voiceResponse.ok) {
+          const voiceData = await voiceResponse.json();
+          console.log('Fetched voice favorite questions response:', voiceData);
+          weakestList = Array.isArray(voiceData.data) ? voiceData.data : [];
+        }
+      }
+      
+      // If we didn't get any favorites from the voice method, or this is a text interview
+      // try the standard thread_id method
+      if (weakestList.length === 0) {
+        // Use the full thread_id
+        const response = await fetch(`${API_BASE_URL}/api/weak_questions/${email}?session_id=${log.thread_id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched text weakest questions response:', data);
+          weakestList = Array.isArray(data.data) ? data.data : [];
+        }
+      }
+      
+      setWeakestQuestions(weakestList);
+    } catch (error) {
+      console.error('Error fetching weakest questions:', error);
+      message.error('Failed to load weakest questions');
+    } finally {
+      setLoadingWeakest(false);
+    }
+  };
+  
   const columns = [
     {
       title: 'Interview Config',
@@ -753,6 +813,17 @@ const InterviewHistoryPage: React.FC = () => {
           </Button>
           <Button 
             type="link" 
+            className={`${styles.actionButtonWithLabel} ${styles.weakestButton}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewWeakest(record);
+            }}
+          >
+            <WarningOutlined className={styles.actionIcon} />
+            <span className={styles.actionText}>Weakest</span>
+          </Button>
+          <Button 
+            type="link" 
             danger 
             className={`${styles.actionButtonWithLabel} ${styles.deleteButton}`}
             onClick={(e) => {
@@ -804,12 +875,21 @@ const InterviewHistoryPage: React.FC = () => {
           Back to Dashboard
         </button>
         <h1>Interview History</h1>
-        <button 
-          className={styles.backButton}
+        <Button 
+          className={styles.actionButton}
           onClick={() => navigate('/favorites')}
         >
           <HeartOutlined /> View All Favorite Questions
-        </button>
+        </Button>
+        <div className={styles.headerActions}>
+          <Button
+            icon={<WarningOutlined />}
+            onClick={() => navigate('/weakest')}
+            className={styles.actionButton}
+          >
+            View Weakest Questions
+          </Button>
+        </div>
       </div>
 
       <div className={styles.historyContent}>
@@ -1091,6 +1171,57 @@ const InterviewHistoryPage: React.FC = () => {
                 </ul>
               ) : (
                 <Empty description="No favorite questions found for this interview" />
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+      
+      <Modal
+        title="Weakest Questions"
+        open={weakestModalVisible}
+        onCancel={() => {
+          setWeakestModalVisible(false);
+          setWeakestQuestions([]);
+        }}
+        footer={[
+          <Button key="back" onClick={() => setWeakestModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+        width={800}
+        className={styles.favoritesModal}
+      >
+        {selectedLog && (
+          <div className={styles.favoritesContent}>
+            <div className={styles.favoritesList}>
+              {loadingWeakest ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.spinner}></div>
+                  <div className={styles.loadingText}>Loading weakest questions...</div>
+                  <div className={styles.loadingIndicator}>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                  </div>
+                </div>
+              ) : weakestQuestions.length > 0 ? (
+                <ul className={styles.questionsList}>
+                  {weakestQuestions.map((question, index) => (
+                    <li key={index} className={styles.questionItem}>
+                      <Title level={5}>Question {index + 1}</Title>
+                      <Text>{parseQuestion(question.question_text)}</Text>
+                      {question.answer && (
+                        <div className={styles.answerSection}>
+                          <Text type="secondary" strong>Answer:</Text>
+                          <Text>{question.answer}</Text>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty description="No weakest questions found for this interview" />
               )}
             </div>
           </div>
