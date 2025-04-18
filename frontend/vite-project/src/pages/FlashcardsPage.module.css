@@ -428,3 +428,181 @@
   text-align: center;
   color: #6b7280;
 } 
+
+
+/* ______ overall layout ______ */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  transition: background 0.25s;
+  color: #666;
+}
+.backBtn:hover {
+  background: #f1f1f1;
+  color: #222;
+}
+
+/* ______ flipping card ______ */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  perspective: 1200px;
+}
+
+.card {
+  width: 100%;
+  max-width: 640px;
+  height: 380px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.07);
+}
+
+.flipped {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  padding: 1.6rem 2rem;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  background: #ffffff;
+}
+
+.back {
+  background: #fafafa;
+  transform: rotateY(180deg);
+}
+
+.tag {
+  font-weight: 600;
+  color: #ff1861;
+}
+
+.qText,
+.aText {
+  overflow-y: auto;
+  font-size: 1.35rem;
+  line-height: 1.55;
+  color: #1b1b1b;
+  word-break: break-word;
+}
+
+/* ______ small controls under card ______ */
+.controls {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.progress {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* ______ study list ______ */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.item {
+  background: #fff;
+  padding: 1.8rem 1.6rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.question {
+  font-weight: 600;
+  line-height: 1.5;
+  font-size: 1.1rem;
+}
+
+.area {
+  margin-top: 0.3rem;
+}
+
+.itemBtns {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.aiBlock {
+  margin-top: 1rem;
+  background: #f5faff;
+  border-left: 4px solid #ff1861;
+  padding: 0.9rem 1.2rem;
+  border-radius: 6px;
+}
+
+.aiLabel {
+  font-weight: 600;
+  color: #ff1861;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.bulletList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.bulletList li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+.bulletList li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #ff1861;
+}
+
+/* ______ loader / empty ______ */
+.loaderPane,
+.emptyPane {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #888;
+}
