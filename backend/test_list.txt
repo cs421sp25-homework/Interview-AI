@@ -66,3 +66,12 @@ tests/test_favorite_questions.py::test_add_favorite_question_missing_field
 tests/test_favorite_questions.py::test_remove_favorite_question_valid
 tests/test_favorite_questions.py::test_delete_favorite_questions_by_session_valid
 #tests/test_favorite_questions.py::test_delete_favorite_questions_by_session_missing
+tests/test_weak_questions.py::test_get_weak_questions_valid_email
+tests/test_weak_questions.py::test_get_weak_questions_with_session_id
+#tests/test_weak_questions.py::test_get_weak_questions_empty_email
+tests/test_weak_questions.py::test_add_weak_question_valid
+tests/test_weak_questions.py::test_add_weak_question_missing_field
+#tests/test_weak_questions.py::test_add_weak_question_existing
+tests/test_weak_questions.py::test_remove_weak_question_valid
+tests/test_weak_questions.py::test_remove_weak_question_invalid_id
+
