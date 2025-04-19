@@ -57,3 +57,12 @@ tests/test_profile.py::test_update_profile_nonexistent_user
 #tests/test_speech_text.py::test_speech2text_valid_request
 #tests/test_speech_text.py::test_speech2text_missing_file
 #tests/test_speech_text.py::test_speech2text_file_too_large
+tests/test_favorite_questions.py::test_get_favorite_questions_valid_email
+tests/test_favorite_questions.py::test_get_favorite_questions_with_session_id
+#tests/test_favorite_questions.py::test_get_favorite_questions_empty_email
+tests/test_favorite_questions.py::test_add_favorite_question_valid
+tests/test_favorite_questions.py::test_add_favorite_question_missing_field
+#tests/test_favorite_questions.py::test_add_favorite_question_existing
+tests/test_favorite_questions.py::test_remove_favorite_question_valid
+tests/test_favorite_questions.py::test_delete_favorite_questions_by_session_valid
+#tests/test_favorite_questions.py::test_delete_favorite_questions_by_session_missing
