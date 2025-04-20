@@ -385,7 +385,7 @@ const GraphPage = () => {
 
         {/* Leaderboard */}
         <div className={styles.profileCard}>
-          <h2>Top 10 Leaderboard</h2>
+          <h2>Top 10 Leaderboard By ELO Score</h2>
           {isLoadingLeaderboard ? (
             <div className={styles.loadingContainer}>
               <div style={{ marginBottom: '0.5rem' }}>
