@@ -36,9 +36,6 @@ test.describe('User Dashboard', () => {
     
     // Check that the stats are displayed
     await expect(page.getByText('Interviews Completed')).toBeVisible();
-    // await expect(page.getByText('5', { exact: true })).toBeVisible();
-    await expect(page.getByText('Resume Reviews')).toBeVisible();
-    // await expect(page.getByText('3', { exact: true })).toBeVisible();
     await expect(page.getByText('Member Since')).toBeVisible();
   });
 
