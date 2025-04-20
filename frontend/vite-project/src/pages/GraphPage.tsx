@@ -129,7 +129,7 @@ const GraphPage = () => {
         }
 
         console.log('Fetching ELO history for:', currentEmail);
-        const response = await axios.get(`http://localhost:5001/api/elo/history/${currentEmail}`);
+        const response = await axios.get(`${API_BASE_URL}/api/elo/history/${currentEmail}`);
         console.log('ELO history API response:', response.data);
         
         if (response.data && response.data.success) {
@@ -165,7 +165,7 @@ const GraphPage = () => {
     const fetchLeaderboard = async () => {
       setIsLoadingLeaderboard(true);
       try {
-        const response = await axios.get('http://localhost:5001/api/elo/leaderboard?limit=10');
+        const response = await axios.get(`${API_BASE_URL}/api/elo/leaderboard?limit=10`);
         console.log('Leaderboard API response:', response.data);
         
         if (response.data && response.data.success) {

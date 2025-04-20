@@ -44,7 +44,6 @@ function App() {
       <Route path="/interview/view/:id" element={<InterviewLogViewPage />} />
       <Route path="/favorites" element={<FavoriteQuestionsPage />} />
       <Route path="/voice/interview/view/:id" element={<VoiceInterviewLogPage />} />
-      <Route path="/elo" element={<EloScorePage />} />
       <Route path="/flashcards" element={<FlashcardsSelectionPage />} />
       <Route path="/flashcards/favorites" element={<FlashcardsPage mode="favorites" />} />
       <Route path="/flashcards/weakest" element={<FlashcardsPage mode="weakest" />} />

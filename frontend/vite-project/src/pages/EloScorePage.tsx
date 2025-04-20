@@ -12,7 +12,7 @@ interface LeaderboardUser {
   id: string;
   name: string;
   email: string;
-  photoUrl?: string;
+  photoUrl?: string | null;
   eloScore: number;
   rank: number;
 }
@@ -221,17 +221,26 @@ const EloScorePage: React.FC = () => {
     return styles.neutral;
   };
 
-  const getEloChange = () => {
+  const getEloChange = (): string => {
     if (eloHistory.length < 2) return "+0";
     
     const latestScore = eloHistory[eloHistory.length - 1].score;
     const previousScore = eloHistory[eloHistory.length - 2].score;
     const change = latestScore - previousScore;
     
-    return change > 0 ? `+${change}` : change;
+    return change > 0 ? `+${change}` : `${change}`;
+  };
+
+  // 添加一个新函数，返回纯数字值用于比较
+  const getEloChangeValue = (): number => {
+    if (eloHistory.length < 2) return 0;
+    
+    const latestScore = eloHistory[eloHistory.length - 1].score;
+    const previousScore = eloHistory[eloHistory.length - 2].score;
+    return latestScore - previousScore;
   };
   
-  const renderUserAvatar = (photoUrl: string | undefined, name: string) => {
+  const renderUserAvatar = (photoUrl: string | null | undefined, name: string) => {
     if (photoUrl) {
       return <img src={photoUrl} alt={name} className={styles.avatarImage} />;
     } else {
@@ -271,9 +280,9 @@ const EloScorePage: React.FC = () => {
               <div className={styles.eloMain}>
                 <div className={styles.eloMainValue}>{currentUserElo}</div>
                 <div className={`${styles.eloChange} ${getEloChangeColor()}`}>
-                  {getEloChange() > 0 ? (
+                  {getEloChangeValue() > 0 ? (
                     <ChevronUp size={16} className={styles.changeIcon} />
-                  ) : getEloChange() < 0 ? (
+                  ) : getEloChangeValue() < 0 ? (
                     <ChevronDown size={16} className={styles.changeIcon} />
                   ) : null}
                   {getEloChange()}
@@ -394,13 +403,13 @@ const EloScorePage: React.FC = () => {
               <div className={styles.recentStat}>
                 <span className={styles.recentStatLabel}>7d Change</span>
                 <span className={`${styles.recentStatValue} ${
-                  eloHistory[eloHistory.length-1].score - eloHistory[eloHistory.length-7].score > 0 
+                  Number(eloHistory[eloHistory.length-1].score) - Number(eloHistory[eloHistory.length-7].score) > 0 
                     ? styles.positiveText 
-                    : eloHistory[eloHistory.length-1].score - eloHistory[eloHistory.length-7].score < 0 
+                    : Number(eloHistory[eloHistory.length-1].score) - Number(eloHistory[eloHistory.length-7].score) < 0 
                       ? styles.negativeText 
                       : ''
                 }`}>
-                  {eloHistory[eloHistory.length-1].score - eloHistory[eloHistory.length-7].score > 0 
+                  {Number(eloHistory[eloHistory.length-1].score) - Number(eloHistory[eloHistory.length-7].score) > 0 
                     ? `+${eloHistory[eloHistory.length-1].score - eloHistory[eloHistory.length-7].score}` 
                     : eloHistory[eloHistory.length-1].score - eloHistory[eloHistory.length-7].score}
                 </span>
@@ -434,8 +443,8 @@ const EloScorePage: React.FC = () => {
                     tickLine={false}
                     tick={{ fill: '#64748b', fontSize: 12 }}
                     domain={[
-                      dataMin => Math.floor(dataMin * 0.995),
-                      dataMax => Math.ceil(dataMax * 1.005)
+                      (dataMin: number) => Math.floor(dataMin * 0.995),
+                      (dataMax: number) => Math.ceil(dataMax * 1.005)
                     ]}
                   />
                   <Tooltip 
