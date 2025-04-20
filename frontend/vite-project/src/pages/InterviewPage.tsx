@@ -8,6 +8,7 @@ import InterviewMessage from '../components/InterviewMessage';
 import { Button } from 'antd';
 import { HeartOutlined } from '@ant-design/icons';
 import ChatBubble from '../components/ChatBubble';
+import axios from 'axios';
 
 // 添加保存过渡动画组件
 const SavingOverlay = ({ isVisible }: { isVisible: boolean }) => {
@@ -76,21 +77,13 @@ const InterviewPage: React.FC = () => {
       
       console.log("Saving chat history to API for thread_id:", currentThreadId);
       
-      const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          thread_id: currentThreadId,
-          email: userEmail,
-          messages: chatMessages,
-          config_name: config_name,
-          config_id: config_id
-        })
+      const response = await axios.post(`${API_BASE_URL}/api/chat_history`, {
+        thread_id: currentThreadId,
+        email: userEmail,
+        messages: chatMessages,
+        config_name: config_name,
+        config_id: config_id
       });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to save chat history: ${response.status} ${response.statusText}`);
-      }
       
       console.log("Chat history saved successfully");
       return true;
@@ -155,12 +148,9 @@ const InterviewPage: React.FC = () => {
           // Fetch user profile data
           let userProfile = null;
           try {
-            const profileResponse = await fetch(`${API_BASE_URL}/api/profile/${userEmail}`);
-            if (profileResponse.ok) {
-              const profileData = await profileResponse.json();
-              if (profileData.data) {
-                userProfile = profileData.data;
-              }
+            const profileResponse = await axios.get(`${API_BASE_URL}/api/profile/${userEmail}`);
+            if (profileResponse.data) {
+              userProfile = profileResponse.data.data;
             }
           } catch (profileError) {
             console.error('Error fetching user profile:', profileError);
@@ -170,46 +160,35 @@ const InterviewPage: React.FC = () => {
 
           // Fetch config details to get company name and type
           try {
-            const configResponse = await fetch(`${API_BASE_URL}/api/interview_config/${config_id}`);
-            if (configResponse.ok) {
-              const configData = await configResponse.json();
-              if (configData.data) {
-                const config = configData.data;
-                // Store these values in localStorage for persistence
-                localStorage.setItem('current_company_name', config.company_name || '');
-                localStorage.setItem('current_interview_type', config.interview_type || '');
-                localStorage.setItem('current_question_type', config.question_type || '');
-              }
+            const configResponse = await axios.get(`${API_BASE_URL}/api/interview_config/${config_id}`);
+            if (configResponse.data && configResponse.data.data) {
+              const config = configResponse.data.data;
+              // Store these values in localStorage for persistence
+              localStorage.setItem('current_company_name', config.company_name || '');
+              localStorage.setItem('current_interview_type', config.interview_type || '');
+              localStorage.setItem('current_question_type', config.question_type || '');
             }
           } catch (configError) {
             console.error('Error fetching config details:', configError);
             // Continue even if config fetch fails
           }
           
-          const res = await fetch(`${API_BASE_URL}/api/new_chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              email: userEmail, 
-              name: config_name,
-              new_session: true,
-              // Include user profile information for the LLM
-              userProfile: userProfile || {
-                first_name: localStorage.getItem('user_first_name') || '',
-                last_name: localStorage.getItem('user_last_name') || '',
-                job_title: localStorage.getItem('user_job_title') || '',
-                key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
-                education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
-                resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
-              }
-            }), 
+          const response = await axios.post(`${API_BASE_URL}/api/new_chat`, { 
+            email: userEmail, 
+            name: config_name,
+            new_session: true,
+            // Include user profile information for the LLM
+            userProfile: userProfile || {
+              first_name: localStorage.getItem('user_first_name') || '',
+              last_name: localStorage.getItem('user_last_name') || '',
+              job_title: localStorage.getItem('user_job_title') || '',
+              key_skills: localStorage.getItem('user_skills') ? localStorage.getItem('user_skills')!.split(',') : [],
+              education_history: JSON.parse(localStorage.getItem('user_education') || '[]'),
+              resume_experience: JSON.parse(localStorage.getItem('user_experience') || '[]')
+            }
           });
     
-          if (!res.ok) {
-            throw new Error(`Failed to start interview: ${res.status} ${res.statusText}`);
-          }
-    
-          const data = await res.json();
+          const data = response.data;
           console.log("Received session data:", data);
           
           if (!data.thread_id) {
@@ -267,23 +246,15 @@ const InterviewPage: React.FC = () => {
     setInput('');
     
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: userInput, 
-          thread_id: threadId,
-          email: userEmail,
-          config_name: config_name,
-          config_id: config_id
-        }),
+      const response = await axios.post(`${API_BASE_URL}/api/chat`, { 
+        message: userInput, 
+        thread_id: threadId,
+        email: userEmail,
+        config_name: config_name,
+        config_id: config_id
       });
       
-      if (!res.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      const data = await res.json();
+      const data = response.data;
       
       console.log(`Received AI response: "${data.response.substring(0, 30)}..."`);
       
@@ -344,9 +315,6 @@ const InterviewPage: React.FC = () => {
     }
   };
   
-  
-  
-
   const handleBackToDashboard = () => {
     // 直接调用 handleEndInterview 函数，确保保存逻辑执行
     handleEndInterview();

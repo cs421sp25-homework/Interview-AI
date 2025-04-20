@@ -249,10 +249,10 @@ class SupabaseEloService:
                 }
         
         # Record the ELO history
-        try:
-            self._record_elo_history(email, current_elo, new_elo, elo_change, interview_score, interview_type, difficulty)
-        except Exception as e:
-            print(f"Error recording history for {email}: {e}")
+        # try:
+        #     self._record_elo_history(email, current_elo, new_elo, elo_change, interview_score, interview_type, difficulty)
+        # except Exception as e:
+        #     print(f"Error recording history for {email}: {e}")
         
         return {
             "old_elo": current_elo,

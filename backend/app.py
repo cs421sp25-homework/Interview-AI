@@ -1286,6 +1286,7 @@ def get_overall_scores(id=None, email=None):
         avg_problem_solving = total_problem_solving / total_interviews
         avg_resume_strength = total_resume_strength / total_interviews
         avg_leadership = total_leadership / total_interviews
+
             
             
         return jsonify({
