@@ -117,7 +117,6 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
     if (isLoading) return;
     setIsLoading(true);
     
-    // Set animation state
     setIsAnimating(true);
     
     // Reset animation after it completes

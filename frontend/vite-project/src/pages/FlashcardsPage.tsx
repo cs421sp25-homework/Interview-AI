@@ -17,10 +17,11 @@ const { TextArea } = Input;
 interface Flashcard {
   id: number;
   question: string;
-  human_answer?: string;  // 👈 user‑typed answer
-  ideal_answer?: string;  // 👈 AI answer
+  humanAnswer?: string;  // Rename answer to humanAnswer
+  aiAnswer?: string;     // Add separate field for AI answer
   created_at: string;
   question_type?: string;
+  session_id: string;
 }
 
 interface ApiFlashcard {
@@ -29,6 +30,7 @@ interface ApiFlashcard {
   answer?: string;        // ← existing human answer stored on server (may be undefined)
   created_at: string;
   question_type?: string;
+  session_id: string;
 }
 
 interface FlashcardsPageProps {
@@ -41,6 +43,7 @@ interface LocationState {
     question: string;
     created_at: string;
     question_type: string;
+    session_id: string;
   }[];
 }
 
@@ -98,7 +101,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
         let raw: ApiFlashcard[] = [];
 
-        // 1. came from “favorites” page with pre‑loaded questions?
+        // 1. came from "favorites" page with pre‑loaded questions?
         if (mode === 'favorites' && locationState?.questions) {
           raw = locationState.questions.map(q => ({
             id: q.id,
@@ -106,6 +109,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             created_at: q.created_at,
             question_type: q.question_type,
             answer: undefined,
+            session_id: q.session_id,
           }));
         } else {
           // 2. normal fetch
@@ -121,10 +125,11 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
         const mapped: Flashcard[] = raw.map(r => ({
           id: r.id,
-          question: parseQuestion(r.question_text),
-          human_answer: r.answer ?? '',
+          question: r.question_text,
+          humanAnswer: r.answer ?? '',
           created_at: r.created_at,
           question_type: r.question_type,
+          session_id: r.session_id,
         }));
         setCards(mapped);
       } catch (e) {
@@ -161,25 +166,65 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
   /* ─────  save human answer  ───── */
 
-  const saveHuman = async (i: number) => {
+  const saveAnswer = async (card: Flashcard) => {
     try {
-      const email = localStorage.getItem('user_email');
-      if (!email) return;
-      const c = cards[i];
-      await fetch(`${API_BASE_URL}/api/store_human_answer`, {
+      const response = await fetch(`${API_BASE_URL}/api/store_answer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          id: c.id,
-          question: c.question,
-          answer: c.human_answer,
-          email,
-        }),
+          id: card.id,
+          question: card.question,
+          answer: card.humanAnswer,
+          email: localStorage.getItem('user_email'),
+          session_id: card.session_id,
+        })
       });
-      message.success('Saved');
-    } catch {
-      message.error('Save failed');
+
+      if (!response.ok) {
+        throw new Error('Failed to save answer');
+      }
+
+      message.success('Answer saved successfully');
+      
+      // Update the card in the local state with the saved answer
+      setCards(prevCards => 
+        prevCards.map(c => 
+          c.id === card.id ? { ...c, humanAnswer: card.humanAnswer } : c
+        )
+      );
+    } catch (error) {
+      console.error('Error saving answer:', error);
+      message.error('Failed to save answer. Please try again.');
     }
+  };
+
+  const saveAiAnswer = async (card: Flashcard) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/store_answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: card.id,
+          question: card.question,
+          answer: card.aiAnswer,
+          email: localStorage.getItem('user_email'),
+          session_id: card.session_id,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save AI answer');
+      }
+
+      message.success('AI answer saved successfully');
+    } catch (error) {
+      console.error('Error saving AI answer:', error);
+      message.error('Failed to save AI answer. Please try again.');
+    }   
   };
 
   /* ─────  AI answer generation  ───── */
@@ -189,26 +234,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
     try {
       setAiIdx(i);
 
-      // try cache first
-      const email = localStorage.getItem('user_email')!;
-      const cache = await fetch(
-        `${API_BASE_URL}/api/ideal_answer?question=${encodeURIComponent(
-          q
-        )}&email=${email}`
-      );
-      if (cache.ok) {
-        const j = await cache.json();
-        if (j.ideal_answer) {
-          setCards(prev => {
-            const copy = [...prev];
-            copy[i].ideal_answer = j.ideal_answer;
-            return copy;
-          });
-          return;
-        }
-      }
-
-      // otherwise generate
       const res = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,16 +242,9 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
       if (!res.ok) throw new Error('gen');
       const { ideal_answer } = await res.json();
 
-      // store on server
-      await fetch(`${API_BASE_URL}/api/store_ideal_answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, ideal_answer, email }),
-      });
-
       setCards(prev => {
         const copy = [...prev];
-        copy[i].ideal_answer = ideal_answer;
+        copy[i].aiAnswer = ideal_answer;  // Store AI answer separately
         return copy;
       });
     } catch {
@@ -277,17 +295,23 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           {/* front */}
           <div className={styles.face}>
             <span className={styles.tag}>Question</span>
-            <p className={styles.qText}>{card.question}</p>
+            <p className={styles.qText}>{parseQuestion(card.question)}</p>
           </div>
 
           {/* back */}
           <div className={`${styles.face} ${styles.back}`}>
-            <span className={styles.tag}>Your Answer</span>
+            <span className={styles.tag}>Answer</span>
             <p className={styles.aText}>
-              {card.human_answer?.trim()
-                ? card.human_answer
-                : 'No human answer yet.'}
+              {card.humanAnswer?.trim()
+                ? card.humanAnswer
+                : 'No answer yet.'}
             </p>
+            {card.aiAnswer && (
+              <div className={styles.aiBlock}>
+                <span className={styles.aiLabel}>AI Answer</span>
+                {renderBullet(card.aiAnswer)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -315,11 +339,11 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             <TextArea
               placeholder="Type your answer..."
               autoSize={{ minRows: 2, maxRows: 6 }}
-              value={c.human_answer}
+              value={c.humanAnswer}
               onChange={e =>
                 setCards(prev => {
                   const copy = [...prev];
-                  copy[i].human_answer = e.target.value;
+                  copy[i].humanAnswer = e.target.value;
                   return copy;
                 })
               }
@@ -331,7 +355,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
                 <Button
                   type="primary"
                   icon={<SaveOutlined />}
-                  onClick={() => saveHuman(i)}
+                  onClick={() => saveAnswer(c)}
                 />
               </Tooltip>
 
@@ -344,11 +368,20 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
               </Tooltip>
             </div>
 
-            {c.ideal_answer && (
+            {c.aiAnswer && (
               <div className={styles.aiBlock}>
                 <span className={styles.aiLabel}>AI Answer</span>
-                {renderBullet(c.ideal_answer)}
+                {renderBullet(c.aiAnswer)}
               </div>
+            )}
+            {c.aiAnswer && (
+              <Tooltip title="Save AI answer">
+                <Button
+                  icon={<SaveOutlined />}
+                loading={aiIdx === i}
+                onClick={() => saveAiAnswer(c)}
+              />
+            </Tooltip>
             )}
           </div>
         ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Modal, Empty, Space, Tag, Select, Spin } from 'antd';
-import { SearchOutlined, DeleteOutlined, LeftOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { BookOpenIcon } from 'lucide-react';
 import API_BASE_URL from '../config/api';

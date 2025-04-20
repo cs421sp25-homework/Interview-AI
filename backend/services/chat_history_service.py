@@ -242,53 +242,6 @@ class ChatHistoryService:
 
             print(response)
             
-            # Call OpenAI for analysis
-            # max_attempts = 3
-            # for attempt in range(max_attempts):
-            #     try:
-            #         client = OpenAI()
-            #         response = client.chat.completions.create(
-            #             model="gpt-4o-mini",
-            #             response_format=ScoreRubrics,
-            #             messages=analysis_prompt
-            #         )
-                    
-            #         # Parse the analysis results
-            #         analysis = response.choices[0].message.parsed
-                    
-                    # Validate the response format
-                    # required_keys = ["technical", "communication", "confidence", "problem_solving", "resume_strength", "leadership"]
-                    # if all(key in analysis for key in required_keys) and all(isinstance(analysis[key], (int, float)) for key in required_keys):
-                    #     # Format is correct, proceed with saving
-                    #     break
-                    # else:
-                    #     missing_keys = [key for key in required_keys if key not in analysis]
-                    #     invalid_types = [key for key in required_keys if key in analysis and not isinstance(analysis[key], (int, float))]
-                        
-                    #     if missing_keys:
-                    #         self.logger.warning(f"Analysis response missing keys: {missing_keys}. Retrying...")
-                    #     if invalid_types:
-                    #         self.logger.warning(f"Analysis response has invalid types for keys: {invalid_types}. Retrying...")
-                        
-                    #     if attempt == max_attempts - 1:
-                    #         # Last attempt, use default values for missing/invalid keys
-                    #         for key in required_keys:
-                    #             if key not in analysis or not isinstance(analysis[key], (int, float)):
-                    #                 analysis[key] = 0.75  # Default value
-
-                # except Exception as e:
-                #     self.logger.error(f"Error in analysis attempt {attempt+1}: {str(e)}")
-                #     if attempt == max_attempts - 1:
-                #         # Last attempt failed, use default values
-                #         analysis = {
-                #             "technical": 0.75,
-                #             "communication": 0.75,
-                #             "confidence": 0.75,
-                #             "problem_solving": 0.75,
-                #             "resume_strength": 0.75,
-                #             "leadership": 0.75
-                #         }
-            
             # Strengths prompt - get a list of strengths
             strengths_prompt = [
                 {"role": "system", "content": """
@@ -458,7 +411,6 @@ class ChatHistoryService:
                     # If you store thread_id or anything else, set them here
                 }
 
-                
                 # Check if question already exists for this user/session
                 existing = self.supabase.table('interview_questions') \
                     .select('*') \
@@ -476,9 +428,6 @@ class ChatHistoryService:
                 else:
                     # Insert a new record
                     self.supabase.table('interview_questions').insert(upsert_data).execute()
-
-
-
 
             print("Analysis:")
             print(response.choices[0].message.parsed)
@@ -515,8 +464,6 @@ class ChatHistoryService:
             elo_service = EloCalculator()
             print(f"Updating ELO score for {user_email} with score {total_score} and name {name}")
             elo_service.update_elo_score(user_email, total_score, name)
-
-
             
             self.logger.info(f"Analysis saved for interview_id: {interview_id}")
             return {"success": True}
