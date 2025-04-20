@@ -28,7 +28,6 @@ const FavoritesPage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
   const [loadingSession, setLoadingSession] = useState<number | null>(null);
   const [transitioning, setTransitioning] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -333,26 +332,15 @@ const FavoritesPage: React.FC = () => {
   };
 
   const handleViewFlashcards = () => {
-    const selectedQuestions = selectedRowKeys.length > 0 
-      ? favorites.filter(fav => selectedRowKeys.includes(fav.id))
-      : favorites;
-    
     navigate('/flashcards/favorites', { 
       state: { 
-        questions: selectedQuestions.map(q => ({
+        questions: favorites.map(q => ({
           id: q.id,
           question: q.question_text,
           created_at: q.created_at
         }))
       }
     });
-  };
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedKeys);
-    },
   };
 
   const columns = [
@@ -492,7 +480,7 @@ const FavoritesPage: React.FC = () => {
           onClick={handleViewFlashcards}
           className={styles.flashcardsButton}
         >
-          {selectedRowKeys.length > 0 ? `Practice ${selectedRowKeys.length} Selected Flashcards` : 'Practice All Flashcards'}
+          Practice With Flashcards
         </Button>
       </div>
 
@@ -527,7 +515,6 @@ const FavoritesPage: React.FC = () => {
         
         <div className={styles.historyContainer}>
           <Table
-            rowSelection={rowSelection}
             columns={columns}
             dataSource={filteredFavorites}
             rowKey="id"
