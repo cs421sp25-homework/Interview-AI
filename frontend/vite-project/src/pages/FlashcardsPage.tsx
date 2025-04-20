@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Tooltip, message } from 'antd';
+import { Button, Input, Tooltip, message, Switch, Alert } from 'antd';
 import {
   LeftOutlined,
   SaveOutlined,
   BulbOutlined,
   LoadingOutlined,
+  ReloadOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  AppstoreOutlined,
+  CreditCardOutlined,
+  EditOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
@@ -17,10 +24,11 @@ const { TextArea } = Input;
 interface Flashcard {
   id: number;
   question: string;
-  human_answer?: string;  // 👈 user‑typed answer
-  ideal_answer?: string;  // 👈 AI answer
+  humanAnswer?: string;  // Rename answer to humanAnswer
+  aiAnswer?: string;     // Add separate field for AI answer
   created_at: string;
   question_type?: string;
+  session_id: string;
 }
 
 interface ApiFlashcard {
@@ -29,6 +37,7 @@ interface ApiFlashcard {
   answer?: string;        // ← existing human answer stored on server (may be undefined)
   created_at: string;
   question_type?: string;
+  session_id: string;
 }
 
 interface FlashcardsPageProps {
@@ -41,6 +50,7 @@ interface LocationState {
     question: string;
     created_at: string;
     question_type: string;
+    session_id: string;
   }[];
 }
 
@@ -64,11 +74,11 @@ const renderBullet = (ans = '') => {
     .filter(l => l.trim().startsWith('•'))
     .map(l => l.replace(/^•/, '').trim());
   return (
-    <ul className={styles.bulletList}>
+    <>
       {lines.map((l, i) => (
         <li key={i}>{l}</li>
       ))}
-    </ul>
+    </>
   );
 };
 
@@ -84,6 +94,10 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [aiIdx, setAiIdx] = useState<number | null>(null); // which row is generating
+  const [flashcardsOnly, setFlashcardsOnly] = useState(false); // new state for toggle
+  const [aiGenerated, setAiGenerated] = useState<Record<number, boolean>>({});
+  const [savingIdx, setSavingIdx] = useState<number | null>(null); // which answer is saving
+  const [saveSuccess, setSaveSuccess] = useState<Record<number, boolean>>({});
 
   /* ─────  fetch questions  ───── */
   useEffect(() => {
@@ -98,7 +112,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
         let raw: ApiFlashcard[] = [];
 
-        // 1. came from “favorites” page with pre‑loaded questions?
+        // 1. came from "favorites" page with pre‑loaded questions?
         if (mode === 'favorites' && locationState?.questions) {
           raw = locationState.questions.map(q => ({
             id: q.id,
@@ -106,6 +120,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
             created_at: q.created_at,
             question_type: q.question_type,
             answer: undefined,
+            session_id: q.session_id,
           }));
         } else {
           // 2. normal fetch
@@ -121,10 +136,11 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
         const mapped: Flashcard[] = raw.map(r => ({
           id: r.id,
-          question: parseQuestion(r.question_text),
-          human_answer: r.answer ?? '',
+          question: r.question_text,
+          humanAnswer: r.answer ?? '',
           created_at: r.created_at,
           question_type: r.question_type,
+          session_id: r.session_id,
         }));
         setCards(mapped);
       } catch (e) {
@@ -161,24 +177,52 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
 
   /* ─────  save human answer  ───── */
 
-  const saveHuman = async (i: number) => {
+  const saveAnswer = async (card: Flashcard, index: number) => {
     try {
-      const email = localStorage.getItem('user_email');
-      if (!email) return;
-      const c = cards[i];
-      await fetch(`${API_BASE_URL}/api/store_human_answer`, {
+      setSavingIdx(index);
+      
+      const response = await fetch(`${API_BASE_URL}/api/store_answer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          id: c.id,
-          question: c.question,
-          answer: c.human_answer,
-          email,
-        }),
+          id: card.id,
+          question: card.question,
+          answer: card.humanAnswer,
+          email: localStorage.getItem('user_email'),
+          session_id: card.session_id,
+        })
       });
-      message.success('Saved');
-    } catch {
-      message.error('Save failed');
+
+      if (!response.ok) {
+        throw new Error('Failed to save answer');
+      }
+
+      message.success('Answer saved successfully');
+      
+      // Update the card in the local state with the saved answer
+      setCards(prevCards => 
+        prevCards.map(c => 
+          c.id === card.id ? { ...c, humanAnswer: card.humanAnswer } : c
+        )
+      );
+      
+      // Show success icon briefly
+      setSaveSuccess(prev => ({...prev, [index]: true}));
+      setTimeout(() => {
+        setSaveSuccess(prev => {
+          const newState = {...prev};
+          delete newState[index];
+          return newState;
+        });
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error saving answer:', error);
+      message.error('Failed to save answer. Please try again.');
+    } finally {
+      setSavingIdx(null);
     }
   };
 
@@ -189,26 +233,6 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
     try {
       setAiIdx(i);
 
-      // try cache first
-      const email = localStorage.getItem('user_email')!;
-      const cache = await fetch(
-        `${API_BASE_URL}/api/ideal_answer?question=${encodeURIComponent(
-          q
-        )}&email=${email}`
-      );
-      if (cache.ok) {
-        const j = await cache.json();
-        if (j.ideal_answer) {
-          setCards(prev => {
-            const copy = [...prev];
-            copy[i].ideal_answer = j.ideal_answer;
-            return copy;
-          });
-          return;
-        }
-      }
-
-      // otherwise generate
       const res = await fetch(`${API_BASE_URL}/api/generate_flashcard_answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,18 +241,17 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
       if (!res.ok) throw new Error('gen');
       const { ideal_answer } = await res.json();
 
-      // store on server
-      await fetch(`${API_BASE_URL}/api/store_ideal_answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, ideal_answer, email }),
-      });
-
       setCards(prev => {
         const copy = [...prev];
-        copy[i].ideal_answer = ideal_answer;
+        copy[i].aiAnswer = ideal_answer;  // Store AI answer separately
         return copy;
       });
+      
+      // Mark this card as having newly generated AI content
+      setAiGenerated(prev => ({...prev, [i]: true}));
+      
+      // Show success message with guidance
+      message.success('AI answer generated! Use it as a reference to improve your answer.');
     } catch {
       message.error('AI generation failed');
     } finally {
@@ -241,7 +264,7 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   if (loading) {
     return (
       <div className={styles.loaderPane}>
-        <LoadingOutlined spin style={{ fontSize: 42 }} />
+        <LoadingOutlined spin style={{ fontSize: 42, color: '#ec4899' }} />
       </div>
     );
   }
@@ -249,7 +272,16 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
   if (!cards.length) {
     return (
       <div className={styles.emptyPane}>
-        No {mode === 'favorites' ? 'favourite' : 'weak'} questions yet.
+        <div>
+          <p>No {mode === 'favorites' ? 'favourite' : 'weak'} questions yet.</p>
+          <Button 
+            type="primary" 
+            onClick={() => navigate('/dashboard')}
+            style={{ marginTop: '1rem', background: '#ec4899', borderColor: '#ec4899' }}
+          >
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
@@ -266,7 +298,22 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
         <h1>
           Flashcards – {mode === 'favorites' ? 'Favourite' : 'Weakest'} Questions
         </h1>
+        <div className={styles.viewToggle}>
+          <Tooltip title={flashcardsOnly ? "Show Question List" : "Flashcards Only"}>
+            <Button 
+              icon={flashcardsOnly ? <AppstoreOutlined /> : <CreditCardOutlined />}
+              onClick={() => setFlashcardsOnly(!flashcardsOnly)}
+              type={flashcardsOnly ? "default" : "primary"}
+              style={flashcardsOnly ? {} : {background: '#ec4899', borderColor: '#ec4899'}}
+            >
+              {flashcardsOnly ? "Show List" : "Flashcards Only"}
+            </Button>
+          </Tooltip>
+        </div>
       </div>
+
+      {/* Add spacing for header */}
+      <div style={{ marginTop: '2rem' }}></div>
 
       {/* central flip card */}
       <div className={styles.stage}>
@@ -277,26 +324,38 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
           {/* front */}
           <div className={styles.face}>
             <span className={styles.tag}>Question</span>
-            <p className={styles.qText}>{card.question}</p>
+            <div className={styles.qText}>{parseQuestion(card.question)}</div>
           </div>
 
           {/* back */}
           <div className={`${styles.face} ${styles.back}`}>
-            <span className={styles.tag}>Your Answer</span>
-            <p className={styles.aText}>
-              {card.human_answer?.trim()
-                ? card.human_answer
-                : 'No human answer yet.'}
-            </p>
+            <span className={styles.tag}>Answer</span>
+            <div className={styles.aText}>
+              {card.humanAnswer?.trim()
+                ? card.humanAnswer
+                : 'No answer yet.'}
+            </div>
           </div>
         </div>
 
         <div className={styles.controls}>
-          <Button onClick={prev} disabled={idx === 0}>
+          <Button 
+            onClick={prev} 
+            disabled={idx === 0}
+            icon={<ArrowLeftOutlined />}
+          >
             Previous
           </Button>
-          <Button onClick={shuffle}>Shuffle</Button>
-          <Button onClick={next} disabled={idx === cards.length - 1}>
+          <Button onClick={shuffle} icon={<ReloadOutlined />}>
+            Shuffle
+          </Button>
+          <Button 
+            onClick={next} 
+            disabled={idx === cards.length - 1}
+            icon={<ArrowRightOutlined />}
+            type="primary"
+            style={{ background: '#ec4899', borderColor: '#ec4899' }}
+          >
             Next
           </Button>
         </div>
@@ -306,53 +365,81 @@ const FlashcardsPage: React.FC<FlashcardsPageProps> = ({ mode }) => {
         </p>
       </div>
 
-      {/* editable list */}
-      <div className={styles.list}>
-        {cards.map((c, i) => (
-          <div key={c.id} className={styles.item}>
-            <div className={styles.question}>{c.question}</div>
+      {/* editable list - only show if not in flashcardsOnly mode */}
+      {!flashcardsOnly && (
+        <div className={styles.list}>
+          {cards.map((c, i) => (
+            <div key={c.id} className={styles.item}>
+              <div className={styles.question}>{c.question}</div>
 
-            <TextArea
-              placeholder="Type your answer..."
-              autoSize={{ minRows: 2, maxRows: 6 }}
-              value={c.human_answer}
-              onChange={e =>
-                setCards(prev => {
-                  const copy = [...prev];
-                  copy[i].human_answer = e.target.value;
-                  return copy;
-                })
-              }
-              className={styles.area}
-            />
-
-            <div className={styles.itemBtns}>
-              <Tooltip title="Save my answer">
-                <Button
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={() => saveHuman(i)}
+              {aiGenerated[i] && (
+                <Alert
+                  message="AI answer generated! Review and update your answer if needed."
+                  type="info"
+                  showIcon
+                  icon={<EditOutlined />}
+                  style={{ marginBottom: '1rem', background: '#fdf2f8', border: '1px solid #fbbfd6' }}
+                  closable
+                  onClose={() => {
+                    setAiGenerated(prev => {
+                      const newState = {...prev};
+                      delete newState[i];
+                      return newState;
+                    });
+                  }}
                 />
-              </Tooltip>
+              )}
 
-              <Tooltip title="Generate AI answer">
-                <Button
-                  icon={<BulbOutlined />}
-                  loading={aiIdx === i}
-                  onClick={() => genAI(i)}
-                />
-              </Tooltip>
-            </div>
+              <TextArea
+                placeholder="Type your answer..."
+                autoSize={{ minRows: 2, maxRows: 6 }}
+                value={c.humanAnswer}
+                onChange={e =>
+                  setCards(prev => {
+                    const copy = [...prev];
+                    copy[i].humanAnswer = e.target.value;
+                    return copy;
+                  })
+                }
+                className={styles.area}
+              />
 
-            {c.ideal_answer && (
-              <div className={styles.aiBlock}>
-                <span className={styles.aiLabel}>AI Answer</span>
-                {renderBullet(c.ideal_answer)}
+              <div className={styles.itemBtns}>
+                <Tooltip title="Save my answer">
+                  <Button
+                    type="primary"
+                    icon={saveSuccess[i] ? <CheckOutlined /> : <SaveOutlined />}
+                    onClick={() => saveAnswer(c, i)}
+                    loading={savingIdx === i}
+                    style={{ 
+                      background: saveSuccess[i] ? '#10b981' : '#ec4899', 
+                      borderColor: saveSuccess[i] ? '#10b981' : '#ec4899',
+                      transition: 'all 0.3s ease'
+                    }}
+                  />
+                </Tooltip>
+
+                <Tooltip title="Generate AI Suggested Answer">
+                  <Button
+                    icon={<BulbOutlined />}
+                    loading={aiIdx === i}
+                    onClick={() => genAI(i)}
+                  />
+                </Tooltip>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+
+              {c.aiAnswer && (
+                <div className={styles.aiBlock}>
+                  <span className={styles.aiLabel}>AI Reference</span>
+                  <ul className={styles.bulletList}>
+                    {renderBullet(c.aiAnswer)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

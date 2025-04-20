@@ -1,6 +1,5 @@
 import re
 import traceback
-import uuid
 from characters.interviewer import Interviewer
 from llm.interview_agent import LLMInterviewAgent
 from flask import Flask, request, jsonify, redirect
@@ -1778,39 +1777,40 @@ Format the response as bullet points starting with "•". Do not include any oth
         print(f"Error generating flashcard answer: {str(e)}")
         return jsonify({'error': 'Failed to generate ideal answer'}), 500
 
-@app.route('/api/store_ideal_answer', methods=['POST'])
-def store_ideal_answer():
+@app.route('/api/store_answer', methods=['POST'])
+def store_answer():
     try:
         data = request.get_json()
         question = data.get('question')
-        ideal_answer = data.get('ideal_answer')
+        answer = data.get('answer')
         email = data.get('email')
-        
-        if not question or not ideal_answer or not email:
-            return jsonify({'error': 'Question, ideal_answer, and email are required'}), 400
-            
-        # Check if question already has an ideal answer
+        session_id = data.get('session_id')
+        if not question or not answer or not email or not session_id:
+            return jsonify({'error': 'Question, answer, session_id, and email are required'}), 400
+
         existing = supabase.table('interview_questions').select('*').eq('question_text', question).eq('email', email).execute()
         
         if existing.data and len(existing.data) > 0:
             # Update existing record
             result = supabase.table('interview_questions').update({
-                'ideal_answer': ideal_answer
-            }).eq('id', existing.data[0]['id']).execute()
+                'answer': answer
+            }).eq('question_text', question).eq('email', email).execute()
         else:
             # Create new record
             result = supabase.table('interview_questions').insert({
                 'question_text': question,
-                'ideal_answer': ideal_answer,
+                'answer': answer,
                 'email': email,
-                'created_at': datetime.datetime.now().isoformat()
+                'session_id': session_id,
+                'created_at': datetime.utcnow().isoformat()
             }).execute()
             
         return jsonify({'success': True}), 200
         
     except Exception as e:
-        print(f"Error storing ideal answer: {str(e)}")
-        return jsonify({'error': 'Failed to store ideal answer'}), 500
+        print(f"Error storing answer: {str(e)}")
+        return jsonify({'error': 'Failed to store answer'}), 500
+
 
 if __name__ == '__main__':
     import os

@@ -688,7 +688,7 @@ const InterviewHistoryPage: React.FC = () => {
   
   const columns = [
     {
-      title: 'Interview Config',
+      title: 'Interview',
       key: 'interview',
       width: '20%',
       render: (text: string, record: InterviewLog) => (
@@ -775,7 +775,7 @@ const InterviewHistoryPage: React.FC = () => {
       key: 'actions',
       width: '35%',
       render: (_: unknown, record: InterviewLog) => (
-        <Space size="middle" className={styles.actionButtonsContainer}>
+        <div className={styles.actionButtonsGrid}>
           <Button 
             type="link" 
             className={`${styles.actionButtonWithLabel} ${styles.viewButton}`}
@@ -834,7 +834,7 @@ const InterviewHistoryPage: React.FC = () => {
             <DeleteOutlined className={styles.actionIcon} />
             <span className={styles.actionText}>Delete</span>
           </Button>
-        </Space>
+        </div>
       )
     }
   ];

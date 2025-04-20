@@ -467,7 +467,15 @@
 .actionButtonsContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 8px;
+  margin: -4px 0;
+}
+
+.actionButtonsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
 }
 
 .actionButtonWithLabel {
@@ -675,12 +683,17 @@
   }
   
   .actionButtonsContainer {
-    flex-direction: column;
-    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .actionButtonsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
   }
   
   .performanceStats {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .detailGrid {
@@ -700,6 +713,15 @@
   
   .actionText {
     font-size: 9px;
+  }
+  
+  .actionButtonsGrid {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 4px;
+  }
+  
+  .performanceStats {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -798,11 +820,176 @@
 .detailContent {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
-.favoritesContent {
-  padding: 0.5rem;
+.detailSection {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.5rem;
+}
+
+.detailSection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.detailItem strong {
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+.performanceStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin: 1.5rem 0;
+  padding: 1rem 0;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.statItem::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Custom colors for each stat */
+.statItem:nth-child(1) .statValue { color: #3b82f6; }
+.statItem:nth-child(1)::after { background-color: #3b82f6; }
+
+.statItem:nth-child(2) .statValue { color: #10b981; }
+.statItem:nth-child(2)::after { background-color: #10b981; }
+
+.statItem:nth-child(3) .statValue { color: #8b5cf6; }
+.statItem:nth-child(3)::after { background-color: #8b5cf6; }
+
+.statItem:nth-child(4) .statValue { color: #f59e0b; }
+.statItem:nth-child(4)::after { background-color: #f59e0b; }
+
+.statItem:nth-child(5) .statValue { color: #ec4899; }
+.statItem:nth-child(5)::after { background-color: #ec4899; }
+
+.statItem:nth-child(6) .statValue { color: #6366f1; }
+.statItem:nth-child(6)::after { background-color: #6366f1; }
+
+.insightsList {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 1rem 0;
+}
+
+.insightsList li {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.insightsList li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+.questionsList {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.questionItem {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.questionItem:last-child {
+  border-bottom: none;
+}
+
+.answerSection {
+  margin-top: 1rem;
+}
+
+/* Report-like heading styles */
+.detailSection h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.detailSection h5 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 1.5rem 0 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .performanceStats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .performanceStats {
+    grid-template-columns: 1fr;
+  }
 }
 
 .backButton:hover {
