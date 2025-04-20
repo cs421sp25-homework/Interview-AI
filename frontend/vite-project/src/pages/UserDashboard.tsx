@@ -254,7 +254,7 @@ const UserDashboard = () => {
         setLeaderboardError('');
         
         // 获取排行榜数据
-        const response = await axios.get('http://localhost:5001/api/elo/leaderboard?limit=10');
+        const response = await axios.get(`${API_BASE_URL}/api/elo/leaderboard?limit=10`);
         logInfo('Leaderboard API response:', response.data);
         
         if (response.data && response.data.success && response.data.data) {
@@ -348,7 +348,7 @@ const UserDashboard = () => {
       
       try {
         logInfo('Fetching user rank for email:', email);
-        const response = await axios.get(`http://localhost:5001/api/elo/user/${email}`);
+        const response = await axios.get(`${API_BASE_URL}/api/elo/user/${email}`);
         logInfo('User rank API response:', response.data);
         
         // 检查响应中是否有有效数据
