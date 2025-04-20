@@ -262,70 +262,39 @@ const WeakestQuestionsPage: React.FC = () => {
   };
 
   const handleViewSession = async (record: WeakQuestion) => {
+    setLoadingSession(record.id);
+    setTransitioning(true);
+  
     try {
-      setLoadingSession(record.id);
-      
-      const userEmail = localStorage.getItem('user_email');
-      if (!userEmail) {
-        throw new Error('User not logged in');
-      }
-
-      // First try to find regular text interview logs
-      const response = await fetch(`${API_BASE_URL}/api/interview_logs/${userEmail}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch interview log');
-      }
-      const data = await response.json();
-      
-      // Find the log with matching session_id
-      let matchingLog = null;
-      if (data && Array.isArray(data.data)) {
-        matchingLog = data.data.find((log: any) => log.thread_id === record.session_id);
-      }
-
-      // If found in regular logs, navigate to interview view
-      if (matchingLog && matchingLog.log) {
-        const conversation = typeof matchingLog.log === 'string' ? JSON.parse(matchingLog.log) : matchingLog.log;
-        
-        setTransitioning(true);
-        
-        setTimeout(() => {
-          navigate(`/interview/view/${record.session_id}`, { 
-            state: { 
-              conversation, 
-              thread_id: matchingLog.thread_id,
-              question_type: record.question_type 
-            } 
-          });
-        }, 600);
-        return;
-      }
-      
-      // If not found in regular logs, check voice interview logs
-      // Try to fetch from voice chat history to see if it's a voice interview
-      try {
-        const voiceResponse = await fetch(`${API_BASE_URL}/api/chat_history/${record.session_id}`);
-        if (voiceResponse.ok) {
-          const voiceData = await voiceResponse.json();
-          
-          if (voiceData && voiceData.messages) {
-            // Found in voice logs, navigate to voice interview view
-            setTransitioning(true);
-            
-            setTimeout(() => {
-              navigate(`/voice/interview/view/${record.session_id}`);
-            }, 600);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Error checking voice interview logs:', error);
-      }
-      
-      // If we reach here, the log wasn't found in either place
-      throw new Error('Interview log not found');
-    } catch (error) {
-      console.error('Error loading interview session:', error);
+      // Always call the unified endpoint by passing the thread_id
+      const res = await fetch(
+        `${API_BASE_URL}/api/chat_history/${record.session_id}`
+      );
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+      const data = await res.json();
+      const conversation = data.messages;
+  
+      // Choose route based on type
+      const route =
+        record.interview_type === 'voice'
+          ? `/voice/interview/view/${record.session_id}`
+          : `/interview/view/${record.session_id}`;
+  
+      // Small delay for transition UI
+      setTimeout(() => {
+        navigate(route, {
+          state: {
+            conversation,
+            thread_id: record.session_id,
+            question_type: record.question_type,
+          },
+        });
+        setLoadingSession(null);
+        setTransitioning(false);
+      }, 600);
+  
+    } catch (err) {
+      console.error('Error loading interview session:', err);
       message.error('Failed to load interview session');
       setLoadingSession(null);
       setTransitioning(false);

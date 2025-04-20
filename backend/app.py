@@ -925,6 +925,66 @@ def get_chat_history_by_id(chat_id):
         return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
 
 
+@app.route('/api/chat_history/<identifier>', methods=['GET'])
+def get_chat_history(identifier):
+    """
+    Unified GET: identifier may be the numeric PK (id) or the UUID thread_id.
+    """
+    try:
+        # Try numeric lookup first
+        row = None
+        try:
+            chat_id = int(identifier)
+            result = supabase.table('interview_logs') \
+                             .select('*') \
+                             .eq('id', chat_id) \
+                             .execute()
+            if result.data:
+                row = result.data[0]
+        except ValueError:
+            # not an integer, fall through to thread_id
+            pass
+
+        # If no row yet, try thread_id lookup
+        if not row:
+            result = supabase.table('interview_logs') \
+                             .select('*') \
+                             .eq('thread_id', identifier) \
+                             .execute()
+            if result.data:
+                row = result.data[0]
+
+        if not row:
+            return jsonify({"error": "Interview log not found"}), 404
+
+        # Merge text + audio metadata
+        text_msgs  = json.loads(row.get('log') or '[]')
+        audio_meta = json.loads(row.get('audio_metadata') or '[]')
+
+        messages = []
+        for i, txt in enumerate(text_msgs):
+            audio = audio_meta[i] if i < len(audio_meta) else {}
+            messages.append({
+                **txt,
+                "audioUrl":   audio.get("audioUrl",   txt.get("audioUrl")),
+                "storagePath":audio.get("storagePath",txt.get("storagePath"))
+            })
+
+        return jsonify({
+            "id":        row.get("id"),
+            "thread_id": row.get("thread_id"),
+            "messages":  messages
+        }), 200
+
+    except Exception as e:
+        print(f"Error retrieving chat history for {identifier}: {e}", file=sys.stderr)
+        return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
+    
+
+
+
+    
+
 @app.route('/api/text2speech/<email>', methods=['POST'])
 def api_text2speech(email):
     """
