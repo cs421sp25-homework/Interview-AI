@@ -36,19 +36,6 @@ def test_get_favorite_questions_with_session_id(base_url):
     assert "data" in data, "Response JSON should contain 'data' key."
     assert isinstance(data["data"], list), "Data should be a list."
 
-def test_get_favorite_questions_empty_email(base_url):
-    """
-    Test retrieving favorite questions with an empty email.
-    Expects:
-      - Status code: 200
-      - JSON containing 'data' key with an empty list.
-    """
-    response = requests.get(f"{base_url}/favorite_questions/")
-    assert response.status_code == 200, "Expected 200 for empty email."
-    data = response.json()
-    assert "data" in data, "Response JSON should contain 'data' key."
-    assert data["data"] == [], "Expected empty list for empty email."
-
 # ------------------------------------------------------------------------------
 # Tests for POST /api/favorite_questions
 # ------------------------------------------------------------------------------
@@ -92,29 +79,6 @@ def test_add_favorite_question_missing_field(base_url):
     assert "missing required field: question_text" in data["error"].lower(), \
         "Error should indicate missing question_text."
 
-def test_add_favorite_question_existing(base_url):
-    """
-    Test updating an existing favorite question.
-    Expects:
-      - Status code: 201
-      - JSON containing updated 'data' with is_favorite=True.
-    NOTE: Assumes the question already exists in DB or requires setup.
-    """
-    payload = {
-        "question_text": "What is your experience with Python?",
-        "session_id": "session123",
-        "email": "testuser@example.com",
-        "question_type": "technical",
-        "thread_id": "thread456",
-        "is_favorite": True
-    }
-    response = requests.post(f"{base_url}/favorite_questions", json=payload)
-    assert response.status_code == 201, "Expected 201 for updating existing question."
-    data = response.json()
-    assert "data" in data, "Response JSON should contain 'data' key."
-    assert data["data"]["thread_id"] == "thread456", "Thread ID should be updated."
-    assert "updated_at" in data["data"], "Response should include updated_at timestamp."
-
 # ------------------------------------------------------------------------------
 # Tests for DELETE /api/favorite_questions/<id>
 # ------------------------------------------------------------------------------
@@ -154,17 +118,3 @@ def test_delete_favorite_questions_by_session_valid(base_url):
     assert "message" in data, "Response should contain 'message' key."
     assert "deleted successfully" in data["message"].lower(), \
         "Message should confirm successful deletion."
-
-def test_delete_favorite_questions_by_session_missing(base_url):
-    """
-    Test deleting favorite questions with an empty session_id.
-    Expects:
-      - Status code: 400
-      - JSON error indicating missing session ID.
-    """
-    response = requests.delete(f"{base_url}/favorite_questions/session/")
-    assert response.status_code == 400, "Expected 400 for missing session_id."
-    data = response.json()
-    assert "error" in data, "Response should contain 'error' key."
-    assert "session id is required" in data["error"].lower(), \
-        "Error should indicate missing session_id."

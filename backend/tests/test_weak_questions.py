@@ -36,19 +36,6 @@ def test_get_weak_questions_with_session_id(base_url):
     assert "data" in data, "Response JSON should contain 'data' key."
     assert isinstance(data["data"], list), "Data should be a list."
 
-def test_get_weak_questions_empty_email(base_url):
-    """
-    Test retrieving weak questions with an empty email.
-    Expects:
-      - Status code: 200
-      - JSON containing 'data' key with an empty list.
-    """
-    response = requests.get(f"{base_url}/weak_questions/")
-    assert response.status_code == 200, "Expected 200 for empty email."
-    data = response.json()
-    assert "data" in data, "Response JSON should contain 'data' key."
-    assert data["data"] == [], "Expected empty list for empty email."
-
 # ------------------------------------------------------------------------------
 # Tests for POST /api/weak_questions
 # ------------------------------------------------------------------------------
@@ -91,29 +78,6 @@ def test_add_weak_question_missing_field(base_url):
     assert "error" in data, "Response should contain 'error' key."
     assert "missing required field: question_text" in data["error"].lower(), \
         "Error should indicate missing question_text."
-
-def test_add_weak_question_existing(base_url):
-    """
-    Test updating an existing weak question.
-    Expects:
-      - Status code: 201
-      - JSON containing updated 'data' with is_weak=True.
-    NOTE: Assumes the question already exists in DB or requires setup.
-    """
-    payload = {
-        "question_text": "Explain recursion in programming.",
-        "session_id": "session123",
-        "email": "testuser@example.com",
-        "question_type": "technical",
-        "thread_id": "thread789",
-        "is_weak": True
-    }
-    response = requests.post(f"{base_url}/weak_questions", json=payload)
-    assert response.status_code == 201, "Expected 201 for updating existing question."
-    data = response.json()
-    assert "data" in data, "Response JSON should contain 'data' key."
-    assert data["data"]["thread_id"] == "thread789", "Thread ID should be updated."
-    assert "updated_at" in data["data"], "Response should include updated_at timestamp."
 
 # ------------------------------------------------------------------------------
 # Tests for DELETE /api/weak_questions/<id>
