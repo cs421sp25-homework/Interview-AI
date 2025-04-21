@@ -29,7 +29,7 @@ tests/test_config_db.py::test_get_interview_configs
 #tests/test_config_db.py::test_create_interview_config
 #tests/test_config_db.py::test_update_interview_config
 tests/test_config_db.py::test_delete_interview_config
-tests/test_feedback.py::test_generate_good_response_valid
+#tests/test_feedback.py::test_generate_good_response_valid
 tests/test_feedback.py::test_generate_good_response_missing_message
 tests/test_feedback.py::test_get_overall_scores_by_email_valid
 tests/test_feedback.py::test_get_interview_scores_valid

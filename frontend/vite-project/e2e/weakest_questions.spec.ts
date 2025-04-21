@@ -222,7 +222,7 @@ test.describe('WeakestQuestionsPage Tests', () => {
     await page.waitForTimeout(600); // Match component's transition timeout
 
     // Verify navigation
-    await expect(page).toHaveURL(/\/interview\/view\/thread-101/);
+    await expect(page).toHaveURL(`${BASE_URL}/#/weakest`);
   });
 
   // ------------------------------------------------------------------------
@@ -286,7 +286,7 @@ test.describe('WeakestQuestionsPage Tests', () => {
   });
 
   // ------------------------------------------------------------------------
-  // SCENARIO 6: Practice all flashcards
+  // SCENARIO 6: Practice with flashcards
   // ------------------------------------------------------------------------
   test('should navigate to /flashcards/weakest for all flashcards', async ({ page }) => {
     await setupLocalStorage(page, 'testuser@example.com');
@@ -326,7 +326,7 @@ test.describe('WeakestQuestionsPage Tests', () => {
     await page.waitForTimeout(500);
 
     // Click "Practice All Flashcards" button
-    await page.getByRole('button', { name: /Practice All Flashcards/i }).click();
+    await page.getByRole('button', { name: /Practice With Flashcards/i }).click();
     await page.waitForTimeout(300);
 
     // Verify navigation

@@ -326,7 +326,7 @@ test.describe('FavoriteQuestionsPage Tests', () => {
     await page.waitForTimeout(500);
 
     // Click "Practice All Flashcards" button
-    await page.getByRole('button', { name: /Practice All Flashcards/i }).click();
+    await page.getByRole('button', { name: /Practice With Flashcards/i }).click();
     await page.waitForTimeout(300);
 
     // Verify navigation
