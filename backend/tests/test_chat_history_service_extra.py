@@ -163,3 +163,68 @@ def test_save_analysis_strengths_parse_fallback(
 
     res = svc.save_analysis(3, "u@mail.com", messages)
     assert res["success"] is True    # should not crash despite bad strengths JSON
+
+
+def test_save_chat_history_welcome_skip(svc):
+    out = svc.save_chat_history("t1", "e@x", [{"sender": "ai", "text": "Welcome!"}])
+    assert out == {"success": True, "skipped": True}
+
+
+# --- save_chat_history existing longer → skip update -------------------------
+
+def test_save_chat_history_existing_longer_skip(svc, mock_supabase):
+    existing = json.dumps([1, 2, 3, 4])
+    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
+        {"id": 7, "log": existing}
+    ]
+    result = svc.save_chat_history("t2", "e@x", [{"sender": "user", "text": "hi"}])
+    assert result["skipped"] is True
+    # insert/update should NOT be called
+    assert not mock_supabase.table.return_value.update.called
+    assert not mock_supabase.table.return_value.insert.called
+
+
+# --- save_chat_history new insert path --------------------------------------
+
+def test_save_chat_history_insert_new(svc, mock_supabase):
+    # select returns empty ⇒ new row
+    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+    # mock insert returning id=99
+    mock_supabase.table.return_value.insert.return_value.execute.return_value.data = [
+        {"id": 99}
+    ]
+    msgs = [{"sender": "user", "text": "hi"}, {"sender": "ai", "text": "hello"}]
+    res = svc.save_chat_history("t3", "m@x", msgs)
+    assert res == {"success": True, "interview_id": 99}
+    assert mock_supabase.table.return_value.insert.called
+
+
+# --- get_chat_history not found ---------------------------------------------
+
+def test_get_chat_history_not_found(svc, mock_supabase):
+    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+    assert svc.get_chat_history("nope") is None
+
+
+# --- delete_chat_history success & failure ----------------------------------
+
+def test_delete_chat_history_success(svc, mock_supabase):
+    assert svc.delete_chat_history("tid") is True
+    mock_supabase.table.return_value.delete.assert_called()
+
+
+def test_delete_chat_history_failure(svc, mock_supabase):
+    mock_supabase.table.return_value.delete.return_value.eq.return_value.execute.side_effect = Exception("boom")
+    assert svc.delete_chat_history("tid2") is False
+
+
+# --- save_analysis skips when <3 messages -----------------------------------
+
+def test_save_analysis_skip_too_few_msgs(svc, patched_openai):
+    msgs = [{"sender": "user", "text": "A"}, {"sender": "ai", "text": "B"}]
+    res = svc.save_analysis(4, "u@x", msgs)
+    assert res == {"success": True, "skipped": True}
+
+
+# --- save_analysis weak‑questions bad JSON handled --------------------------
+
