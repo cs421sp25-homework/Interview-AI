@@ -59,3 +59,6 @@ tests/test_utils.py
 tests/test_interview_agent_unit.py
 tests/test_pdf_clean.py
 tests/test_chat_history_service_extra.py
+tests/test_profile_service.py
+tests/test_config_service_extra.py
+tests/test_elo_score_extra.py
