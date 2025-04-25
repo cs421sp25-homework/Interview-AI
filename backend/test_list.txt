@@ -44,3 +44,15 @@ tests/test_elo.py::test_get_current_elo_valid_email
 tests/test_elo.py::test_get_leaderboard_default
 tests/test_elo.py::test_get_leaderboard_with_parameters
 tests/test_elo.py::test_health_check
+tests/test_character.py::TestCharacter::test_character_initialization
+tests/test_character.py::TestCharacter::test_character_attributes
+tests/test_character.py::TestCharacter::test_character_str_representation
+tests/test_character.py::TestCharacter::test_default_values
+tests/test_interviewer.py::TestInterviewer::test_interviewer_initialization
+tests/test_interviewer.py::TestInterviewer::test_interviewer_inheritance
+tests/test_interviewer.py::TestInterviewer::test_interviewer_attributes
+tests/test_character_classes.py
+tests/test_llm_modules.py
+tests/test_models.py
+tests/test_services.py
+tests/test_utils.py

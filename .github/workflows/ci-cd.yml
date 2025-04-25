@@ -56,6 +56,7 @@ jobs:
           cd backend
           poetry install
           poetry add pytest gtts PyPDF2 pydantic fastapi uvicorn SpeechRecognition pyaudio
+          poetry add coverage --dev
 
       # 8. Start backend server in the background.
       - name: Start Backend Server
