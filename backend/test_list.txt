@@ -56,3 +56,6 @@ tests/test_llm_modules.py
 tests/test_models.py
 tests/test_services.py
 tests/test_utils.py
+tests/test_interview_agent_unit.py
+tests/test_pdf_clean.py
+tests/test_chat_history_service_extra.py

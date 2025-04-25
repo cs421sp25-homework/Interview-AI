@@ -1,8 +1,11 @@
 import json
 from characters.interviewer import Interviewer
-from .llm_graph import LLMGraph
+
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import SystemMessage
+from dotenv import load_dotenv
+from .llm_graph import LLMGraph
+
 
 class LLMInterviewAgent:
     """
@@ -174,24 +177,7 @@ class LLMInterviewAgent:
     # Example usage (not part of the library code)
 
 if __name__ == "__main__":
-    """
-    Example usage of the LLMInterviewAgent in an interactive terminal session.
-    Run:
-
-        poetry run python -m llm.interview_agent_llm
-
-    or from the project root with a direct path:
-
-        poetry run python llm/interview_agent_llm.py
-
-    Then type your responses as though you are the interviewee.
-    """
-    from dotenv import load_dotenv
-    from .llm_graph import LLMGraph
-    from characters.interviewer import Interviewer
-
     load_dotenv()
-    # Create an interviewer object (you can adapt these parameters)
     interviewer = Interviewer(
         name="Alice",
         personality="Friendly but professional",
@@ -199,46 +185,29 @@ if __name__ == "__main__":
         language="English",
         job_description="Senior Backend Developer",
         company_name="TechCorp",
-        interviewee_resume="Candidate has 5 years of Python experience..."
-    )
-
-    # Initialize LLM graph
+        interviewee_resume="Candidate has 5 years of Python experience...")
     llm_graph = LLMGraph()
-
-    # Create interview agent
     agent = LLMInterviewAgent(llm_graph=llm_graph, question_threshold=5)
-    # Set up system context
     agent.initialize(interviewer)
-
-    # Get the greeting from the LLM
     greeting = agent.greet()
     print(f"[AI]: {greeting}")
-
     last_ai_response = greeting
-
-    # Interactive loop
     while True:
         if agent.is_end(last_ai_response):
             print("[SYSTEM]: Interview is complete.\n")
             break
-
         user_input = input("[You]: ").strip()
         if not user_input:
             print("[SYSTEM]: Please provide a response. Type 'quit' to exit.")
             continue
-
         if user_input.lower() in ("quit", "exit"):
             print("[SYSTEM]: Exiting the interview.")
             break
-
         last_ai_response = agent.next_question(user_input)
         if last_ai_response.strip() == "END_INTERVIEW":
             print("[AI]: The interview has ended.")
             break
-
         print(f"[AI]: {last_ai_response}")
-
-    # Optionally record the entire conversation to JSON
     agent.record_conversation_to_json("interview_conversation.json")
     print("[SYSTEM]: Conversation saved to 'interview_conversation.json'.")
     print("[SYSTEM]: Goodbye!")
