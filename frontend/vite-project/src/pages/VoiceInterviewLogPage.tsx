@@ -162,35 +162,28 @@ import React, {
           
           // Set thread ID and question type if available in the response
           if (data.thread_id) {
-            console.log('Setting thread_id from API response:', data.thread_id);
             setThreadId(data.thread_id);
           } else if (data.id) {
             // If thread_id is not available, use the id field instead
-            console.log('Setting thread_id from API id field:', data.id);
             setThreadId(String(data.id));
           } else {
             // If neither is available, use the id from the URL
-            console.log('Setting thread_id from URL parameter:', id);
             setThreadId(id || '');
           }
           
           if (data.question_type) {
-            console.log('Setting question_type from API response:', data.question_type);
             setQuestionType(data.question_type);
           } else if (data.messages && data.messages.length > 0) {
             // Try to get question_type from the first AI message if available
             const firstAiMessage = data.messages.find((msg: ChatMessage) => msg.sender === 'ai');
             if (firstAiMessage && firstAiMessage.question_type) {
-              console.log('Setting question_type from first AI message:', firstAiMessage.question_type);
               setQuestionType(firstAiMessage.question_type);
             } else {
               // Default to 'behavioral' if no question_type is found
-              console.log('Setting default question_type: behavioral');
               setQuestionType('behavioral');
             }
           } else {
             // Default to 'behavioral' if no messages found
-            console.log('Setting default question_type: behavioral (no messages)');
             setQuestionType('behavioral');
           }
         } catch (error) {

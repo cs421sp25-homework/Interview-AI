@@ -575,7 +575,6 @@ const VoiceInterviewPage: React.FC = () => {
       source.start();
       
       setAudioInitialized(true);
-      console.log('Audio context initialized successfully');
       
       if (pendingAudioQueue.current.length > 0) {
         const next = pendingAudioQueue.current.shift();
@@ -613,7 +612,6 @@ const VoiceInterviewPage: React.FC = () => {
       if (!audioInitialized) {
         const index = messages.length - 1;
         pendingAudioQueue.current.push({ url: audioUrl, index });
-        console.log('Audio playback queued - waiting for initialization');
         return null;
       }
       
@@ -641,11 +639,9 @@ const VoiceInterviewPage: React.FC = () => {
         setCurrentlyPlaying(index);
         
         await audio.play();
-        console.log('Audio playback started successfully');
       } catch (playError) {
         console.warn('Autoplay prevented by browser:', playError);
         
-        console.log('Click on AI message to play the response');
         setIsAISpeaking(false);
         setCurrentlyPlaying(null);
       }

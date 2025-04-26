@@ -34,7 +34,6 @@ const WeakestQuestionsPage: React.FC = () => {
     try {
       const email = localStorage.getItem('user_email');
       if (!email) {
-        console.log("User not logged in, redirecting to login page");
         navigate('/login');
         return;
       }

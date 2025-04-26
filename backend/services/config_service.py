@@ -20,7 +20,6 @@ class ConfigService:
              .eq("email", email)
              .execute()
          )
-         print(f"get_single_config result: {result.data[0]}")
          if not result.data:
              return None
          return result.data[0]
@@ -30,7 +29,6 @@ class ConfigService:
         Retrieves all configuration entries associated with the given email.
         """
         result = self.supabase.table('interview_config').select('*').eq('email', email).execute()
-        print(f"get_config result: {result.data}")
 
         if not result.data:
             return None
@@ -56,7 +54,6 @@ class ConfigService:
             return result.data[0]['id']
     
         except Exception as e:
-            print(f"Error creating config: {e}")
             return None
 
     def update_config(self, id: int, updated_data: dict):

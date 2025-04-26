@@ -244,7 +244,6 @@ const MultiStepForm = () => {
       });
 
       if (response.status === 200) {
-        console.log('Form submitted successfully:', response.data);
         // Clear localStorage if you want to remove old data
         localStorage.clear();
 

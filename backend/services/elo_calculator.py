@@ -69,13 +69,10 @@ class SupabaseEloService:
             The user's current ELO score or the base score if user not found
         """
         response = self.supabase.table("elo_scores").select("eloscore").eq("email", email).execute()
-        print(f"Response: {response}")
 
         if response.data and len(response.data) > 0:
             return response.data[0]["eloscore"]
-        
-        print(f"User {email} not found in elo_scores table")
-        
+                
         return BASE_ELO
     
     def get_expected_result(self, user_elo: int, benchmark_elo: int) -> float:
@@ -158,19 +155,15 @@ class SupabaseEloService:
         current_elo = self.get_user_elo(email)
         
         # Calculate the new ELO
-        print(f"Current ELO: {current_elo}")
         new_elo = self.calculate_elo(current_elo, interview_score, difficulty)
         elo_change = new_elo - current_elo
-        print(f"New ELO: {new_elo}")
         timestamp = datetime.datetime.now()
         
         # First try to update the user if they exist
         user_response = self.supabase.table("elo_scores").select("id").eq("email", email).execute()
-        print(f"User Response: {user_response}")
 
         if not user_response.data or len(user_response.data) == 0:
             # User doesn't exist, let's create one
-            print(f"User {email} doesn't exist, creating new user")
             # Get the next available ID     
             max_id_response = self.supabase.table("elo_scores").select("id").order("id", desc=True).limit(1).execute()
             next_id = 1
@@ -197,11 +190,8 @@ class SupabaseEloService:
                     "eloscore": new_elo,
                     "created_at": timestamp.isoformat()
                 }).execute()
-                
-                print(f"Created new user: {email} with ELO score {new_elo}")
             
             except Exception as e:
-                print(f"Error creating user {email}: {e}")
                 # If creation fails, still return the calculated values
                 return {
                     "old_elo": current_elo,
@@ -213,10 +203,6 @@ class SupabaseEloService:
         else:
             # User exists, update their ELO score
             user_id = user_response.data[0]["id"]
-            
-            print(f"User ID: {user_id}")
-            print(f"New ELO: {new_elo}")
-            print(f"Current ELO: {current_elo}")
 
             try:
                 # Update the user's ELO in the database
@@ -224,22 +210,17 @@ class SupabaseEloService:
                     "eloscore": new_elo,
                 }).eq("id", user_id).execute()
 
-                print(f"Updated ELO score for user {email} to {new_elo}")
-
                 self.supabase.table("elo_history").insert({
                     "name": name,
                     "email": email,
                     "eloscore": new_elo,
                     "created_at": timestamp.isoformat()
                 }).execute()
-
-                print(f"Inserted ELO history for user {email}")
                 
                 # Update all ranks
                 self._update_all_ranks()
             
             except Exception as e:
-                print(f"Error updating user {email}: {e}")
                 return {
                     "old_elo": current_elo,
                     "new_elo": new_elo,
@@ -342,10 +323,6 @@ class SupabaseEloService:
             .limit(limit) \
             .execute()
         
-        print(f"Limit: {limit}")
-        
-        print(f"Response: {response}")
-
         if not response.data:
             return []
         
@@ -422,35 +399,20 @@ def main() -> None:
                 args.difficulty,
                 args.type
             )
-            print(f"Updated ELO for user {args.email}:")
-            print(f"  Old ELO: {result['old_elo']}")
-            print(f"  New ELO: {result['new_elo']}")
-            print(f"  Change:  {result['elo_change']:+}")
-        
+
         elif args.command == "get":
             elo = elo_service.get_user_elo(args.email)
-            print(f"Current ELO for user {args.email}: {elo}")
         
         elif args.command == "leaderboard":
             leaderboard = elo_service.get_leaderboard(args.limit, args.offset)
-            print(f"ELO Leaderboard (Rank {args.offset+1}-{args.offset+len(leaderboard)}):")
-            for user in leaderboard:
-                print(f"  #{user['rank']}: {user['name']} - {user['eloScore']}")
-        
+
         elif args.command == "history":
             history = elo_service.get_user_elo_history(args.email, args.limit)
-            print(f"ELO History for user {args.email} (last {len(history)} entries):")
-            for entry in history:
-                print(f"  {entry['date']}: {entry['score']}")
-        
+  
         elif args.command == "calculate":
             new_elo = elo_service.calculate_elo(args.current_elo, args.score, args.difficulty)
             change = new_elo - args.current_elo
-            print(f"ELO Calculation Results:")
-            print(f"  Current ELO: {args.current_elo}")
-            print(f"  New ELO:     {new_elo}")
-            print(f"  Change:      {change:+}")
-        
+
         else:
             parser.print_help()
             

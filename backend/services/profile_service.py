@@ -104,18 +104,13 @@ class ProfileService:
                 profile_data['resume'] = ResumeData(**profile_data['resume'])
             
             profile = self.map_profile_data(profile_data)
-            
-            print(f"OAuth: Attempting to insert profile into database for email: {profile.email}")
             result = self.supabase.table('profiles').insert(profile.model_dump()).execute()
-            print(f"OAuth: Database insertion result: {result}")
             
             if result and result.data:
                 return {"success": True, "data": result.data[0] if result.data else {}}
             
             return {"success": True, "message": "Profile created"}
         except Exception as e:
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
             raise
 
 
@@ -170,6 +165,4 @@ class ProfileService:
                 resume=resume,
             )
         except Exception as e:
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
             raise

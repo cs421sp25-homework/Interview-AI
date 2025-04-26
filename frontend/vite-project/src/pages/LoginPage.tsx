@@ -103,7 +103,6 @@ const LoginPage = () => {
 
       if (response.status === 200) {
         // Successful login
-        console.log('Login successful');
         login(sanitizedEmail);
         
         // You can store email in localStorage if you want to remember next time

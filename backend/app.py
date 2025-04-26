@@ -80,7 +80,6 @@ def signup():
     Handles user signup, including resume upload and profile creation.
     """
     try:
-        print("signup")
         if 'resume' not in request.files:
             return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
         
@@ -115,7 +114,6 @@ def signup():
             "profile": result.get("data", {})
         }), 200
     except Exception as e:
-        print(f"Signup error: {str(e)}")
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
     
 
@@ -125,7 +123,6 @@ def oauth_signup():
     Handles user signup, including resume upload and profile creation.
     """
     try:
-        print("signup")
         if 'resume' not in request.files:
             return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
         
@@ -158,7 +155,6 @@ def oauth_signup():
             "profile": result.get("data", {})
         }), 200
     except Exception as e:
-        print(f"Signup error: {str(e)}")
         return jsonify({"error": "Signup failed", "message": str(e)}), 500
 
 
@@ -168,14 +164,11 @@ def get_config(email):
     Retrieves a user's configurations by email.
     """
     try:
-        print(f"email: {email}")
         configs = config_service.get_configs(email)
-        print(f"configs: {configs}")
 
         if not configs:
             return jsonify({"error": "No configurations found"}), 404
 
-        print("Configurations retrieved:", configs)
         return jsonify({
             "message": "Configurations retrieved successfully",
             "data": configs
@@ -184,9 +177,6 @@ def get_config(email):
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 401
     except Exception as e:
-        print(f"Error in get_config route: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get configurations", "message": str(e)}), 500
 
 
@@ -201,7 +191,6 @@ def get_profile(email):
         if not profile:
             return jsonify({"error": "User not found"}), 404
 
-        print(f"profile get")
         return jsonify({
             "message": "Profile retrieved successfully",
             "data": profile.model_dump()
@@ -210,9 +199,6 @@ def get_profile(email):
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 401
     except Exception as e:
-        print(f"Error in get_profile route: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get profile", "message": str(e)}), 500
 
 
@@ -225,8 +211,6 @@ def update_profile(email):
         if not updated_profile:
             return jsonify({"error": "User not found or failed to update"}), 404
         
-        print(f"updated_profile: {updated_profile}")
-
         formatted_response = {
             "name": f"{updated_profile.get('first_name', '')} {updated_profile.get('last_name', '')}".strip(),
             "title": updated_profile.get('job_title', ''),
@@ -242,15 +226,11 @@ def update_profile(email):
             "experience": updated_profile.get('resume_experience', [])
         }
 
-        print(f"formatted_response: {formatted_response}")
-
         return jsonify({
             "message": "Profile updated successfully",
             "data": formatted_response
         }), 200
-
     except Exception as e:
-        print("Error updating profile:", str(e))
         return jsonify({
             "error": "Failed to update profile",
             "message": str(e)
@@ -267,8 +247,6 @@ def parse_resume():
             return jsonify({"error": "Resume is required", "message": "Please upload a resume file"}), 400
 
         resume_file = request.files['resume']
-        print("Received resume file:", resume_file.filename)
-        print("File content type:", resume_file.content_type)
 
         validate_file(resume_file, allowed_types=['application/pdf'])
 
@@ -295,16 +273,10 @@ def upload_image():
         image_file = request.files['file']
         email = request.form.get('email', 'default_user')
 
-        print(f"Uploading image for email: {email}")
-
         validate_file(image_file, allowed_types=['image/jpeg', 'image/png', 'image/gif'])
-
-        print(f"Image validated")
 
         file_path = f"{email}/{image_file.filename}"
         storage_service.upload_file('profile_pics', file_path, image_file.read(), image_file.content_type)
-
-        print(f"File path: {file_path}")
 
         file_url = storage_service.get_public_url('profile_pics', file_path)
 
@@ -320,7 +292,6 @@ def upload_image():
 def email_login():
     try:
         data = request.json
-        print(f"data: {data}")
         email = data.get('email')
         password = data.get('password')
 
@@ -334,7 +305,6 @@ def email_login():
         
         return jsonify({"message": "Login successful"}), 200
     except Exception as e:
-        print(f"error: {str(e)}")
         return jsonify({"error": "Login failed"}), 500
 
 
@@ -351,7 +321,6 @@ def oauth_login(provider):
         
         # Set the redirect to our backend callback endpoint
         callback_url = f"{request.host_url.rstrip('/')}/api/auth/callback"
-        print(f"Initiating sign in with {provider}, callback URL: {callback_url}")
         
         response = supabase.auth.sign_in_with_oauth(
             {
@@ -367,7 +336,6 @@ def oauth_login(provider):
         return redirect(response.url)
 
     except Exception as e:
-        print(f"Error in {provider} OAuth: {str(e)}")
         return jsonify({
             "error": "OAuth failed",
             "message": str(e)
@@ -399,7 +367,6 @@ def get_oauth_email():
         return jsonify({"email": user.email}), 200
         
     except Exception as e:
-        print(f"Error getting OAuth email: {str(e)}")
         # For testing/development, return a dummy email
         if app.debug:
             return jsonify({"email": "test@example.com"}), 200
@@ -409,18 +376,13 @@ def get_oauth_email():
 @app.route('/api/auth/callback', methods=['GET'])
 def auth_callback():
     try:
-        print(f"Request received at callback endpoint")
-        
         code = request.args.get('code')
-        print(f"Code from query params: {code}")
 
         try:
             result = supabase.auth.exchange_code_for_session({
                 "auth_code": code
             })
-            
-            print(f"Exchange result: {result}")
-            
+                        
             if not result or not result.session:
                 return jsonify({"error": "Failed to exchange code for session"}), 400
             
@@ -430,15 +392,12 @@ def auth_callback():
             if authorization_service.check_email_exists(email):
                 is_new_user = False
 
-            print(f"email: {email}")
             return redirect(f"{os.getenv('FRONTEND_URL')}/#/auth/callback?email={email}&is_new_user={is_new_user}")
 
         except Exception as exchange_error:
-            print(f"Exchange error: {str(exchange_error)}")
             return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?code={code}")
         
     except Exception as e:
-        print(f"Auth callback error: {str(e)}")
         return redirect(f"{os.getenv('FRONTEND_URL')}/auth/callback?error={str(e)}")
 
 
@@ -457,8 +416,6 @@ def new_chat():
     config_row = config_service.get_single_config(name=name, email=email)
     if not config_row:
         return jsonify({"error": "No config found for given name and email."}), 404
-
-    print(f"get_single_config result: {config_row}")
     
     # Pull relevant config fields
     config_id = config_row.get("id")
@@ -681,7 +638,6 @@ def save_chat_history():
     
     # Check if there's only a welcome message, if so skip saving
     if len(messages) == 1 and messages[0].get('sender') == 'ai':
-        print(f"Skipping save for thread {thread_id} - only contains welcome message")
         return jsonify({"success": True, "skipped": True, "reason": "only_welcome_message"})
     
     # Check existing record's message count
@@ -703,7 +659,6 @@ def save_chat_history():
                     existing_messages = json.loads(existing_messages)
                     
                 if len(existing_messages) > len(messages):
-                    print(f"Skipping save for thread {thread_id} - existing log has more messages")
                     return jsonify({"success": True, "skipped": True, "reason": "existing_log_longer"})
     except Exception as e:
         print(f"Error checking existing log: {e}")
@@ -719,10 +674,6 @@ def save_chat_history():
         return jsonify({"error": "Failed to get interview ID"}), 500
     
     analysis_result = chat_history_service.save_analysis(interview_id, user_email, messages, config_name, config_id, session_id=thread_id)
-    
-    if not analysis_result.get('success'):
-        print(f"Warning: Failed to save analysis for interview {interview_id}: {analysis_result.get('error', 'Unknown error')}")
-        # Continue anyway, don't fail the whole request
     
     try:
         result = supabase.table('interview_logs').select('*').eq('thread_id', thread_id).execute()
@@ -741,7 +692,6 @@ def get_interview_config(email):
         # Return empty array if no configs found, instead of 404 error
         return jsonify(result if result else []), 200
     except Exception as e:
-        print(f"Error getting configs: {str(e)}")
         # Return empty array instead of error
         return jsonify([]), 200
     
@@ -838,9 +788,6 @@ def get_interview_logs(email):
             
         return jsonify({"data": enhanced_logs}), 200
     except Exception as e:
-        print(f"Error fetching interview logs: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch interview logs", "message": str(e)}), 500
 
 
@@ -874,7 +821,6 @@ def delete_chat_history_by_id(id):
         }), 200
 
     except Exception as e:
-        print(f"Error deleting interview log: {str(e)}")
         return jsonify({"error": "Failed to delete interview log", "message": str(e)}), 500
 
 
@@ -920,7 +866,6 @@ def get_chat_history_by_id(chat_id):
         }), 200
 
     except Exception as e:
-        print(f"Error retrieving chat history {chat_id}: {e}")
         return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
 
 
@@ -976,7 +921,6 @@ def get_chat_history(identifier):
         }), 200
 
     except Exception as e:
-        print(f"Error retrieving chat history for {identifier}: {e}", file=sys.stderr)
         return jsonify({"error": "Failed to retrieve chat history", "message": str(e)}), 500
     
 
@@ -1108,9 +1052,6 @@ def generate_good_response():
     if not user_message:
          return jsonify({"error": "Missing message"}), 400
 
-    print(f"Received AI question: {ai_question}")
-    print(f"Received user message: {user_message}")
-
     time.sleep(3)
 
     # Build a prompt that adapts to question type
@@ -1222,8 +1163,6 @@ Your response:"""
 @app.route('/api/overall_scores/<id>', methods=['GET'])
 @app.route('/api/overall_scores/email/<email>', methods=['GET'])
 def get_overall_scores(id=None, email=None):
-    print(f"Getting overall scores for id: {id}, email: {email}")
-
     try:
         result = supabase.table('interview_performance').select('*').eq('user_email', email).execute()
             
@@ -1281,15 +1220,11 @@ def get_overall_scores(id=None, email=None):
         })
 
     except Exception as e:
-        print(f"Error getting overall scores: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Failed to get overall scores", "message": str(e)}), 500
 
 
 @app.route('/api/interview_scores/<interview_id>', methods=['GET'])
 def get_interview_scores(interview_id: int):                 
-    print(f"Getting interview scores for id: {interview_id}")
     # get the scores of the interview from the database
     try:
         result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
@@ -1309,7 +1244,6 @@ def get_interview_scores(interview_id: int):
 
 @app.route('/api/interview_feedback_strengths/<interview_id>', methods=['GET'])
 def get_interview_feedback_strengths(interview_id: int):
-    print(f"Getting interview feedback strengths for id: {interview_id}")
     try:
         result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
         if not result.data:
@@ -1321,7 +1255,6 @@ def get_interview_feedback_strengths(interview_id: int):
 
 @app.route('/api/interview_feedback_improvement_areas/<interview_id>', methods=['GET'])
 def get_interview_feedback_improvement_areas(interview_id: int):
-    print(f"Getting interview feedback improvement areas for id: {interview_id}")
     try:
         result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
         if not result.data:
@@ -1333,7 +1266,6 @@ def get_interview_feedback_improvement_areas(interview_id: int):
 
 @app.route('/api/interview_feedback_specific_feedback/<interview_id>', methods=['GET'])
 def get_interview_feedback_specific_feedback(interview_id: int):
-    print(f"Getting interview feedback specific feedback for id: {interview_id}")
     try:
         result = supabase.table('interview_performance').select('*').eq('interview_id', interview_id).execute()
         if not result.data:
@@ -1363,8 +1295,6 @@ def get_favorite_questions(email):
         
         return jsonify({"data": result.data if result.data else []}), 200
     except Exception as e:
-        print(f"Error in get_favorite_questions: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({"data": []}), 200
 
 @app.route('/api/favorite_questions', methods=['POST'])
@@ -1412,8 +1342,6 @@ def add_favorite_question():
             
         return jsonify({"data": result.data[0]}), 201
     except Exception as e:
-        print("Error in add_favorite_question:", str(e))
-        print("Traceback:", traceback.format_exc())
         return jsonify({"error": "Failed to add favorite question", "message": str(e)}), 500
 
 
@@ -1453,28 +1381,20 @@ def get_weak_questions(email):
         if not email:
             return jsonify({"data": []}), 200
 
-        print(f"Fetching weak questions for email: {email}")
-
         # Build the base query
         query = supabase.table('interview_questions').select('*').eq('email', email).eq('is_weak', True)
         
         # Check if session_id is provided in query parameters
         session_id = request.args.get('session_id')
         if session_id:
-            print(f"Filtering by session_id: {session_id}")
             query = query.eq('session_id', session_id)
         
-        print(f"Final query: {query}")
         result = query.execute()
         
-        print(f"Query result: {result}")
         # Always return a 200 status code with data array (empty if none found)
         return jsonify({"data": result.data if result.data else []}), 200
 
     except Exception as e:
-        print(f"Error in get_weak_questions: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         # Return empty array instead of error for better UX
         return jsonify({"data": []}), 200
 
@@ -1487,7 +1407,6 @@ def add_weak_question():
     """
     try:
         data = request.json
-        print("Received data for weak question:", data)
         
         # Validate required fields
         required_fields = ['question_text', 'session_id', 'email']
@@ -1513,9 +1432,7 @@ def add_weak_question():
         # If a thread_id is provided, keep it
         if 'thread_id' in data:
             data['thread_id'] = data['thread_id']
-        
-        print("Attempting to insert/update data into Supabase:", data)
-        
+                
         # Check if question already exists for this session/email
         existing = supabase.table('interview_questions') \
             .select('*') \
@@ -1543,9 +1460,6 @@ def add_weak_question():
         return jsonify({"data": result.data[0]}), 201
     
     except Exception as e:
-        print("Error in add_weak_question:", str(e))
-        import traceback
-        print("Traceback:", traceback.format_exc())
         return jsonify({"error": "Failed to add weak question", "message": str(e)}), 500
 
 @app.route('/api/weak_questions/<id>', methods=['DELETE'])
@@ -1634,7 +1548,6 @@ def get_elo_history(email):
     try:
         # Get optional limit parameter
         limit = request.args.get('limit', default=90, type=int)
-        print(f"Getting ELO history for email: {email} with limit: {limit}")
         
         # Get user's ELO history
         history = elo_service.get_user_elo_history(email, limit)
@@ -1673,7 +1586,6 @@ def get_current_elo(email):
         if len(history) >= 2:
             # The history is ordered with oldest first, so index 0 is earlier than index 1
             previous_elo = history[1]['score']  # Second to last entry
-            print(f"history: {history}")
             change = current_elo - previous_elo
         
         return jsonify({
@@ -1774,7 +1686,6 @@ Format the response as bullet points starting with "•". Do not include any oth
         })
         
     except Exception as e:
-        print(f"Error generating flashcard answer: {str(e)}")
         return jsonify({'error': 'Failed to generate ideal answer'}), 500
 
 @app.route('/api/store_answer', methods=['POST'])
@@ -1808,7 +1719,6 @@ def store_answer():
         return jsonify({'success': True}), 200
         
     except Exception as e:
-        print(f"Error storing answer: {str(e)}")
         return jsonify({'error': 'Failed to store answer'}), 500
 
 
