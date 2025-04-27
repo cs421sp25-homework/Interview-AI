@@ -212,33 +212,24 @@ if __name__ == "__main__":
 
     # Get the greeting from the LLM
     greeting = agent.greet()
-    print(f"[AI]: {greeting}")
-
     last_ai_response = greeting
 
     # Interactive loop
     while True:
         if agent.is_end(last_ai_response):
-            print("[SYSTEM]: Interview is complete.\n")
             break
 
         user_input = input("[You]: ").strip()
         if not user_input:
-            print("[SYSTEM]: Please provide a response. Type 'quit' to exit.")
             continue
 
         if user_input.lower() in ("quit", "exit"):
-            print("[SYSTEM]: Exiting the interview.")
             break
 
         last_ai_response = agent.next_question(user_input)
         if last_ai_response.strip() == "END_INTERVIEW":
-            print("[AI]: The interview has ended.")
             break
 
-        print(f"[AI]: {last_ai_response}")
 
     # Optionally record the entire conversation to JSON
     agent.record_conversation_to_json("interview_conversation.json")
-    print("[SYSTEM]: Conversation saved to 'interview_conversation.json'.")
-    print("[SYSTEM]: Goodbye!")

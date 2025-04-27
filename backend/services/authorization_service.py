@@ -16,9 +16,7 @@ class AuthorizationService:
         if not self.check_email_exists(email):
             return False
         
-        print(f"email: {email}, password: {password}")
         response = self.supabase.table('profiles').select('*').eq('email', email).eq('password', password).execute()
-        print(f"response: {response}")
         return len(response.data) > 0
 
     def get_user_from_session(self, session_id):
@@ -28,7 +26,6 @@ class AuthorizationService:
             result = self.supabase.auth.get_user(session_id)
             return result.user if result else None
         except Exception as e:
-            print(f"Error getting user from session: {str(e)}")
             return None
 
     def get_current_user(self):
@@ -39,7 +36,6 @@ class AuthorizationService:
             
             # Check if we have a valid session
             if session_response.session is None:
-                print("No active session found")
                 return None
             
             user_response = self.supabase.auth.get_user(session_response.session.access_token)
@@ -48,7 +44,6 @@ class AuthorizationService:
                 return user_response.user
             return None
         except Exception as e:
-            print(f"Error getting current user: {str(e)}")
             return None
 
     def get_user_from_token(self, access_token):
@@ -57,5 +52,4 @@ class AuthorizationService:
             user_response = self.supabase.auth.get_user(access_token)
             return user_response.user if user_response else None
         except Exception as e:
-            print(f"Error getting user from token: {str(e)}")
             return None

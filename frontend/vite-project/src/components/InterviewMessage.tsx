@@ -80,8 +80,6 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
         question_type: currentQuestionType
       };
 
-      console.log('Sending favorite data:', favoriteData);
-
       const response = await fetch(`${API_BASE_URL}/api/favorite_questions`, {
         method: 'POST',
         headers: {
@@ -91,7 +89,6 @@ const InterviewMessage: React.FC<InterviewMessageProps> = ({ message, messageId,
       });
 
       const responseData = await response.json();
-      console.log('Server response:', responseData);
 
       if (!response.ok) {
         const errorMessage = responseData.error || responseData.message || 'Failed to favorite question';

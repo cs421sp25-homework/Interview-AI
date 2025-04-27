@@ -176,4 +176,3 @@ if __name__ == '__main__':
     # Example usage
     pdf_url = "https://example.com/resume.pdf"  # Replace with a valid URL
     result = process_resume(pdf_url)
-    print(json.dumps(result, indent=2))

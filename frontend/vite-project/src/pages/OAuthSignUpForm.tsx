@@ -255,7 +255,6 @@ const MultiStepForm = () => {
 
       // If submission is successful
       if (response.status === 200) {
-        console.log('Form submitted successfully:', response.data);
         navigate('/dashboard');
       } else {
         // Handle unexpected status codes

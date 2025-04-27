@@ -46,21 +46,6 @@ const GraphPage = () => {
   const [leaderboard, setLeaderboard] = useState<{ rank: number; name: string; elo: number }[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
 
-  // 添加调试状态
-  const [debug, setDebug] = useState(false);
-
-  // 添加调试函数
-  const toggleDebug = () => {
-    setDebug(!debug);
-    if (!debug) {
-      console.log('Debug mode enabled. Current state:', {
-        skillStats,
-        eloData,
-        leaderboard
-      });
-    }
-  };
-
   useEffect(() => {
     // Fetch real skill data from the 'overall_scores' endpoint
     const fetchSkills = async () => {
@@ -77,7 +62,6 @@ const GraphPage = () => {
           : `${API_BASE_URL}/api/overall_scores/${currentEmail}`;
 
         const response = await axios.get(endpoint);
-        console.log('Skills API response:', response.data);
         
         if (response.data && response.data.scores) {
           const scores = response.data.scores;
@@ -89,10 +73,8 @@ const GraphPage = () => {
             { subject: 'Resume Strength', A: Math.round(scores['resume strength'] * 100) },
             { subject: 'Confidence', A: Math.round(scores.confidence * 100) }
           ];
-          console.log('Formatted skills data:', formattedSkills);
           setSkillStats(formattedSkills);
         } else {
-          console.log('No skills data found, using defaults');
           setSkillStats([
             { subject: 'Technical Skills', A: 65 },
             { subject: 'Communication', A: 78 },
@@ -104,7 +86,6 @@ const GraphPage = () => {
         }
       } catch (error) {
         console.error('Error fetching skill scores:', error);
-        console.log('Error fetching skills, using default values');
         setSkillStats([
           { subject: 'Technical Skills', A: 65 },
           { subject: 'Communication', A: 78 },
@@ -128,27 +109,20 @@ const GraphPage = () => {
           return;
         }
 
-        console.log('Fetching ELO history for:', currentEmail);
         const response = await axios.get(`${API_BASE_URL}/api/elo/history/${currentEmail}`);
-        console.log('ELO history API response:', response.data);
         
         if (response.data && response.data.success) {
           if (response.data.data && response.data.data.length > 0) {
-            // 有历史数据，格式化并设置
             const formattedData = response.data.data.map((item: any) => ({
               timestamp: item.date,
               elo: item.score
             }));
             
-            console.log('Formatted ELO history data:', formattedData);
             setEloData(formattedData);
           } else {
-            // API成功但没有数据 - 用户没有ELO历史
-            console.log('User has no ELO history yet');
             setEloData([]);
           }
         } else {
-          console.log('Invalid ELO history data response');
           setEloError('Could not retrieve ELO history data.');
           setEloData([]);
         }
@@ -166,26 +140,20 @@ const GraphPage = () => {
       setIsLoadingLeaderboard(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/api/elo/leaderboard?limit=10`);
-        console.log('Leaderboard API response:', response.data);
         
         if (response.data && response.data.success) {
           if (response.data.data && response.data.data.length > 0) {
-            // 有排行榜数据，格式化并设置
             const formattedData = response.data.data.map((item: any) => ({
               rank: item.rank,
               name: item.name,
               elo: item.eloscore // Note: using lowercase as per our Supabase schema
             }));
             
-            console.log('Formatted leaderboard data:', formattedData);
             setLeaderboard(formattedData);
           } else {
-            // API成功但没有数据 - 排行榜为空
-            console.log('No leaderboard data available yet');
             setLeaderboard([]);
           }
         } else {
-          console.log('Invalid leaderboard data response');
           setLeaderboard([]);
         }
       } catch (error) {
@@ -238,13 +206,12 @@ const GraphPage = () => {
       <div className={styles.container}>
         <h1 className={styles.pageTitle}>
           Performance Analytics Dashboard
-          {/* 隐藏的调试开关 */}
           <span 
             onClick={toggleDebug} 
             style={{ 
               marginLeft: '8px', 
               fontSize: '12px', 
-              color: debug ? '#ec4899' : '#f1f5f9',
+              color: '#f1f5f9',
               cursor: 'pointer',
               userSelect: 'none'
             }}
@@ -253,32 +220,6 @@ const GraphPage = () => {
           </span>
         </h1>
         
-        {/* 调试面板 */}
-        {debug && (
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            padding: '10px',
-            marginBottom: '20px',
-            borderRadius: '6px',
-            fontSize: '14px'
-          }}>
-            <p>Debug Info:</p>
-            <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
-              <li>Skill Data Count: {skillStats.length}</li>
-              <li>ELO History Count: {eloData.length}</li>
-              <li>Leaderboard Count: {leaderboard.length}</li>
-            </ul>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button onClick={() => console.log(skillStats)} style={{ fontSize: '12px', padding: '3px 6px' }}>
-                Log Skill Data
-              </button>
-              <button onClick={() => console.log(eloData)} style={{ fontSize: '12px', padding: '3px 6px' }}>
-                Log ELO Data
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Card Grid: Radar (Hexagon) & ELO Chart */}
         <div className={styles.cardGrid}>

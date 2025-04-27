@@ -132,13 +132,11 @@ const SettingsPage: React.FC = () => {
           return;
         }
 
-        console.log("Fetching profile for email:", localEmail);
         setError(null);
 
         const response = await axios.get(`${API_BASE_URL}/api/profile/${localEmail}`);
         if (response.data?.data) {
           const userData = response.data.data;
-          console.log("Profile data loaded:", userData);
 
           const profileData: UserProfile = {
             firstName: userData.first_name || '',
@@ -218,14 +216,11 @@ const SettingsPage: React.FC = () => {
       formData.append('file', photoFile);
       formData.append('email', localEmail);
 
-      console.log("Uploading image for email:", localEmail);
-
       const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       if (response.data?.url) {
-        console.log('Image uploaded successfully:', response.data.url);
         return response.data.url;
       } else {
         console.error('Upload response did not contain a URL:', response.data);
@@ -273,7 +268,6 @@ const SettingsPage: React.FC = () => {
 
       if (response.status === 200 && response.data.resume) {
         const resumeData = response.data.resume;
-        console.log("Parsed resume data:", resumeData);
 
         // Update local state
         setProfile(prev => ({
@@ -293,7 +287,6 @@ const SettingsPage: React.FC = () => {
             headers: { 'Content-Type': 'application/json' }
           }
         );
-        console.log("Profile updated with new resume data:", updateResponse.data);
         alert("Resume parsed and profile updated successfully!");
       } else {
         setError('Server returned an unexpected response parsing resume.');
@@ -397,7 +390,6 @@ const SettingsPage: React.FC = () => {
       };
 
       const response = await axios.put(`${API_BASE_URL}/api/profile/${profile.email}`, updateData);
-      console.log('Profile update server response:', response.data);
 
       alert('Profile updated successfully!');
       navigate('/dashboard');

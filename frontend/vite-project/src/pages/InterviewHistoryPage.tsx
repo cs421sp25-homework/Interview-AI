@@ -98,7 +98,6 @@ const InterviewHistoryPage: React.FC = () => {
       // Check if user is logged in
       const email = localStorage.getItem('user_email');
       if (!email) {
-        console.log("User not logged in, redirecting to login page");
         navigate('/login');
         return;
       }
@@ -141,12 +140,10 @@ const InterviewHistoryPage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Fetched interview logs:', data);
 
       if (data && Array.isArray(data.data)) {
 
         const transformedLogs = data.data.map((log: any) => {
-          console.log(`Log ID: ${log.id}, updated_at: ${log.updated_at}, created_at: ${log.created_at}`);
 
           return {
             id: log.id,
@@ -311,7 +308,6 @@ const InterviewHistoryPage: React.FC = () => {
                 method: 'DELETE',
               });
               
-              console.log(`Deleted favorites associated with voice session ID: ${log.id}`);
             } catch (error) {
               console.error('Error deleting voice favorites by ID:', error);
             }
@@ -343,9 +339,7 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleExportInterview = async (log: InterviewLog) => {
-    try {
-      console.log("Export button clicked", log);
-      
+    try {      
       if (!log.log || (Array.isArray(log.log) && log.log.length === 0)) {
         message.warning('No conversation data found for export');
         return;
@@ -354,8 +348,6 @@ const InterviewHistoryPage: React.FC = () => {
       const conversationData = Array.isArray(log.log) ? log.log : 
                               typeof log.log === 'string' ? JSON.parse(log.log) : [];
       
-      console.log("Conversation data:", conversationData);
-
       message.loading('Preparing export...', 0.5);
 
       let strengths = ["Demonstrated communication skills", "Showed technical knowledge"];
@@ -363,13 +355,10 @@ const InterviewHistoryPage: React.FC = () => {
       let specificFeedback = "Performance data available for this interview.";
       let performanceScores = null;
       
-      try {
-        console.log("Fetching complete details for ID:", log.id);
-        
+      try {        
         const scoresResponse = await fetch(`${API_BASE_URL}/api/interview_scores/${log.id}`);
         if (scoresResponse.ok) {
           const scoresData = await scoresResponse.json();
-          console.log("Performance scores data:", scoresData);
           
           if (scoresData.scores) {
             performanceScores = {
@@ -433,7 +422,6 @@ const InterviewHistoryPage: React.FC = () => {
       };
 
       try {
-        console.log("Starting PDF export with complete data");
         exportToPDF(exportData);
         message.success('Export prepared. Use browser print dialog to save as PDF.');
       } catch (error) {
@@ -447,13 +435,6 @@ const InterviewHistoryPage: React.FC = () => {
   };
   
   const handleViewDetails = async (log: InterviewLog) => {
-    console.log("Selected log for details view:", {
-      id: log.id,
-      type: log.interview_type,
-      job_description: log.job_description,
-      thread_id: log.thread_id
-    });
-    
     setSelectedLog(log);
     setDetailModalVisible(true);
     
@@ -587,13 +568,6 @@ const InterviewHistoryPage: React.FC = () => {
         return;
       }
 
-      console.log('Fetching favorites for:', {
-        email,
-        thread_id: log.thread_id,
-        id: log.id,
-        log: log
-      });
-
       let favoritesList = [];
       
       // For voice interviews, the session_id might be stored as the log.id
@@ -603,7 +577,6 @@ const InterviewHistoryPage: React.FC = () => {
         
         if (voiceResponse.ok) {
           const voiceData = await voiceResponse.json();
-          console.log('Fetched voice favorite questions response:', voiceData);
           favoritesList = Array.isArray(voiceData.data) ? voiceData.data : [];
         }
       }
@@ -616,7 +589,6 @@ const InterviewHistoryPage: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched text favorite questions response:', data);
           favoritesList = Array.isArray(data.data) ? data.data : [];
         }
       }
@@ -642,14 +614,6 @@ const InterviewHistoryPage: React.FC = () => {
         message.error('Please log in to view weakest questions');
         return;
       }
-
-      console.log('Fetching weakest questions for:', {
-        email,
-        thread_id: log.thread_id,
-        id: log.id,
-        log: log
-      });
-
       let weakestList = [];
       
       // For voice interviews, the session_id might be stored as the log.id
@@ -659,7 +623,6 @@ const InterviewHistoryPage: React.FC = () => {
         
         if (voiceResponse.ok) {
           const voiceData = await voiceResponse.json();
-          console.log('Fetched voice favorite questions response:', voiceData);
           weakestList = Array.isArray(voiceData.data) ? voiceData.data : [];
         }
       }
@@ -672,7 +635,6 @@ const InterviewHistoryPage: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched text weakest questions response:', data);
           weakestList = Array.isArray(data.data) ? data.data : [];
         }
       }

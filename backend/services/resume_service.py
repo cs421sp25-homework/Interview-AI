@@ -44,5 +44,4 @@ class ResumeService:
             else:
                 raise ValueError("Invalid extraction result format")
         except Exception as e:
-            print(f"Error processing resume: {str(e)}")
             raise
