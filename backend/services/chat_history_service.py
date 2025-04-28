@@ -239,8 +239,6 @@ class ChatHistoryService:
                 response_format=ScoreRubrics,
                 messages=analysis_prompt 
             )
-
-            print(response)
             
             # Strengths prompt - get a list of strengths
             strengths_prompt = [
@@ -429,15 +427,6 @@ class ChatHistoryService:
                     # Insert a new record
                     self.supabase.table('interview_questions').insert(upsert_data).execute()
 
-            print("Analysis:")
-            print(response.choices[0].message.parsed)
-            print("Strengths:")
-            print(strengths_data)
-            print("Weaknesses:")
-            print(weaknesses_data)
-            print("Specific Feedback:")
-            print(specific_feedback_text)
-
             result = self.supabase.table('interview_performance').upsert({
                 'interview_id': interview_id,
                 'user_email': user_email,
@@ -462,7 +451,6 @@ class ChatHistoryService:
 
             # Update ELO score
             elo_service = EloCalculator()
-            print(f"Updating ELO score for {user_email} with score {total_score} and name {name}")
             elo_service.update_elo_score(user_email, total_score, name)
             
             self.logger.info(f"Analysis saved for interview_id: {interview_id}")

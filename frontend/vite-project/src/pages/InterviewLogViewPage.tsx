@@ -78,11 +78,6 @@ const InterviewLogViewPage: React.FC = () => {
         }
       }
       
-      console.log("Sending request to generate_good_response with data:", {
-        message: messageText,
-        ai_question: aiQuestion
-      });
-      
       const res = await fetch(`${API_BASE_URL}/api/generate_good_response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,7 +136,6 @@ const InterviewLogViewPage: React.FC = () => {
       setThreadId(thread_id);
       setQuestionType(question_type);
       setTimeout(() => setLoading(false), 300);
-      console.log('Thread ID:', thread_id);
     } else {
       // Fetch from DB if not in router state
       const fetchLog = async () => {

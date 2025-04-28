@@ -62,12 +62,9 @@ const InterviewPage: React.FC = () => {
     try {
       // If there's only one AI message, it's just the welcome message, skip saving
       if (chatMessages.length === 1 && chatMessages[0].sender === 'ai') {
-        console.log("Only welcome message exists, skipping save");
         return true;
       }
-      
-      console.log("Saving chat history to API for thread_id:", currentThreadId);
-      
+            
       const response = await fetch(`${API_BASE_URL}/api/chat_history`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,7 +81,6 @@ const InterviewPage: React.FC = () => {
         throw new Error(`Failed to save chat history: ${response.status} ${response.statusText}`);
       }
       
-      console.log("Chat history saved successfully");
       return true;
     } catch (error) {
       console.error("Error saving chat history:", error);
@@ -107,12 +103,8 @@ const InterviewPage: React.FC = () => {
         hasRealConversationRef.current &&
         !initialLoadRef.current
       ) {
-        console.log("Component unmounting, saving chat history");
         saveChatHistory(threadId, messages)
-          .then(() => console.log("Chat history saved on unmount"))
           .catch(err => console.error("Failed to save chat history on unmount:", err));
-      } else {
-        console.log("Skipping save on unmount because conditions not met");
       }
     };
   }, [threadId, messages, saveChatHistory]);
@@ -122,7 +114,6 @@ const InterviewPage: React.FC = () => {
       // Check if user is logged in
       const email = localStorage.getItem('user_email');
       if (!email) {
-        console.log("User not logged in, redirecting to login page");
         navigate('/login');
         return;
       }
@@ -141,9 +132,7 @@ const InterviewPage: React.FC = () => {
       }
       
       const createSession = async () => {
-        try {
-          console.log("Creating new interview session...");
-          
+        try {          
           // Fetch user profile data
           let userProfile = null;
           try {
@@ -158,8 +147,6 @@ const InterviewPage: React.FC = () => {
             console.error('Error fetching user profile:', profileError);
             // Continue even if profile fetch fails
           }
-          console.log("User profile:", userProfile);
-
           // Fetch config details to get company name and type
           try {
             const configResponse = await fetch(`${API_BASE_URL}/api/interview_config/${config_id}`);
@@ -202,7 +189,6 @@ const InterviewPage: React.FC = () => {
           }
     
           const data = await res.json();
-          console.log("Received session data:", data);
           
           if (!data.thread_id) {
             throw new Error("No thread_id received from server");
@@ -224,7 +210,6 @@ const InterviewPage: React.FC = () => {
           // Set initial load flag to false after a short delay
           setTimeout(() => {
             initialLoadRef.current = false;
-            console.log("Initial load phase completed");
           }, 1000);
           
           return data.thread_id;
@@ -276,9 +261,7 @@ const InterviewPage: React.FC = () => {
       }
       
       const data = await res.json();
-      
-      console.log(`Received AI response: "${data.response.substring(0, 30)}..."`);
-      
+            
       const aiMessage = { 
         text: data.response || "I'm thinking about my response...", 
         sender: 'ai' as const 

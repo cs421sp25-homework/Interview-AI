@@ -8,9 +8,6 @@ const AuthCallback = () => {
 
   useEffect(() => {
     try {
-      // We wrap all logic in a try/catch to catch unexpected issues:
-      console.log('Search params', searchParams);
-
       const error = searchParams.get('error');
       const email = searchParams.get('email');
       const isNewUser = 

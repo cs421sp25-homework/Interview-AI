@@ -55,7 +55,6 @@ const PromptPage = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${API_BASE_URL}/api/get_interview_configs/${email}`);
-        console.log("API Response:", response.data);
         setSavedInterviewConfigs(response.data);
       } catch (error: any) {
         console.error("Error fetching interview configs:", error);

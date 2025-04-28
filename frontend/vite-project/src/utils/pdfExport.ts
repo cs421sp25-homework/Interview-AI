@@ -4,9 +4,7 @@
 
 // Simple utility to convert interview data to PDF using browser printing
 export const exportToPDF = (data: any): void => {
-  try {
-    console.log("Starting PDF export with data:", data);
-    
+  try {    
     // Validate data
     if (!data || !data.interview) {
       console.error("Invalid data for PDF export", data);
@@ -24,8 +22,6 @@ export const exportToPDF = (data: any): void => {
     if (!printWindow) {
       throw new Error('Could not open print window. Please check if pop-ups are blocked in your browser settings.');
     }
-
-    console.log("Creating HTML content for PDF");
     
     // Format date for display
     const formatDate = (dateStr: string) => {
@@ -369,8 +365,6 @@ export const exportToPDF = (data: any): void => {
         </body>
       </html>
     `;
-
-    console.log("Writing HTML content to print window");
     
     // Write content to the new window
     printWindow.document.open();
@@ -379,8 +373,6 @@ export const exportToPDF = (data: any): void => {
 
     // Focus the window
     printWindow.focus();
-    
-    console.log("PDF export completed successfully");
   } catch (error) {
     console.error('Error preparing print view:', error);
     throw error;
