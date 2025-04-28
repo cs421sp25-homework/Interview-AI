@@ -34,3 +34,5 @@ coverage/
 # Local Netlify folder
 .netlify
 
+backend/.coverage
+backend/.coverage
