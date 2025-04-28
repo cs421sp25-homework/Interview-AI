@@ -487,12 +487,12 @@ const InterviewHistoryPage: React.FC = () => {
       if (scoresData.scores) {
         setPerformanceData({
           scores: {
-            confidence: scoresData.scores.confidence || 0.75,
-            communication: scoresData.scores.communication || 0.75,
-            technical: scoresData.scores.technical || 0.75,
-            problem_solving: scoresData.scores.problem_solving || 0.75,
-            resume_strength: scoresData.scores["resume strength"] || 0.75, // Note the different key format
-            leadership: scoresData.scores.leadership || 0.75
+            confidence: scoresData.scores.confidence || 0,
+            communication: scoresData.scores.communication || 0,
+            technical: scoresData.scores.technical || 0,
+            problem_solving: scoresData.scores.problem_solving || 0,
+            resume_strength: scoresData.scores["resume strength"] || 0, // Note the different key format
+            leadership: scoresData.scores.leadership || 0
           },
           feedback: {
             key_strengths: strengths,
