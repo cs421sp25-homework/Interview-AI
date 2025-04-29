@@ -1,3 +1,13 @@
+## Important Note
+
+⚠️ **OAuth Login Notice**
+
+OAuth login does **not** work on the development server.  
+This is because the OAuth URL has been configured to match the production server, not the local development environment.
+
+All other functionalities continue to work as expected.
+
+
 # Setting Up the Development Environment for InterviewAI
 
 This guide walks you through setting up and running the **React + Vite** frontend and **Flask** backend for the **InterviewAI** project. You can choose to run it locally or using Docker Compose.
